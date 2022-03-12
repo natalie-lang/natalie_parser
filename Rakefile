@@ -9,7 +9,7 @@ desc 'Build Natalie Parser library'
 task library: "build/libnatalie_parser.a"
 
 desc 'Build Natalie Parser MRI C extension'
-task parser_c_ext: "build/parser_c_ext.#{so_ext}"
+task parser_c_ext: "ext/natalie_parser/natalie_parser.#{so_ext}"
 
 desc 'Remove temporary files created during build'
 task :clean do
@@ -134,16 +134,12 @@ file 'build/libnatalie_parser.a' => HEADERS + OBJECT_FILES do |t|
   sh "ar rcs #{t.name} #{OBJECT_FILES}"
 end
 
-file "build/parser_c_ext.#{so_ext}" => ['build/libnatalie_parser.a', 'src/parser_c_ext/parser_c_ext.cpp'] do |t|
-  build_dir = File.expand_path('build/parser_c_ext', __dir__)
-  FileList['src/parser_c_ext/*'].each do |path|
-    cp path, build_dir
-  end
+file "ext/natalie_parser/natalie_parser.#{so_ext}" => ['build/libnatalie_parser.a', 'ext/natalie_parser/natalie_parser.cpp'] do |t|
+  build_dir = File.expand_path('ext/natalie_parser', __dir__)
   sh <<-SH
     cd #{build_dir} && \
     ruby extconf.rb && \
-    make && \
-    cp parser_c_ext.#{so_ext} ..
+    make
   SH
 end
 
