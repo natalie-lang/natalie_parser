@@ -150,7 +150,7 @@ private:
     using parse_null_fn = Node *(Parser::*)(LocalsHashmap &);
     using parse_left_fn = Node *(Parser::*)(Node *, LocalsHashmap &);
 
-    parse_null_fn null_denotation(Token::Type, Precedence);
+    parse_null_fn null_denotation(Token::Type);
     parse_left_fn left_denotation(Token &, Node *);
 
     bool treat_left_bracket_as_element_reference(Node *left, Token &token) {

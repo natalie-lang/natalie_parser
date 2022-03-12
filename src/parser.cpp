@@ -151,7 +151,7 @@ Parser::Precedence Parser::get_precedence(Token &token, Node *left) {
 Node *Parser::parse_expression(Parser::Precedence precedence, LocalsHashmap &locals) {
     skip_newlines();
 
-    auto null_fn = null_denotation(current_token().type(), precedence);
+    auto null_fn = null_denotation(current_token().type());
     if (!null_fn) {
         throw_unexpected("expression");
     }
@@ -724,6 +724,7 @@ Node *Parser::parse_multiple_assignment_expression(Node *left, LocalsHashmap &lo
 }
 
 Node *Parser::parse_constant(LocalsHashmap &locals) {
+    TM_UNUSED(locals);
     auto node = new ConstantNode { current_token() };
     advance();
     return node;
@@ -914,6 +915,7 @@ Node *Parser::parse_modifier_expression(Node *left, LocalsHashmap &locals) {
 }
 
 Node *Parser::parse_file_constant(LocalsHashmap &locals) {
+    TM_UNUSED(locals);
     auto token = current_token();
     advance();
     return new StringNode { token, token.file() };
@@ -1129,6 +1131,7 @@ Node *Parser::parse_interpolated_string(LocalsHashmap &locals) {
 };
 
 Node *Parser::parse_lit(LocalsHashmap &locals) {
+    TM_UNUSED(locals);
     auto token = current_token();
     switch (token.type()) {
     case Token::Type::Integer:
@@ -1250,6 +1253,7 @@ Node *Parser::parse_not(LocalsHashmap &locals) {
 }
 
 Node *Parser::parse_regexp(LocalsHashmap &locals) {
+    TM_UNUSED(locals);
     auto token = current_token();
     auto regexp = new RegexpNode { token, token.literal_string() };
     regexp->set_options(token.options().value());
@@ -1290,6 +1294,7 @@ Node *Parser::parse_sclass(LocalsHashmap &locals) {
 }
 
 Node *Parser::parse_self(LocalsHashmap &locals) {
+    TM_UNUSED(locals);
     auto token = current_token();
     advance();
     return new SelfNode { token };
@@ -1319,6 +1324,7 @@ Node *Parser::parse_stabby_proc(LocalsHashmap &locals) {
 };
 
 Node *Parser::parse_string(LocalsHashmap &locals) {
+    TM_UNUSED(locals);
     auto token = current_token();
     auto string = new StringNode { token, token.literal_string() };
     advance();
@@ -1346,6 +1352,7 @@ Node *Parser::parse_super(LocalsHashmap &locals) {
 };
 
 Node *Parser::parse_symbol(LocalsHashmap &locals) {
+    TM_UNUSED(locals);
     auto token = current_token();
     auto symbol = new SymbolNode { token, current_token().literal_string() };
     advance();
@@ -1411,6 +1418,7 @@ Node *Parser::parse_unary_operator(LocalsHashmap &locals) {
 }
 
 Node *Parser::parse_word_array(LocalsHashmap &locals) {
+    TM_UNUSED(locals);
     auto token = current_token();
     auto array = new ArrayNode { token };
     auto literal = token.literal();
@@ -1435,6 +1443,7 @@ Node *Parser::parse_word_array(LocalsHashmap &locals) {
 }
 
 Node *Parser::parse_word_symbol_array(LocalsHashmap &locals) {
+    TM_UNUSED(locals);
     auto token = current_token();
     auto array = new ArrayNode { token };
     auto literal = token.literal();
@@ -1985,7 +1994,7 @@ Node *Parser::parse_while(LocalsHashmap &locals) {
     }
 }
 
-Parser::parse_null_fn Parser::null_denotation(Token::Type type, Precedence precedence) {
+Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
     using Type = Token::Type;
     switch (type) {
     case Type::AliasKeyword:

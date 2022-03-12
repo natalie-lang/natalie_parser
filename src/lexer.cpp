@@ -763,7 +763,6 @@ Token Lexer::build_next_token() {
         else if (match(5, "yield"))
             return Token { Token::Type::YieldKeyword, m_file, m_token_line, m_token_column };
         auto c = current_char();
-        bool symbol_key = false;
         if ((c >= 'a' && c <= 'z') || c == '_') {
             return consume_bare_name();
         } else if (c >= 'A' && c <= 'Z') {
@@ -962,7 +961,6 @@ size_t get_heredoc_indent(SharedPtr<String> doc) {
     if (doc->is_empty())
         return 0;
     size_t heredoc_indent = std::numeric_limits<size_t>::max();
-    size_t line_begin = 0;
     size_t line_indent = 0;
     bool maybe_blank_line = true;
     for (size_t i = 0; i < doc->length(); i++) {
@@ -970,7 +968,6 @@ size_t get_heredoc_indent(SharedPtr<String> doc) {
         if (c == '\n') {
             if (!maybe_blank_line && line_indent < heredoc_indent)
                 heredoc_indent = line_indent;
-            line_begin = i + 1;
             line_indent = 0;
             maybe_blank_line = true;
         } else if (isspace(c)) {
@@ -1098,7 +1095,6 @@ Token Lexer::consume_heredoc() {
 }
 
 Token Lexer::consume_numeric(bool negative) {
-    size_t start_index = m_index;
     long long number = 0;
     if (current_char() == '0') {
         switch (peek()) {

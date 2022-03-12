@@ -1,14 +1,20 @@
 task default: :build
 
-desc 'Build Natalie Parser C Extension'
-task build: :parser_c_ext
+desc 'Build Natalie Parser library and MRI C extension'
+task build: [:bundle_install, :build_dir, :library, :parser_c_ext]
+
+so_ext = RUBY_PLATFORM =~ /darwin/ ? 'bundle' : 'so'
+
+desc 'Build Natalie Parser library'
+task library: "build/libnatalie_parser.a"
+
+desc 'Build Natalie Parser MRI C extension'
+task parser_c_ext: "build/parser_c_ext.#{so_ext}"
 
 desc 'Remove temporary files created during build'
 task :clean do
   rm_rf 'build/build.log'
   rm_rf 'build/parser_c_ext'
-  rm_rf 'build/parser_c_ext.so'
-  rm_rf 'build/parser_c_ext.bundle'
   rm_rf Rake::FileList['build/*.o']
 end
 
@@ -111,21 +117,24 @@ end
 
 STANDARD = 'c++17'
 HEADERS = Rake::FileList['include/**/{*.h,*.hpp}']
+SOURCES = Rake::FileList['src/**/*.{c,cpp}'].exclude('src/parser_c_ext/*')
+OBJECT_FILES = SOURCES.sub('src/', 'build/').pathmap('%p.o')
 
 require 'tempfile'
 
-so_ext = RUBY_PLATFORM =~ /darwin/ ? 'bundle' : 'so'
-task parser_c_ext: [:bundle_install, :build_dir, "build/parser_c_ext.#{so_ext}"]
-
 task :build_dir do
-  mkdir_p 'build/parser_c_ext' unless File.exist?('build')
+  mkdir_p 'build/parser_c_ext' unless File.exist?('build/parser_c_ext')
 end
 
 rule '.cpp.o' => ['src/%n'] + HEADERS do |t|
   sh "#{cxx} #{cxx_flags.join(' ')} -std=#{STANDARD} -c -o #{t.name} #{t.source}"
 end
 
-file "build/parser_c_ext.#{so_ext}" => 'src/parser_c_ext/parser_c_ext.cpp' do |t|
+file 'build/libnatalie_parser.a' => HEADERS + OBJECT_FILES do |t|
+  sh "ar rcs #{t.name} #{OBJECT_FILES}"
+end
+
+file "build/parser_c_ext.#{so_ext}" => ['build/libnatalie_parser.a', 'src/parser_c_ext/parser_c_ext.cpp'] do |t|
   build_dir = File.expand_path('build/parser_c_ext', __dir__)
   FileList['src/parser_c_ext/*'].each do |path|
     cp path, build_dir
@@ -168,19 +177,18 @@ def cxx_flags
   base_flags =
     case ENV['BUILD']
     when 'release'
-      %w[-pthread -fPIC -g -O2]
+      %w[
+        -fPIC
+        -g
+        -O2
+      ]
     else
       %w[
-        -pthread
         -fPIC
         -g
         -Wall
         -Wextra
         -Werror
-        -Wno-unused-parameter
-        -Wno-unused-variable
-        -Wno-unused-but-set-variable
-        -Wno-unknown-warning-option
       ]
     end
   base_flags + include_paths.map { |path| "-I #{path}" }
