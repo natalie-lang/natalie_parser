@@ -1,7 +1,13 @@
 task default: :build
 
 desc 'Build Natalie Parser library and MRI C extension'
-task build: [:bundle_install, :build_dir, :library, :parser_c_ext]
+task build: %i[
+  bundle_install
+  build_dir
+  library
+  parser_c_ext
+  write_compile_database
+]
 
 so_ext = RUBY_PLATFORM =~ /darwin/ ? 'bundle' : 'so'
 
@@ -13,14 +19,19 @@ task parser_c_ext: "ext/natalie_parser/natalie_parser.#{so_ext}"
 
 desc 'Remove temporary files created during build'
 task :clean do
-  rm_rf 'build/build.log'
-  rm_rf 'build/parser_c_ext'
-  rm_rf Rake::FileList['build/*.o']
+  Rake::FileList[%w[
+    build/build.log
+    build/*.o
+    ext/natalie_parser/*.{h,log,o}
+  ]].each { |path| rm_rf path if File.exist?(path) }
 end
 
 desc 'Remove all generated files'
 task :clobber do
-  rm_rf 'build'
+  Rake::FileList[%w[
+    build
+    ext/natalie_parser/*.{so,bundle,h,log,o}
+  ]].each { |path| rm_rf path if File.exist?(path) }
 end
 
 task distclean: :clobber
@@ -117,7 +128,7 @@ end
 
 STANDARD = 'c++17'
 HEADERS = Rake::FileList['include/**/{*.h,*.hpp}']
-SOURCES = Rake::FileList['src/**/*.{c,cpp}'].exclude('src/parser_c_ext/*')
+SOURCES = Rake::FileList['src/**/*.{c,cpp}']
 OBJECT_FILES = SOURCES.sub('src/', 'build/').pathmap('%p.o')
 
 require 'tempfile'

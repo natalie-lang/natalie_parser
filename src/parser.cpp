@@ -823,7 +823,7 @@ Node *Parser::parse_def_single_arg(LocalsHashmap &locals) {
         auto sub_args = parse_def_args(locals);
         expect(Token::Type::RParen, "nested args closing paren");
         advance();
-        auto masgn = new MultipleAssignmentNode { token };
+        auto masgn = new MultipleAssignmentArgNode { token };
         for (auto arg : *sub_args) {
             masgn->add_node(arg);
         }
@@ -1045,16 +1045,20 @@ Node *Parser::parse_interpolated_regexp(LocalsHashmap &locals) {
     if (current_token().type() == Token::Type::InterpolatedRegexpEnd) {
         auto regexp_node = new RegexpNode { token, new String };
         auto options = current_token().options();
-        if (options)
-            regexp_node->set_options(options.value());
+        if (options) {
+            int options_int = parse_regexp_options(options.value().ref());
+            regexp_node->set_options(options_int);
+        }
         advance();
         return regexp_node;
     } else if (current_token().type() == Token::Type::String && peek_token().type() == Token::Type::InterpolatedRegexpEnd) {
         auto regexp_node = new RegexpNode { token, current_token().literal_string() };
         advance();
         auto options = current_token().options();
-        if (options)
-            regexp_node->set_options(options.value());
+        if (options) {
+            int options_int = parse_regexp_options(options.value().ref());
+            regexp_node->set_options(options_int);
+        }
         advance();
         return regexp_node;
     } else {
@@ -1072,15 +1076,15 @@ Node *Parser::parse_interpolated_regexp(LocalsHashmap &locals) {
 
 int Parser::parse_regexp_options(String &options_string) {
     int options = 0;
-    for (char *c = const_cast<char *>(options_string.c_str()); *c != '\0'; ++c) {
-        switch (*c) {
-        case 'i': // ignore case
+    for (size_t i = 0; i < options_string.size(); ++i) {
+        switch (options_string.at(i)) {
+        case 'i':
             options |= 1;
             break;
-        case 'x': // extended
+        case 'x':
             options |= 2;
             break;
-        case 'm': // multiline
+        case 'm':
             options |= 4;
             break;
         default:
@@ -1256,7 +1260,11 @@ Node *Parser::parse_regexp(LocalsHashmap &locals) {
     TM_UNUSED(locals);
     auto token = current_token();
     auto regexp = new RegexpNode { token, token.literal_string() };
-    regexp->set_options(token.options().value());
+    auto options = token.options();
+    if (options) {
+        int options_int = parse_regexp_options(options.value().ref());
+        regexp->set_options(options_int);
+    }
     advance();
     return regexp;
 };

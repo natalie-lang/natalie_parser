@@ -1,5 +1,6 @@
 #pragma once
 
+#include "natalie_parser/creator.hpp"
 #include "natalie_parser/token.hpp"
 #include "tm/hashmap.hpp"
 #include "tm/shared_ptr.hpp"
@@ -52,6 +53,7 @@ public:
         Match,
         Module,
         MultipleAssignment,
+        MultipleAssignmentArg,
         Next,
         Nil,
         NilSexp,
@@ -89,13 +91,18 @@ public:
 
     virtual ~Node() { }
 
-    virtual Type type() = 0;
+    virtual Type type() const = 0;
 
     virtual bool is_callable() const { return false; }
 
     virtual Node *clone() const {
         printf("Need to implement Node::clone() in a subclass...\n");
         TM_UNREACHABLE();
+    }
+
+    virtual void transform(Creator *creator) const {
+        creator->set_type("NOT_YET_IMPLEMENTED");
+        creator->append_integer((int)type());
     }
 
     SharedPtr<String> file() const { return m_token.file(); }
@@ -129,6 +136,9 @@ public:
     }
 
     Vector<Node *> &args() { return m_args; }
+    const Vector<Node *> &args() const { return m_args; }
+
+    void append_method_or_block_args(Creator *creator) const;
 
 protected:
     Vector<Node *> m_args {};
@@ -145,10 +155,12 @@ public:
 
     ~AliasNode();
 
-    virtual Type type() override { return Type::Alias; }
+    virtual Type type() const override { return Type::Alias; }
 
     SymbolNode *new_name() const { return m_new_name; }
     SymbolNode *existing_name() const { return m_existing_name; }
+
+    virtual void transform(Creator *creator) const override;
 
 private:
     SymbolNode *m_new_name { nullptr };
@@ -180,9 +192,24 @@ public:
         return new ArgNode(*this);
     }
 
-    virtual Type type() override { return Type::Arg; }
+    virtual Type type() const override { return Type::Arg; }
 
-    SharedPtr<String> name() const { return m_name; }
+    const SharedPtr<String> name() const { return m_name; }
+
+    void append_name(Creator *creator) const {
+        String n;
+        if (m_name)
+            n = m_name->clone();
+        if (m_splat) {
+            n.prepend_char('*');
+        } else if (m_kwsplat) {
+            n.prepend_char('*');
+            n.prepend_char('*');
+        } else if (m_block_arg) {
+            n.prepend_char('&');
+        }
+        creator->append_symbol(n);
+    }
 
     bool splat() const { return m_splat; }
     void set_splat(bool splat) { m_splat = splat; }
@@ -198,6 +225,13 @@ public:
 
     void add_to_locals(TM::Hashmap<const char *> &locals) {
         locals.set(m_name->c_str());
+    }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("lasgn");
+        append_name(creator);
+        if (m_value)
+            creator->append(m_value);
     }
 
 protected:
@@ -228,13 +262,19 @@ public:
         return new ArrayNode(*this);
     }
 
-    virtual Type type() override { return Type::Array; }
+    virtual Type type() const override { return Type::Array; }
 
     void add_node(Node *node) {
         m_nodes.push(node);
     }
 
-    Vector<Node *> &nodes() { return m_nodes; }
+    const Vector<Node *> &nodes() const { return m_nodes; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("array");
+        for (auto node : m_nodes)
+            creator->append(node);
+    }
 
 protected:
     Vector<Node *> m_nodes {};
@@ -245,7 +285,15 @@ public:
     ArrayPatternNode(const Token &token)
         : ArrayNode { token } { }
 
-    virtual Type type() override { return Type::ArrayPattern; }
+    virtual Type type() const override { return Type::ArrayPattern; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("array_pat");
+        if (!m_nodes.is_empty())
+            creator->append_nil(); // NOTE: I don't know what this nil is for
+        for (auto node : m_nodes)
+            creator->append(node);
+    }
 };
 
 class BlockPassNode : public Node {
@@ -260,9 +308,14 @@ public:
         delete m_node;
     }
 
-    virtual Type type() override { return Type::BlockPass; }
+    virtual Type type() const override { return Type::BlockPass; }
 
     Node *node() const { return m_node; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("block_pass");
+        creator->append(m_node);
+    }
 
 protected:
     Node *m_node { nullptr };
@@ -278,15 +331,23 @@ public:
         delete m_arg;
     }
 
-    virtual Type type() override { return Type::Break; }
+    virtual Type type() const override { return Type::Break; }
 
     Node *arg() const { return m_arg; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("break");
+        if (m_arg)
+            creator->append(m_arg);
+    }
 
 protected:
     Node *m_arg { nullptr };
 };
 
 class IdentifierNode;
+
+class MultipleAssignmentNode;
 
 class AssignmentNode : public Node {
 public:
@@ -303,10 +364,12 @@ public:
         delete m_value;
     }
 
-    virtual Type type() override { return Type::Assignment; }
+    virtual Type type() const override { return Type::Assignment; }
 
     Node *identifier() const { return m_identifier; }
     Node *value() const { return m_value; }
+
+    virtual void transform(Creator *creator) const override;
 
 protected:
     Node *m_identifier { nullptr };
@@ -326,7 +389,7 @@ public:
 
     ~BeginNode();
 
-    virtual Type type() override { return Type::Begin; }
+    virtual Type type() const override { return Type::Begin; }
 
     void add_rescue_node(BeginRescueNode *node) { m_rescue_nodes.push(node); }
     bool no_rescue_nodes() const { return m_rescue_nodes.size() == 0; }
@@ -340,6 +403,8 @@ public:
     BlockNode *ensure_body() const { return m_ensure_body; }
 
     Vector<BeginRescueNode *> &rescue_nodes() { return m_rescue_nodes; }
+
+    virtual void transform(Creator *creator) const override;
 
 protected:
     BlockNode *m_body { nullptr };
@@ -355,7 +420,7 @@ public:
 
     ~BeginRescueNode();
 
-    virtual Type type() override { return Type::BeginRescue; }
+    virtual Type type() const override { return Type::BeginRescue; }
 
     void add_exception_node(Node *node) {
         m_exceptions.push(node);
@@ -367,11 +432,13 @@ public:
 
     void set_body(BlockNode *body) { m_body = body; }
 
-    Node *name_to_node();
+    Node *name_to_node() const;
 
     IdentifierNode *name() const { return m_name; }
     Vector<Node *> &exceptions() { return m_exceptions; }
     BlockNode *body() const { return m_body; }
+
+    virtual void transform(Creator *creator) const override;
 
 protected:
     IdentifierNode *m_name { nullptr };
@@ -398,7 +465,7 @@ public:
         m_nodes.push(node);
     }
 
-    virtual Type type() override { return Type::Block; }
+    virtual Type type() const override { return Type::Block; }
 
     Vector<Node *> &nodes() { return m_nodes; }
     bool is_empty() const { return m_nodes.is_empty(); }
@@ -410,6 +477,12 @@ public:
             return m_nodes[0];
         else
             return this;
+    }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("block");
+        for (auto node : m_nodes)
+            creator->append(node);
     }
 
 protected:
@@ -439,7 +512,7 @@ public:
         delete m_receiver;
     }
 
-    virtual Type type() override { return Type::Call; }
+    virtual Type type() const override { return Type::Call; }
 
     virtual bool is_callable() const override { return true; }
 
@@ -455,6 +528,26 @@ public:
     void set_message(const char *message) {
         assert(message);
         m_message = new String(message);
+    }
+
+    virtual void transform(Creator *creator) const override {
+        if (creator->assignment()) {
+            creator->set_type("attrasgn");
+            creator->with_assignment(false, [&]() {
+                creator->append(m_receiver);
+            });
+            auto message = m_message->clone();
+            message.append_char('=');
+            creator->append_symbol(message);
+        } else {
+            creator->set_type("call");
+            creator->append(m_receiver);
+            creator->append_symbol(m_message);
+        }
+        creator->with_assignment(false, [&]() {
+            for (auto arg : args())
+                creator->append(arg);
+        });
     }
 
 protected:
@@ -477,7 +570,7 @@ public:
         delete m_else_node;
     }
 
-    virtual Type type() override { return Type::Case; }
+    virtual Type type() const override { return Type::Case; }
 
     void add_node(Node *node) {
         m_nodes.push(node);
@@ -490,6 +583,17 @@ public:
     Node *subject() const { return m_subject; }
     Vector<Node *> &nodes() { return m_nodes; }
     BlockNode *else_node() const { return m_else_node; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("case");
+        creator->append(m_subject);
+        for (auto when_node : m_nodes)
+            creator->append(when_node);
+        if (m_else_node)
+            creator->append(m_else_node->without_unnecessary_nesting());
+        else
+            creator->append_nil();
+    }
 
 protected:
     Node *m_subject { nullptr };
@@ -512,10 +616,17 @@ public:
         delete m_body;
     }
 
-    virtual Type type() override { return Type::CaseIn; }
+    virtual Type type() const override { return Type::CaseIn; }
 
     Node *pattern() const { return m_pattern; }
     BlockNode *body() const { return m_body; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("in");
+        creator->append(m_pattern);
+        for (auto node : m_body->nodes())
+            creator->append(node);
+    }
 
 protected:
     Node *m_pattern { nullptr };
@@ -537,10 +648,17 @@ public:
         delete m_body;
     }
 
-    virtual Type type() override { return Type::CaseWhen; }
+    virtual Type type() const override { return Type::CaseWhen; }
 
     Node *condition() const { return m_condition; }
     BlockNode *body() const { return m_body; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("when");
+        creator->append(m_condition);
+        for (auto node : m_body->nodes())
+            creator->append(node);
+    }
 
 protected:
     Node *m_condition { nullptr };
@@ -555,7 +673,12 @@ public:
     SafeCallNode(const Token &token, CallNode &node)
         : CallNode { token, node } { }
 
-    virtual Type type() override { return Type::SafeCall; }
+    virtual Type type() const override { return Type::SafeCall; }
+
+    virtual void transform(Creator *creator) const override {
+        CallNode::transform(creator);
+        creator->set_type("safe_call");
+    }
 };
 
 class ClassNode : public Node {
@@ -564,15 +687,21 @@ public:
         : Node { token }
         , m_name { name }
         , m_superclass { superclass }
-        , m_body { body } { }
+        , m_body { body } {
+        assert(m_name);
+        assert(m_superclass);
+        assert(m_body);
+    }
 
     ~ClassNode();
 
-    virtual Type type() override { return Type::Class; }
+    virtual Type type() const override { return Type::Class; }
 
     Node *name() const { return m_name; }
     Node *superclass() const { return m_superclass; }
     BlockNode *body() const { return m_body; }
+
+    virtual void transform(Creator *creator) const override;
 
 protected:
     Node *m_name { nullptr };
@@ -594,10 +723,20 @@ public:
         delete m_left;
     }
 
-    virtual Type type() override { return Type::Colon2; }
+    virtual Type type() const override { return Type::Colon2; }
 
     Node *left() const { return m_left; }
     SharedPtr<String> name() const { return m_name; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("colon2");
+        creator->with_assignment(false, [&]() {
+            creator->append(m_left);
+        });
+        creator->append_symbol(m_name);
+        if (creator->assignment())
+            creator->wrap("cdecl");
+    }
 
 protected:
     Node *m_left { nullptr };
@@ -610,9 +749,16 @@ public:
         : Node { token }
         , m_name { name } { }
 
-    virtual Type type() override { return Type::Colon3; }
+    virtual Type type() const override { return Type::Colon3; }
 
     SharedPtr<String> name() const { return m_name; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("colon3");
+        creator->append_symbol(m_name);
+        if (creator->assignment())
+            creator->wrap("cdecl");
+    }
 
 protected:
     SharedPtr<String> m_name {};
@@ -623,9 +769,14 @@ public:
     ConstantNode(const Token &token)
         : Node { token } { }
 
-    virtual Type type() override { return Type::Constant; }
+    virtual Type type() const override { return Type::Constant; }
 
     SharedPtr<String> name() const { return m_token.literal_string(); }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("const");
+        creator->append_symbol(name());
+    }
 };
 
 class IntegerNode : public Node {
@@ -634,9 +785,14 @@ public:
         : Node { token }
         , m_number { number } { }
 
-    virtual Type type() override { return Type::Integer; }
+    virtual Type type() const override { return Type::Integer; }
 
     long long number() const { return m_number; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("lit");
+        creator->append_integer(m_number);
+    }
 
 protected:
     long long m_number;
@@ -648,9 +804,14 @@ public:
         : Node { token }
         , m_number { number } { }
 
-    virtual Type type() override { return Type::Float; }
+    virtual Type type() const override { return Type::Float; }
 
     double number() const { return m_number; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("lit");
+        creator->append_float(m_number);
+    }
 
 protected:
     double m_number;
@@ -668,9 +829,14 @@ public:
         delete m_arg;
     }
 
-    virtual Type type() override { return Type::Defined; }
+    virtual Type type() const override { return Type::Defined; }
 
     Node *arg() const { return m_arg; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("defined");
+        creator->append(m_arg);
+    }
 
 protected:
     Node *m_arg { nullptr };
@@ -694,11 +860,28 @@ public:
         delete m_body;
     }
 
-    virtual Type type() override { return Type::Def; }
+    virtual Type type() const override { return Type::Def; }
 
     Node *self_node() const { return m_self_node; }
     SharedPtr<String> name() const { return m_name; }
     BlockNode *body() const { return m_body; }
+
+    virtual void transform(Creator *creator) const override {
+        if (m_self_node) {
+            creator->set_type("defs");
+            creator->append(m_self_node);
+        } else {
+            creator->set_type("defn");
+        }
+        creator->append_symbol(m_name);
+        append_method_or_block_args(creator);
+        if (m_body->is_empty()) {
+            creator->append_sexp([&](Creator *c) { c->set_type("nil"); });
+        } else {
+            for (auto node : m_body->nodes())
+                creator->append(node);
+        }
+    }
 
 protected:
     Node *m_self_node { nullptr };
@@ -716,9 +899,14 @@ public:
         delete m_node;
     }
 
-    virtual Type type() override { return Type::EvaluateToString; }
+    virtual Type type() const override { return Type::EvaluateToString; }
 
     Node *node() const { return m_node; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("evstr");
+        creator->append(m_node);
+    }
 
 protected:
     Node *m_node { nullptr };
@@ -729,7 +917,11 @@ public:
     FalseNode(const Token &token)
         : Node { token } { }
 
-    virtual Type type() override { return Type::False; }
+    virtual Type type() const override { return Type::False; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("false");
+    }
 };
 
 class HashNode : public Node {
@@ -742,13 +934,19 @@ public:
             delete node;
     }
 
-    virtual Type type() override { return Type::Hash; }
+    virtual Type type() const override { return Type::Hash; }
 
     void add_node(Node *node) {
         m_nodes.push(node);
     }
 
     Vector<Node *> &nodes() { return m_nodes; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("hash");
+        for (auto node : m_nodes)
+            creator->append(node);
+    }
 
 protected:
     Vector<Node *> m_nodes {};
@@ -759,7 +957,14 @@ public:
     HashPatternNode(const Token &token)
         : HashNode { token } { }
 
-    virtual Type type() override { return Type::HashPattern; }
+    virtual Type type() const override { return Type::HashPattern; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("hash_pat");
+        creator->append_nil(); // NOTE: I don't know what this nil is for
+        for (auto node : m_nodes)
+            creator->append(node);
+    }
 };
 
 class IdentifierNode : public Node {
@@ -768,7 +973,7 @@ public:
         : Node { token }
         , m_is_lvar { is_lvar } { }
 
-    virtual Type type() override { return Type::Identifier; }
+    virtual Type type() const override { return Type::Identifier; }
 
     Token::Type token_type() const { return m_token.type(); }
 
@@ -819,6 +1024,73 @@ public:
             locals.set(name()->c_str());
     }
 
+    virtual void transform(Creator *creator) const override {
+        if (creator->assignment())
+            return transform_assignment(creator);
+        switch (token_type()) {
+        case Token::Type::BareName:
+            if (is_lvar()) {
+                creator->set_type("lvar");
+                creator->append_symbol(name());
+            } else {
+                creator->set_type("call");
+                creator->append_nil();
+                creator->append_symbol(name());
+            }
+            break;
+        case Token::Type::ClassVariable:
+            creator->set_type("cvar");
+            creator->append_symbol(name());
+            break;
+        case Token::Type::Constant:
+            creator->set_type("const");
+            creator->append_symbol(name());
+            break;
+        case Token::Type::GlobalVariable: {
+            auto ref = nth_ref();
+            if (ref > 0) {
+                creator->set_type("nth_ref");
+                creator->append_integer(ref);
+            } else {
+                creator->set_type("gvar");
+                creator->append_symbol(name());
+            }
+            break;
+        }
+        case Token::Type::InstanceVariable:
+            creator->set_type("ivar");
+            creator->append_symbol(name());
+            break;
+        default:
+            TM_UNREACHABLE();
+        }
+    }
+
+    void transform_assignment(Creator *creator) const {
+        switch (token().type()) {
+        case Token::Type::BareName:
+            creator->set_type("lasgn");
+            break;
+        case Token::Type::ClassVariable:
+            creator->set_type("cvdecl");
+            break;
+        case Token::Type::Constant:
+        case Token::Type::ConstantResolution:
+            creator->set_type("cdecl");
+            break;
+        case Token::Type::GlobalVariable:
+            creator->set_type("gasgn");
+            break;
+        case Token::Type::InstanceVariable:
+            creator->set_type("iasgn");
+            break;
+        default:
+            printf("got token type %d\n", (int)token().type());
+            TM_UNREACHABLE();
+        }
+        creator->append_symbol(name());
+    }
+
 protected:
     bool m_is_lvar { false };
 };
@@ -841,11 +1113,18 @@ public:
         delete m_false_expr;
     }
 
-    virtual Type type() override { return Type::If; }
+    virtual Type type() const override { return Type::If; }
 
     Node *condition() const { return m_condition; }
     Node *true_expr() const { return m_true_expr; }
     Node *false_expr() const { return m_false_expr; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("if");
+        creator->append(m_condition);
+        creator->append(m_true_expr);
+        creator->append(m_false_expr);
+    }
 
 protected:
     Node *m_condition { nullptr };
@@ -868,10 +1147,26 @@ public:
         delete m_body;
     }
 
-    virtual Type type() override { return Type::Iter; }
+    virtual Type type() const override { return Type::Iter; }
 
     Node *call() const { return m_call; }
     BlockNode *body() const { return m_body; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("iter");
+        creator->append(m_call);
+        if (args().is_empty()) {
+            creator->append_integer(0);
+        } else {
+            append_method_or_block_args(creator);
+        }
+        if (!m_body->is_empty()) {
+            if (m_body->has_one_node())
+                creator->append(m_body->nodes()[0]);
+            else
+                creator->append(m_body);
+        }
+    }
 
 protected:
     Node *m_call { nullptr };
@@ -890,7 +1185,7 @@ public:
 
     void add_node(Node *node) { m_nodes.push(node); };
 
-    Vector<Node *> &nodes() { return m_nodes; }
+    const Vector<Node *> &nodes() const { return m_nodes; }
 
 protected:
     Vector<Node *> m_nodes {};
@@ -901,10 +1196,12 @@ public:
     InterpolatedRegexpNode(const Token &token)
         : InterpolatedNode { token } { }
 
-    virtual Type type() override { return Type::InterpolatedRegexp; }
+    virtual Type type() const override { return Type::InterpolatedRegexp; }
 
     int options() const { return m_options; }
     void set_options(int options) { m_options = options; }
+
+    virtual void transform(Creator *creator) const override;
 
 private:
     int m_options { 0 };
@@ -915,7 +1212,9 @@ public:
     InterpolatedShellNode(const Token &token)
         : InterpolatedNode { token } { }
 
-    virtual Type type() override { return Type::InterpolatedShell; }
+    virtual Type type() const override { return Type::InterpolatedShell; }
+
+    virtual void transform(Creator *creator) const override;
 };
 
 class InterpolatedStringNode : public InterpolatedNode {
@@ -923,7 +1222,9 @@ public:
     InterpolatedStringNode(const Token &token)
         : InterpolatedNode { token } { }
 
-    virtual Type type() override { return Type::InterpolatedString; }
+    virtual Type type() const override { return Type::InterpolatedString; }
+
+    virtual void transform(Creator *creator) const override;
 };
 
 class KeywordArgNode : public ArgNode {
@@ -931,7 +1232,12 @@ public:
     KeywordArgNode(const Token &token, SharedPtr<String> name)
         : ArgNode { token, name } { }
 
-    virtual Type type() override { return Type::KeywordArg; }
+    virtual Type type() const override { return Type::KeywordArg; }
+
+    virtual void transform(Creator *creator) const override {
+        ArgNode::transform(creator);
+        creator->set_type("kwarg");
+    }
 };
 
 class KeywordSplatNode : public Node {
@@ -949,9 +1255,18 @@ public:
         delete m_node;
     }
 
-    virtual Type type() override { return Type::KeywordSplat; }
+    virtual Type type() const override { return Type::KeywordSplat; }
 
     Node *node() const { return m_node; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("hash");
+        creator->append_sexp([&](Creator *c) {
+            c->set_type("kwsplat");
+            if (m_node)
+                c->append(m_node);
+        });
+    }
 
 protected:
     Node *m_node { nullptr };
@@ -972,10 +1287,16 @@ public:
         delete m_right;
     }
 
-    virtual Type type() override { return Type::LogicalAnd; }
+    virtual Type type() const override { return Type::LogicalAnd; }
 
     Node *left() const { return m_left; }
     Node *right() const { return m_right; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("and");
+        creator->append(m_left);
+        creator->append(m_right);
+    }
 
 protected:
     Node *m_left { nullptr };
@@ -997,10 +1318,16 @@ public:
         delete m_right;
     }
 
-    virtual Type type() override { return Type::LogicalOr; }
+    virtual Type type() const override { return Type::LogicalOr; }
 
     Node *left() const { return m_left; }
     Node *right() const { return m_right; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("or");
+        creator->append(m_left);
+        creator->append(m_right);
+    }
 
 protected:
     Node *m_left { nullptr };
@@ -1019,11 +1346,13 @@ public:
 
     ~MatchNode();
 
-    virtual Type type() override { return Type::Match; }
+    virtual Type type() const override { return Type::Match; }
 
     RegexpNode *regexp() const { return m_regexp; }
     Node *arg() const { return m_arg; }
     bool regexp_on_left() const { return m_regexp_on_left; }
+
+    virtual void transform(Creator *creator) const override;
 
 protected:
     RegexpNode *m_regexp { nullptr };
@@ -1043,10 +1372,12 @@ public:
         delete m_body;
     }
 
-    virtual Type type() override { return Type::Module; }
+    virtual Type type() const override { return Type::Module; }
 
     Node *name() const { return m_name; }
     BlockNode *body() const { return m_body; }
+
+    virtual void transform(Creator *creator) const override;
 
 protected:
     Node *m_name { nullptr };
@@ -1058,9 +1389,35 @@ public:
     MultipleAssignmentNode(const Token &token)
         : ArrayNode { token } { }
 
-    virtual Type type() override { return Type::MultipleAssignment; }
+    virtual Type type() const override { return Type::MultipleAssignment; }
 
     void add_locals(TM::Hashmap<const char *> &);
+
+    virtual void transform(Creator *creator) const override {
+        creator->with_assignment(true, [&]() {
+            creator->set_type("masgn");
+            creator->append_array(this);
+        });
+    }
+};
+
+class MultipleAssignmentArgNode : public ArrayNode {
+public:
+    MultipleAssignmentArgNode(const Token &token)
+        : ArrayNode { token } { }
+
+    virtual Type type() const override { return Type::MultipleAssignmentArg; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("masgn");
+        for (auto arg : nodes()) {
+            if (arg->type() == Node::Type::Arg) {
+                static_cast<ArgNode *>(arg)->append_name(creator);
+            } else {
+                creator->append(arg);
+            }
+        }
+    }
 };
 
 class NextNode : public Node {
@@ -1073,9 +1430,15 @@ public:
         delete m_arg;
     }
 
-    virtual Type type() override { return Type::Next; }
+    virtual Type type() const override { return Type::Next; }
 
     Node *arg() const { return m_arg; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("next");
+        if (m_arg)
+            creator->append(m_arg);
+    }
 
 protected:
     Node *m_arg { nullptr };
@@ -1086,7 +1449,11 @@ public:
     NilNode(const Token &token)
         : Node { token } { }
 
-    virtual Type type() override { return Type::Nil; }
+    virtual Type type() const override { return Type::Nil; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("nil");
+    }
 };
 
 class NotNode : public Node {
@@ -1101,20 +1468,30 @@ public:
         delete m_expression;
     }
 
-    virtual Type type() override { return Type::Not; }
+    virtual Type type() const override { return Type::Not; }
 
     Node *expression() const { return m_expression; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("not");
+        creator->append(m_expression);
+    }
 
 protected:
     Node *m_expression { nullptr };
 };
 
+// FIXME: Why do we have this and NilNode??
 class NilSexpNode : public Node {
 public:
     NilSexpNode(const Token &token)
         : Node { token } { }
 
-    virtual Type type() override { return Type::NilSexp; }
+    virtual Type type() const override { return Type::NilSexp; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("nil");
+    }
 };
 
 class OpAssignNode : public Node {
@@ -1142,11 +1519,21 @@ public:
         delete m_value;
     }
 
-    virtual Type type() override { return Type::OpAssign; }
+    virtual Type type() const override { return Type::OpAssign; }
 
     SharedPtr<String> op() const { return m_op; }
     IdentifierNode *name() const { return m_name; }
     Node *value() const { return m_value; }
+
+    virtual void transform(Creator *creator) const override {
+        assert(op());
+        creator->with_assignment(true, [&]() {
+            m_name->transform(creator);
+        });
+        auto call = CallNode { token(), m_name, m_op };
+        call.add_arg(m_value);
+        creator->append(&call);
+    }
 
 protected:
     SharedPtr<String> m_op {};
@@ -1173,12 +1560,33 @@ public:
         delete m_value;
     }
 
-    virtual Type type() override { return Type::OpAssignAccessor; }
+    virtual Type type() const override { return Type::OpAssignAccessor; }
 
     SharedPtr<String> op() const { return m_op; }
     Node *receiver() const { return m_receiver; }
     SharedPtr<String> message() const { return m_message; }
     Node *value() const { return m_value; }
+
+    virtual void transform(Creator *creator) const override {
+        if (*m_message == "[]=") {
+            creator->set_type("op_asgn1");
+            creator->append(m_receiver);
+            creator->append_sexp([&](Creator *c) {
+                c->set_type("arglist");
+                for (auto arg : args())
+                    c->append(arg);
+            });
+            creator->append_symbol(m_op);
+            creator->append(m_value);
+            return;
+        }
+        assert(args().is_empty());
+        creator->set_type("op_asgn2");
+        creator->append(m_receiver);
+        creator->append_symbol(m_message);
+        creator->append_symbol(m_op);
+        creator->append(m_value);
+    }
 
 protected:
     SharedPtr<String> m_op {};
@@ -1192,7 +1600,15 @@ public:
     OpAssignAndNode(const Token &token, IdentifierNode *name, Node *value)
         : OpAssignNode { token, name, value } { }
 
-    virtual Type type() override { return Type::OpAssignAnd; }
+    virtual Type type() const override { return Type::OpAssignAnd; }
+
+    virtual void transform(Creator *creator) const override {
+        // s(:op_asgn_and, s(:lvar, :x), s(:lasgn, :x, s(:lit, 1)))
+        creator->set_type("op_asgn_and");
+        creator->append(m_name);
+        auto assignment = AssignmentNode { token(), m_name, m_value };
+        creator->append(&assignment);
+    }
 };
 
 class OpAssignOrNode : public OpAssignNode {
@@ -1200,7 +1616,15 @@ public:
     OpAssignOrNode(const Token &token, IdentifierNode *name, Node *value)
         : OpAssignNode { token, name, value } { }
 
-    virtual Type type() override { return Type::OpAssignOr; }
+    virtual Type type() const override { return Type::OpAssignOr; }
+
+    virtual void transform(Creator *creator) const override {
+        // s(:op_asgn_or, s(:lvar, :x), s(:lasgn, :x, s(:lit, 1)))
+        creator->set_type("op_asgn_or");
+        creator->append(m_name);
+        auto assignment = AssignmentNode { token(), m_name, m_value };
+        creator->append(&assignment);
+    }
 };
 
 class PinNode : public Node {
@@ -1215,9 +1639,14 @@ public:
         delete m_identifier;
     }
 
-    virtual Type type() override { return Type::Pin; }
+    virtual Type type() const override { return Type::Pin; }
 
     Node *identifier() const { return m_identifier; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("pin");
+        creator->append(m_identifier);
+    }
 
 protected:
     Node *m_identifier { nullptr };
@@ -1239,11 +1668,27 @@ public:
         delete m_last;
     }
 
-    virtual Type type() override { return Type::Range; }
+    virtual Type type() const override { return Type::Range; }
 
     Node *first() const { return m_first; }
     Node *last() const { return m_last; }
     bool exclude_end() const { return m_exclude_end; }
+
+    virtual void transform(Creator *creator) const override {
+        if (m_first->type() == Node::Type::Integer && m_last->type() == Node::Type::Integer) {
+            creator->set_type("lit");
+            auto first_num = static_cast<const IntegerNode *>(m_first)->number();
+            auto last_num = static_cast<const IntegerNode *>(m_last)->number();
+            creator->append_range(first_num, last_num, m_exclude_end);
+        } else {
+            if (m_exclude_end)
+                creator->set_type("dot3");
+            else
+                creator->set_type("dot2");
+            creator->append(m_first);
+            creator->append(m_last);
+        }
+    }
 
 protected:
     Node *m_first { nullptr };
@@ -1259,16 +1704,21 @@ public:
         assert(m_pattern);
     }
 
-    virtual Type type() override { return Type::Regexp; }
+    virtual Type type() const override { return Type::Regexp; }
 
     SharedPtr<String> pattern() const { return m_pattern; }
-    SharedPtr<String> options() const { return m_options; }
 
-    void set_options(SharedPtr<String> options) { m_options = options; }
+    int options() const { return m_options; }
+    void set_options(int options) { m_options = options; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("lit");
+        creator->append_regexp(m_pattern, m_options);
+    }
 
 protected:
     SharedPtr<String> m_pattern {};
-    SharedPtr<String> m_options {};
+    int m_options { 0 };
 };
 
 class ReturnNode : public Node {
@@ -1283,9 +1733,15 @@ public:
         delete m_value;
     }
 
-    virtual Type type() override { return Type::Return; }
+    virtual Type type() const override { return Type::Return; }
 
     Node *value() const { return m_value; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("return");
+        if (m_value->type() != Node::Type::Nil)
+            creator->append(m_value);
+    }
 
 protected:
     Node *m_value { nullptr };
@@ -1303,10 +1759,17 @@ public:
         delete m_body;
     }
 
-    virtual Type type() override { return Type::Sclass; }
+    virtual Type type() const override { return Type::Sclass; }
 
     Node *klass() const { return m_klass; }
     BlockNode *body() const { return m_body; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("sclass");
+        creator->append(m_klass);
+        for (auto node : m_body->nodes())
+            creator->append(node);
+    }
 
 protected:
     Node *m_klass { nullptr };
@@ -1318,7 +1781,11 @@ public:
     SelfNode(const Token &token)
         : Node { token } { }
 
-    virtual Type type() override { return Type::Self; }
+    virtual Type type() const override { return Type::Self; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("self");
+    }
 };
 
 class ShellNode : public Node {
@@ -1329,9 +1796,14 @@ public:
         assert(m_string);
     }
 
-    virtual Type type() override { return Type::Shell; }
+    virtual Type type() const override { return Type::Shell; }
 
     SharedPtr<String> string() const { return m_string; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("xstr");
+        creator->append_string(m_string);
+    }
 
 protected:
     SharedPtr<String> m_string {};
@@ -1352,9 +1824,15 @@ public:
         delete m_node;
     }
 
-    virtual Type type() override { return Type::Splat; }
+    virtual Type type() const override { return Type::Splat; }
 
     Node *node() const { return m_node; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("splat");
+        if (m_node)
+            creator->append(m_node);
+    }
 
 protected:
     Node *m_node { nullptr };
@@ -1370,9 +1848,14 @@ public:
         delete m_value;
     }
 
-    virtual Type type() override { return Type::SplatValue; }
+    virtual Type type() const override { return Type::SplatValue; }
 
     Node *value() const { return m_value; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("svalue");
+        creator->append(m_value);
+    }
 
 protected:
     Node *m_value { nullptr };
@@ -1382,7 +1865,11 @@ class StabbyProcNode : public NodeWithArgs {
 public:
     using NodeWithArgs::NodeWithArgs;
 
-    virtual Type type() override { return Type::StabbyProc; }
+    virtual Type type() const override { return Type::StabbyProc; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("lambda");
+    }
 };
 
 class StringNode : public Node {
@@ -1393,9 +1880,14 @@ public:
         assert(m_string);
     }
 
-    virtual Type type() override { return Type::String; }
+    virtual Type type() const override { return Type::String; }
 
     SharedPtr<String> string() const { return m_string; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("str");
+        creator->append_string(m_string);
+    }
 
 protected:
     SharedPtr<String> m_string {};
@@ -1407,9 +1899,14 @@ public:
         : Node { token }
         , m_name { name } { }
 
-    virtual Type type() override { return Type::Symbol; }
+    virtual Type type() const override { return Type::Symbol; }
 
     SharedPtr<String> name() const { return m_name; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("lit");
+        creator->append_symbol(m_name);
+    }
 
 protected:
     SharedPtr<String> m_name {};
@@ -1425,9 +1922,14 @@ public:
         delete m_value;
     }
 
-    virtual Type type() override { return Type::ToArray; }
+    virtual Type type() const override { return Type::ToArray; }
 
     Node *value() const { return m_value; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("to_ary");
+        creator->append(m_value);
+    }
 
 protected:
     Node *m_value { nullptr };
@@ -1438,7 +1940,11 @@ public:
     TrueNode(const Token &token)
         : Node { token } { }
 
-    virtual Type type() override { return Type::True; }
+    virtual Type type() const override { return Type::True; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("true");
+    }
 };
 
 class SuperNode : public NodeWithArgs {
@@ -1446,12 +1952,26 @@ public:
     SuperNode(const Token &token)
         : NodeWithArgs { token } { }
 
-    virtual Type type() override { return Type::Super; }
+    virtual Type type() const override { return Type::Super; }
 
     bool parens() const { return m_parens; }
     void set_parens(bool parens) { m_parens = parens; }
 
     bool empty_parens() const { return m_parens && m_args.is_empty(); }
+
+    virtual void transform(Creator *creator) const override {
+        if (empty_parens()) {
+            creator->set_type("super");
+            return;
+        } else if (args().is_empty()) {
+            creator->set_type("zsuper");
+            return;
+        }
+        creator->set_type("super");
+        for (auto arg : args()) {
+            creator->append(arg);
+        }
+    }
 
 protected:
     bool m_parens { false };
@@ -1473,11 +1993,27 @@ public:
         delete m_body;
     }
 
-    virtual Type type() override { return Type::While; }
+    virtual Type type() const override { return Type::While; }
 
     Node *condition() const { return m_condition; }
     BlockNode *body() const { return m_body; }
     bool pre() const { return m_pre; }
+
+    virtual void transform(Creator *creator) const override {
+        if (type() == Node::Type::Until)
+            creator->set_type("until");
+        else
+            creator->set_type("while");
+        creator->append(m_condition);
+        if (m_body->is_empty())
+            creator->append_nil();
+        else
+            creator->append(m_body->without_unnecessary_nesting());
+        if (m_pre)
+            creator->append_true();
+        else
+            creator->append_false();
+    }
 
 protected:
     Node *m_condition { nullptr };
@@ -1490,7 +2026,7 @@ public:
     UntilNode(const Token &token, Node *condition, BlockNode *body, bool pre)
         : WhileNode { token, condition, body, pre } { }
 
-    virtual Type type() override { return Type::Until; }
+    virtual Type type() const override { return Type::Until; }
 };
 
 class YieldNode : public NodeWithArgs {
@@ -1498,6 +2034,14 @@ public:
     YieldNode(const Token &token)
         : NodeWithArgs { token } { }
 
-    virtual Type type() override { return Type::Yield; }
+    virtual Type type() const override { return Type::Yield; }
+
+    virtual void transform(Creator *creator) const override {
+        creator->set_type("yield");
+        if (args().is_empty())
+            return;
+        for (auto arg : args())
+            creator->append(arg);
+    }
 };
 }
