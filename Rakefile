@@ -88,7 +88,7 @@ task :docker_build_ruby27 do
   sh 'docker build -t natalie-parser-ruby27 --build-arg IMAGE="ruby:2.7" .'
 end
 
-task docker_test: %i[docker_test_gcc docker_test_clang docker_test_ruby27]
+task docker_test: %i[docker_test_gcc docker_test_clang]
 
 task docker_test_gcc: :docker_build do
   sh "docker run #{DOCKER_FLAGS} --rm --entrypoint rake natalie-parser test"
@@ -96,10 +96,6 @@ end
 
 task docker_test_clang: :docker_build_clang do
   sh "docker run #{DOCKER_FLAGS} --rm --entrypoint rake natalie-parser-clang test"
-end
-
-task docker_test_ruby27: :docker_build_ruby27 do
-  sh "docker run #{DOCKER_FLAGS} --rm --entrypoint rake natalie-parser-ruby27 test"
 end
 
 # # # # Build Compile Database # # # #
