@@ -1,9 +1,9 @@
 #pragma once
 
-#include "natalie_parser/node/node.hpp"
-#include "natalie_parser/node/while_node.hpp"
 #include "natalie_parser/node/block_node.hpp"
+#include "natalie_parser/node/node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
+#include "natalie_parser/node/while_node.hpp"
 #include "tm/hashmap.hpp"
 #include "tm/string.hpp"
 

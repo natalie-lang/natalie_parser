@@ -1,10 +1,10 @@
 #pragma once
 
-#include "natalie_parser/node/node.hpp"
-#include "natalie_parser/node/op_assign_node.hpp"
-#include "natalie_parser/node/identifier_node.hpp"
 #include "natalie_parser/node/assignment_node.hpp"
+#include "natalie_parser/node/identifier_node.hpp"
+#include "natalie_parser/node/node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
+#include "natalie_parser/node/op_assign_node.hpp"
 #include "tm/hashmap.hpp"
 #include "tm/string.hpp"
 

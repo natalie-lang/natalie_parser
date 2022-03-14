@@ -1,8 +1,8 @@
 #pragma once
 
 #include "natalie_parser/node/node.hpp"
-#include "natalie_parser/node/symbol_node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
+#include "natalie_parser/node/symbol_node.hpp"
 #include "tm/hashmap.hpp"
 #include "tm/string.hpp"
 

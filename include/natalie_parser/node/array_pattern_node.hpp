@@ -1,7 +1,7 @@
 #pragma once
 
-#include "natalie_parser/node/node.hpp"
 #include "natalie_parser/node/array_node.hpp"
+#include "natalie_parser/node/node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
 #include "tm/hashmap.hpp"
 #include "tm/string.hpp"
