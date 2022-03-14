@@ -29,3 +29,7 @@ class Sexp < Array
     end
   end
 end
+
+def s(*items)
+  Sexp.new(*items)
+end
