@@ -38,12 +38,8 @@ public:
         } else {
             append_method_or_block_args(creator);
         }
-        if (!m_body->is_empty()) {
-            if (m_body->has_one_node())
-                creator->append(m_body->nodes()[0]);
-            else
-                creator->append(m_body);
-        }
+        if (!m_body->is_empty())
+            creator->append(m_body->without_unnecessary_nesting());
     }
 
 protected:

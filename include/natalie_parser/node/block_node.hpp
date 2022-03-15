@@ -34,10 +34,11 @@ public:
     bool is_empty() const { return m_nodes.is_empty(); }
 
     bool has_one_node() const { return m_nodes.size() == 1; }
+    Node *first() const { return m_nodes.at(0); }
 
     Node *without_unnecessary_nesting() {
         if (has_one_node())
-            return m_nodes[0];
+            return first();
         else
             return this;
     }

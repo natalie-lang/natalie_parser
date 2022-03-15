@@ -1004,7 +1004,7 @@ Node *Parser::parse_if_body(LocalsHashmap &locals) {
     }
     if (!current_token().is_elsif_keyword() && !current_token().is_else_keyword() && !current_token().is_end_keyword())
         throw_unexpected("if end");
-    return body->has_one_node() ? body->nodes()[0] : body;
+    return body->without_unnecessary_nesting();
 }
 
 void Parser::parse_interpolated_body(LocalsHashmap &locals, InterpolatedNode *node, Token::Type end_token) {
@@ -1018,13 +1018,15 @@ void Parser::parse_interpolated_body(LocalsHashmap &locals, InterpolatedNode *no
                 skip_newlines();
             }
             advance();
-            if (block->has_one_node())
-                if (block->nodes()[0]->type() == Node::Type::String)
-                    node->add_node(block->nodes()[0]);
+            if (block->has_one_node()) {
+                auto first = block->first();
+                if (first->type() == Node::Type::String)
+                    node->add_node(first);
                 else
-                    node->add_node(new EvaluateToStringNode { current_token(), block->nodes()[0] });
-            else
+                    node->add_node(new EvaluateToStringNode { current_token(), first });
+            } else {
                 node->add_node(new EvaluateToStringNode { current_token(), block });
+            }
             break;
         }
         case Token::Type::String:
