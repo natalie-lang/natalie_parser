@@ -12,10 +12,10 @@ task build: %i[
 so_ext = RUBY_PLATFORM =~ /darwin/ ? 'bundle' : 'so'
 
 desc 'Build Natalie Parser library'
-task library: "build/libnatalie_parser.a"
+task library: [:build_dir, "build/libnatalie_parser.a"]
 
 desc 'Build Natalie Parser MRI C extension'
-task parser_c_ext: "ext/natalie_parser/natalie_parser.#{so_ext}"
+task parser_c_ext: [:build_dir, "ext/natalie_parser/natalie_parser.#{so_ext}"]
 
 desc 'Remove temporary files created during build'
 task :clean do
