@@ -15,7 +15,7 @@ Node *BeginRescueNode::name_to_node() const {
     assert(m_name);
     return new AssignmentNode {
         token(),
-        m_name,
+        new IdentifierNode(*m_name),
         new IdentifierNode {
             Token { Token::Type::GlobalVariable, "$!", file(), line(), column() },
             false },

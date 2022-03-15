@@ -41,10 +41,12 @@ VALUE parse_on_instance(VALUE self) {
     NatalieParser::Node *tree;
     try {
         tree = parser.tree();
-        return node_to_ruby(tree);
     } catch (NatalieParser::Parser::SyntaxError &error) {
         rb_raise(rb_eSyntaxError, "%s", error.message());
     }
+    VALUE ast = node_to_ruby(tree);
+    delete tree;
+    return ast;
 }
 
 VALUE parse(int argc, VALUE *argv, VALUE self) {

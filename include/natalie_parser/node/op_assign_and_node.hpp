@@ -23,7 +23,7 @@ public:
         // s(:op_asgn_and, s(:lvar, :x), s(:lasgn, :x, s(:lit, 1)))
         creator->set_type("op_asgn_and");
         creator->append(m_name);
-        auto assignment = AssignmentNode { token(), m_name, m_value };
+        auto assignment = AssignmentNode { token(), m_name->clone(), m_value->clone() };
         creator->append(&assignment);
     }
 };

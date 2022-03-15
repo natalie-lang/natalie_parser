@@ -15,6 +15,13 @@ public:
         : Node { token }
         , m_number { number } { }
 
+    IntegerNode(const IntegerNode &other)
+        : IntegerNode { other.token(), other.number() } { }
+
+    virtual Node *clone() const override {
+        return new IntegerNode(*this);
+    }
+
     virtual Type type() const override { return Type::Integer; }
 
     long long number() const { return m_number; }

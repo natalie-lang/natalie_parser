@@ -90,7 +90,7 @@ public:
     virtual bool is_callable() const { return false; }
 
     virtual Node *clone() const {
-        printf("Need to implement Node::clone() in a subclass...\n");
+        printf("Need to implement Node::clone() in a subclass (type=%d)...\n", (int)type());
         TM_UNREACHABLE();
     }
 

@@ -19,6 +19,17 @@ public:
         add_node(single_node);
     }
 
+    BlockNode(const BlockNode &other)
+        : BlockNode { other.token() } {
+        for (auto node : other.nodes()) {
+            add_node(node->clone());
+        }
+    }
+
+    virtual Node *clone() const override {
+        return new BlockNode(*this);
+    }
+
     ~BlockNode() {
         for (auto node : m_nodes)
             delete node;
@@ -30,7 +41,7 @@ public:
 
     virtual Type type() const override { return Type::Block; }
 
-    Vector<Node *> &nodes() { return m_nodes; }
+    const Vector<Node *> &nodes() const { return m_nodes; }
     bool is_empty() const { return m_nodes.is_empty(); }
 
     bool has_one_node() const { return m_nodes.size() == 1; }

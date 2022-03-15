@@ -15,7 +15,7 @@ public:
     NodeWithArgs(const Token &token)
         : Node { token } { }
 
-    NodeWithArgs(const Token &token, Vector<Node *> &args)
+    NodeWithArgs(const Token &token, const Vector<Node *> &args)
         : Node { token } {
         for (auto arg : args)
             add_arg(arg);

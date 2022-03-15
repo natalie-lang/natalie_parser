@@ -405,7 +405,12 @@ void Parser::parse_rest_of_begin(BeginNode *begin_node, LocalsHashmap &locals) {
 Node *Parser::parse_beginless_range(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    return new RangeNode { token, new NilNode { token }, parse_expression(Precedence::LOWEST, locals), token.type() == Token::Type::DotDotDot };
+    return new RangeNode {
+        token,
+        new NilNode { token },
+        parse_expression(Precedence::LOWEST, locals),
+        token.type() == Token::Type::DotDotDot
+    };
 }
 
 Node *Parser::parse_block_pass(LocalsHashmap &locals) {
@@ -1860,7 +1865,7 @@ Node *Parser::parse_op_attr_assign_expression(Node *left, LocalsHashmap &locals)
     return new OpAssignAccessorNode {
         token,
         op,
-        left_call->receiver(),
+        left_call->receiver()->clone(),
         message,
         parse_expression(Precedence::OPASSIGNMENT, locals),
         left_call->args(),

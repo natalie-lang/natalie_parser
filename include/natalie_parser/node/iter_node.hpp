@@ -12,12 +12,19 @@ using namespace TM;
 
 class IterNode : public NodeWithArgs {
 public:
-    IterNode(const Token &token, Node *call, Vector<Node *> &args, BlockNode *body)
+    IterNode(const Token &token, Node *call, const Vector<Node *> &args, BlockNode *body)
         : NodeWithArgs { token, args }
         , m_call { call }
         , m_body { body } {
         assert(m_call);
         assert(m_body);
+    }
+
+    IterNode(const IterNode &other)
+        : IterNode { other.token(), other.call()->clone(), other.args(), static_cast<BlockNode *>(other.body()->clone()) } { }
+
+    virtual Node *clone() const override {
+        return new IterNode(*this);
     }
 
     ~IterNode() {

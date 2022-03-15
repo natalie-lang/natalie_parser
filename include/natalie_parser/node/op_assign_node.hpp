@@ -47,8 +47,8 @@ public:
         creator->with_assignment(true, [&]() {
             m_name->transform(creator);
         });
-        auto call = CallNode { token(), m_name, m_op };
-        call.add_arg(m_value);
+        auto call = CallNode { token(), m_name->clone(), m_op };
+        call.add_arg(m_value->clone());
         creator->append(&call);
     }
 
