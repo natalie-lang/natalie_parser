@@ -59,8 +59,8 @@ public:
         rb_ary_push(m_sexp, rb_range_new(rb_int_new(first), rb_int_new(last), exclude_end ? Qtrue : Qfalse));
     }
 
-    virtual void append_regexp(TM::SharedPtr<TM::String> pattern, int options) override {
-        auto regexp = rb_reg_new(pattern->c_str(), pattern->size(), options);
+    virtual void append_regexp(TM::String &pattern, int options) override {
+        auto regexp = rb_reg_new(pattern.c_str(), pattern.size(), options);
         rb_ary_push(m_sexp, regexp);
     }
 
@@ -70,16 +70,11 @@ public:
         rb_ary_push(m_sexp, creator.sexp());
     }
 
-    virtual void append_string(TM::SharedPtr<TM::String> str) override {
-        rb_ary_push(m_sexp, rb_str_new(str->c_str(), str->length()));
+    virtual void append_string(TM::String &string) override {
+        rb_ary_push(m_sexp, rb_str_new(string.c_str(), string.length()));
     }
 
-    virtual void append_symbol(TM::SharedPtr<TM::String> name) override {
-        // FIXME: check if there is a way to avoid creation of the Ruby String obj
-        rb_ary_push(m_sexp, ID2SYM(rb_intern_str(rb_str_new(name->c_str(), name->length()))));
-    }
-
-    virtual void append_symbol(TM::String name) override {
+    virtual void append_symbol(TM::String &name) override {
         // FIXME: check if there is a way to avoid creation of the Ruby String obj
         rb_ary_push(m_sexp, ID2SYM(rb_intern_str(rb_str_new(name.c_str(), name.length()))));
     }

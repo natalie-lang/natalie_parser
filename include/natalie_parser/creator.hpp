@@ -22,13 +22,40 @@ public:
     virtual void append_integer(long long number) = 0;
     virtual void append_nil() = 0;
     virtual void append_range(long long first, long long last, bool exclude_end) = 0;
-    virtual void append_regexp(TM::SharedPtr<TM::String> pattern, int options) = 0;
+    virtual void append_regexp(TM::String &pattern, int options) = 0;
     virtual void append_sexp(std::function<void(Creator *)> fn) = 0;
-    virtual void append_string(TM::SharedPtr<TM::String> str) = 0;
-    virtual void append_symbol(TM::SharedPtr<TM::String> name) = 0;
-    virtual void append_symbol(TM::String name) = 0;
+    virtual void append_string(TM::String &string) = 0;
+    virtual void append_symbol(TM::String &symbol) = 0;
     virtual void append_true() = 0;
     virtual void wrap(const char *type) = 0;
+
+    void append_nil_sexp() {
+        append_sexp([&](Creator *c) { c->set_type("nil"); });
+    }
+
+    void append_regexp(TM::SharedPtr<TM::String> pattern_ptr, int options) {
+        if (!pattern_ptr) {
+            auto p = TM::String("");
+            append_regexp(p, options);
+        }
+        append_regexp(*pattern_ptr, options);
+    }
+
+    void append_string(TM::SharedPtr<TM::String> string_ptr) {
+        if (!string_ptr) {
+            auto s = TM::String("");
+            append_string(s);
+        }
+        append_string(*string_ptr);
+    }
+
+    void append_symbol(TM::SharedPtr<TM::String> symbol_ptr) {
+        if (!symbol_ptr) {
+            auto s = TM::String("");
+            append_symbol(s);
+        }
+        append_symbol(*symbol_ptr);
+    }
 
     bool assignment() { return m_assignment; }
     void set_assignment(bool assignment) { m_assignment = assignment; }

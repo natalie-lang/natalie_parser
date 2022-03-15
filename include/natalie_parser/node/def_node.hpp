@@ -44,7 +44,7 @@ public:
         creator->append_symbol(m_name);
         append_method_or_block_args(creator);
         if (m_body->is_empty()) {
-            creator->append_sexp([&](Creator *c) { c->set_type("nil"); });
+            creator->append_nil_sexp();
         } else {
             for (auto node : m_body->nodes())
                 creator->append(node);
