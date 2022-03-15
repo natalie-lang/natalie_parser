@@ -22,6 +22,7 @@ task :clean do
   Rake::FileList[%w[
     build/build.log
     build/*.o
+    build/node
     ext/natalie_parser/*.{h,log,o}
   ]].each { |path| rm_rf path if File.exist?(path) }
 end
@@ -142,7 +143,9 @@ rule %r{node/.*\.cpp\.o$} => ['src/node/%n'] + HEADERS do |t|
   sh "#{cxx} #{cxx_flags.join(' ')} -std=#{STANDARD} -c -o #{t.name} #{t.source}"
 end
 
-file 'build/libnatalie_parser.a' => HEADERS + OBJECT_FILES do |t|
+multitask objects: OBJECT_FILES
+
+file 'build/libnatalie_parser.a' => HEADERS + [:objects] do |t|
   sh "ar rcs #{t.name} #{OBJECT_FILES}"
 end
 
