@@ -22,7 +22,7 @@ public:
     virtual void transform(Creator *creator) const override {
         // s(:op_asgn_or, s(:lvar, :x), s(:lasgn, :x, s(:lit, 1)))
         creator->set_type("op_asgn_or");
-        creator->append(m_name);
+        creator->append(m_name.ref());
         auto assignment = AssignmentNode { token(), m_name->clone(), m_value->clone() };
         creator->append(&assignment);
     }

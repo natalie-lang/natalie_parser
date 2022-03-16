@@ -5,6 +5,7 @@
 #include "natalie_parser/node/node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
 #include "tm/hashmap.hpp"
+#include "tm/owned_ptr.hpp"
 #include "tm/string.hpp"
 
 namespace NatalieParser {
@@ -32,15 +33,23 @@ public:
 
     Node *name_to_node() const;
 
-    IdentifierNode *name() const { return m_name; }
+    const IdentifierNode &name() const {
+        assert(m_name);
+        return m_name.ref();
+    }
+
     Vector<Node *> &exceptions() { return m_exceptions; }
-    BlockNode *body() const { return m_body; }
+
+    const BlockNode &body() const {
+        assert(m_body);
+        return m_body.ref();
+    }
 
     virtual void transform(Creator *creator) const override;
 
 protected:
-    IdentifierNode *m_name { nullptr };
+    OwnedPtr<IdentifierNode> m_name {};
     Vector<Node *> m_exceptions {};
-    BlockNode *m_body { nullptr };
+    OwnedPtr<BlockNode> m_body {};
 };
 }

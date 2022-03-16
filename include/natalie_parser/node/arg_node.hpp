@@ -3,6 +3,7 @@
 #include "natalie_parser/node/node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
 #include "tm/hashmap.hpp"
+#include "tm/owned_ptr.hpp"
 #include "tm/string.hpp"
 
 namespace NatalieParser {
@@ -24,11 +25,7 @@ public:
         , m_block_arg { other.m_block_arg }
         , m_splat { other.m_splat }
         , m_kwsplat { other.m_kwsplat }
-        , m_value { other.m_value } { }
-
-    ~ArgNode() {
-        delete m_value;
-    }
+        , m_value { other.value() ? other.value().clone() : nullptr } { }
 
     virtual Node *clone() const override {
         return new ArgNode(*this);
@@ -62,7 +59,12 @@ public:
     bool block_arg() const { return m_block_arg; }
     void set_block_arg(bool block_arg) { m_block_arg = block_arg; }
 
-    Node *value() const { return m_value; }
+    const Node &value() const {
+        if (m_value)
+            return m_value.ref();
+        return Node::invalid();
+    }
+
     void set_value(Node *value) { m_value = value; }
 
     void add_to_locals(TM::Hashmap<const char *> &locals) {
@@ -73,7 +75,7 @@ public:
         creator->set_type("lasgn");
         append_name(creator);
         if (m_value)
-            creator->append(m_value);
+            creator->append(m_value.ref());
     }
 
 protected:
@@ -81,6 +83,6 @@ protected:
     bool m_block_arg { false };
     bool m_splat { false };
     bool m_kwsplat { false };
-    Node *m_value { nullptr };
+    OwnedPtr<Node> m_value {};
 };
 }

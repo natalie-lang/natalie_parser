@@ -21,6 +21,12 @@ public:
             add_arg(arg);
     }
 
+    NodeWithArgs(const NodeWithArgs &other)
+        : NodeWithArgs {
+            other.token(),
+            other.args(),
+        } { }
+
     ~NodeWithArgs() {
         for (auto arg : m_args)
             delete arg;

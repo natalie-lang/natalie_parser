@@ -5,6 +5,7 @@
 #include "natalie_parser/node/node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
 #include "tm/hashmap.hpp"
+#include "tm/owned_ptr.hpp"
 #include "tm/string.hpp"
 
 namespace NatalieParser {
@@ -30,18 +31,18 @@ public:
     void set_else_body(BlockNode *else_body) { m_else_body = else_body; }
     void set_ensure_body(BlockNode *ensure_body) { m_ensure_body = ensure_body; }
 
-    BlockNode *body() const { return m_body; }
-    BlockNode *else_body() const { return m_else_body; }
-    BlockNode *ensure_body() const { return m_ensure_body; }
+    const BlockNode &body() const { return m_body.ref(); }
+    const BlockNode &else_body() const { return m_else_body.ref(); }
+    const BlockNode &ensure_body() const { return m_ensure_body.ref(); }
 
-    Vector<BeginRescueNode *> &rescue_nodes() { return m_rescue_nodes; }
+    const Vector<BeginRescueNode *> &rescue_nodes() { return m_rescue_nodes; }
 
     virtual void transform(Creator *creator) const override;
 
 protected:
-    BlockNode *m_body { nullptr };
-    BlockNode *m_else_body { nullptr };
-    BlockNode *m_ensure_body { nullptr };
+    OwnedPtr<BlockNode> m_body {};
+    OwnedPtr<BlockNode> m_else_body {};
+    OwnedPtr<BlockNode> m_ensure_body {};
     Vector<BeginRescueNode *> m_rescue_nodes {};
 };
 }

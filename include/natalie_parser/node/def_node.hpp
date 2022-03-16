@@ -4,6 +4,7 @@
 #include "natalie_parser/node/node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
 #include "tm/hashmap.hpp"
+#include "tm/owned_ptr.hpp"
 #include "tm/string.hpp"
 
 namespace NatalieParser {
@@ -16,28 +17,25 @@ public:
         : NodeWithArgs { token, args }
         , m_self_node { self_node }
         , m_name { name }
-        , m_body { body } { }
-
-    DefNode(const Token &token, SharedPtr<String> name, Vector<Node *> &args, BlockNode *body)
-        : NodeWithArgs { token, args }
-        , m_name { name }
-        , m_body { body } { }
-
-    ~DefNode() {
-        delete m_self_node;
-        delete m_body;
+        , m_body { body } {
+        assert(m_body);
     }
 
     virtual Type type() const override { return Type::Def; }
 
-    Node *self_node() const { return m_self_node; }
+    const Node &self_node() const {
+        if (m_self_node)
+            return m_self_node.ref();
+        return Node::invalid();
+    }
+
     SharedPtr<String> name() const { return m_name; }
-    BlockNode *body() const { return m_body; }
+    const BlockNode &body() const { return m_body.ref(); }
 
     virtual void transform(Creator *creator) const override {
         if (m_self_node) {
             creator->set_type("defs");
-            creator->append(m_self_node);
+            creator->append(m_self_node.ref());
         } else {
             creator->set_type("defn");
         }
@@ -52,8 +50,8 @@ public:
     }
 
 protected:
-    Node *m_self_node { nullptr };
+    OwnedPtr<Node> m_self_node {};
     SharedPtr<String> m_name {};
-    BlockNode *m_body { nullptr };
+    OwnedPtr<BlockNode> m_body {};
 };
 }

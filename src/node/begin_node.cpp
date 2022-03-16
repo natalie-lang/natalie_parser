@@ -3,9 +3,6 @@
 namespace NatalieParser {
 
 BeginNode::~BeginNode() {
-    delete m_body;
-    delete m_else_body;
-    delete m_ensure_body;
     for (auto node : m_rescue_nodes)
         delete node;
 }

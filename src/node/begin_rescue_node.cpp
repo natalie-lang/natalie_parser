@@ -5,8 +5,6 @@
 namespace NatalieParser {
 
 BeginRescueNode::~BeginRescueNode() {
-    delete m_name;
-    delete m_body;
     for (auto node : m_exceptions)
         delete node;
 }

@@ -3,6 +3,7 @@
 #include "natalie_parser/node/node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
 #include "tm/hashmap.hpp"
+#include "tm/owned_ptr.hpp"
 #include "tm/string.hpp"
 
 namespace NatalieParser {
@@ -21,28 +22,22 @@ public:
         assert(m_false_expr);
     }
 
-    ~IfNode() {
-        delete m_condition;
-        delete m_true_expr;
-        delete m_false_expr;
-    }
-
     virtual Type type() const override { return Type::If; }
 
-    Node *condition() const { return m_condition; }
-    Node *true_expr() const { return m_true_expr; }
-    Node *false_expr() const { return m_false_expr; }
+    const Node &condition() const { return m_condition.ref(); }
+    const Node &true_expr() const { return m_true_expr.ref(); }
+    const Node &false_expr() const { return m_false_expr.ref(); }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("if");
-        creator->append(m_condition);
-        creator->append(m_true_expr);
-        creator->append(m_false_expr);
+        creator->append(m_condition.ref());
+        creator->append(m_true_expr.ref());
+        creator->append(m_false_expr.ref());
     }
 
 protected:
-    Node *m_condition { nullptr };
-    Node *m_true_expr { nullptr };
-    Node *m_false_expr { nullptr };
+    OwnedPtr<Node> m_condition {};
+    OwnedPtr<Node> m_true_expr {};
+    OwnedPtr<Node> m_false_expr {};
 };
 }

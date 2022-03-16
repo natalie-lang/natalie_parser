@@ -18,8 +18,8 @@ void MultipleAssignmentNode::add_locals(TM::Hashmap<const char *> &locals) {
             break;
         case Node::Type::Splat: {
             auto splat = static_cast<SplatNode *>(node);
-            if (splat->node() && splat->node()->type() == Node::Type::Identifier) {
-                auto identifier = static_cast<IdentifierNode *>(splat->node());
+            if (splat->node() && splat->node().type() == Node::Type::Identifier) {
+                auto identifier = static_cast<const IdentifierNode *>(&splat->node());
                 identifier->add_to_locals(locals);
             }
             break;

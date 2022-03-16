@@ -3,6 +3,7 @@
 #include "natalie_parser/node/node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
 #include "tm/hashmap.hpp"
+#include "tm/owned_ptr.hpp"
 #include "tm/string.hpp"
 
 namespace NatalieParser {
@@ -23,43 +24,38 @@ public:
         assert(m_value);
     }
 
-    ~OpAssignAccessorNode() {
-        delete m_receiver;
-        delete m_value;
-    }
-
     virtual Type type() const override { return Type::OpAssignAccessor; }
 
     SharedPtr<String> op() const { return m_op; }
-    Node *receiver() const { return m_receiver; }
+    const Node &receiver() const { return m_receiver.ref(); }
     SharedPtr<String> message() const { return m_message; }
-    Node *value() const { return m_value; }
+    const Node &value() const { return m_value.ref(); }
 
     virtual void transform(Creator *creator) const override {
         if (*m_message == "[]=") {
             creator->set_type("op_asgn1");
-            creator->append(m_receiver);
+            creator->append(m_receiver.ref());
             creator->append_sexp([&](Creator *c) {
                 c->set_type("arglist");
                 for (auto arg : args())
                     c->append(arg);
             });
             creator->append_symbol(m_op);
-            creator->append(m_value);
+            creator->append(m_value.ref());
             return;
         }
         assert(args().is_empty());
         creator->set_type("op_asgn2");
-        creator->append(m_receiver);
+        creator->append(m_receiver.ref());
         creator->append_symbol(m_message);
         creator->append_symbol(m_op);
-        creator->append(m_value);
+        creator->append(m_value.ref());
     }
 
 protected:
     SharedPtr<String> m_op {};
-    Node *m_receiver { nullptr };
+    OwnedPtr<Node> m_receiver {};
     SharedPtr<String> m_message {};
-    Node *m_value { nullptr };
+    OwnedPtr<Node> m_value {};
 };
 }

@@ -8,6 +8,7 @@ namespace NatalieParser {
 class Node {
 public:
     enum class Type {
+        Invalid,
         Alias,
         Arg,
         Array,
@@ -77,6 +78,8 @@ public:
         Yield,
     };
 
+    Node() { }
+
     Node(const Token &token)
         : m_token { token } { }
 
@@ -85,12 +88,15 @@ public:
 
     virtual ~Node() { }
 
-    virtual Type type() const = 0;
+    virtual Type type() const { return Type::Invalid; }
 
     virtual bool is_callable() const { return false; }
 
     virtual Node *clone() const {
-        printf("Need to implement Node::clone() in a subclass (type=%d)...\n", (int)type());
+        if (type() == Type::Invalid)
+            printf("Trying to clone() an invalid Node\n");
+        else
+            printf("Need to implement Node::clone() in a subclass (type=%d)...\n", (int)type());
         TM_UNREACHABLE();
     }
 
@@ -105,7 +111,18 @@ public:
 
     const Token &token() const { return m_token; }
 
+    const static Node &invalid() {
+        if (!s_invalid)
+            s_invalid = new Node;
+        return *s_invalid;
+    }
+
+    operator bool() const {
+        return type() != Type::Invalid;
+    }
+
 protected:
+    static inline Node *s_invalid { nullptr };
     Token m_token {};
 };
 

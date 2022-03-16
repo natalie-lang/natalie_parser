@@ -14,6 +14,13 @@ public:
     FalseNode(const Token &token)
         : Node { token } { }
 
+    FalseNode(const FalseNode &other)
+        : FalseNode { other.token() } { }
+
+    virtual Node *clone() const override {
+        return new FalseNode(*this);
+    }
+
     virtual Type type() const override { return Type::False; }
 
     virtual void transform(Creator *creator) const override {

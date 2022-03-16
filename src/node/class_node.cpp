@@ -3,21 +3,15 @@
 
 namespace NatalieParser {
 
-ClassNode::~ClassNode() {
-    delete m_name;
-    delete m_superclass;
-    delete m_body;
-}
-
 void ClassNode::transform(Creator *creator) const {
     creator->set_type("class");
     if (m_name->type() == Node::Type::Identifier) {
-        auto identifier = static_cast<IdentifierNode *>(m_name);
+        auto identifier = static_cast<const IdentifierNode *>(&name());
         creator->append_symbol(identifier->name());
     } else {
-        creator->append(m_name);
+        creator->append(m_name.ref());
     }
-    creator->append(m_superclass);
+    creator->append(m_superclass.ref());
     for (auto node : m_body->nodes())
         creator->append(node);
 }

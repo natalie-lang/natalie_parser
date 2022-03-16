@@ -3,6 +3,7 @@
 #include "natalie_parser/node/node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
 #include "tm/hashmap.hpp"
+#include "tm/owned_ptr.hpp"
 #include "tm/string.hpp"
 
 namespace NatalieParser {
@@ -17,21 +18,17 @@ public:
         assert(m_value);
     }
 
-    ~ReturnNode() {
-        delete m_value;
-    }
-
     virtual Type type() const override { return Type::Return; }
 
-    Node *value() const { return m_value; }
+    const Node &value() const { return m_value.ref(); }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("return");
         if (m_value->type() != Node::Type::Nil)
-            creator->append(m_value);
+            creator->append(m_value.ref());
     }
 
 protected:
-    Node *m_value { nullptr };
+    OwnedPtr<Node> m_value {};
 };
 }

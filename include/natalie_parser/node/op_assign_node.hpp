@@ -31,16 +31,11 @@ public:
         assert(m_value);
     }
 
-    ~OpAssignNode() {
-        delete m_name;
-        delete m_value;
-    }
-
     virtual Type type() const override { return Type::OpAssign; }
 
     SharedPtr<String> op() const { return m_op; }
-    IdentifierNode *name() const { return m_name; }
-    Node *value() const { return m_value; }
+    const IdentifierNode &name() const { return m_name.ref(); }
+    const Node &value() const { return m_value.ref(); }
 
     virtual void transform(Creator *creator) const override {
         assert(op());
@@ -54,7 +49,7 @@ public:
 
 protected:
     SharedPtr<String> m_op {};
-    IdentifierNode *m_name { nullptr };
-    Node *m_value { nullptr };
+    OwnedPtr<IdentifierNode> m_name {};
+    OwnedPtr<Node> m_value {};
 };
 }

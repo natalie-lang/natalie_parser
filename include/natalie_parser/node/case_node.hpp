@@ -4,6 +4,7 @@
 #include "natalie_parser/node/node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
 #include "tm/hashmap.hpp"
+#include "tm/owned_ptr.hpp"
 #include "tm/string.hpp"
 
 namespace NatalieParser {
@@ -19,10 +20,8 @@ public:
     }
 
     ~CaseNode() {
-        delete m_subject;
         for (auto node : m_nodes)
             delete node;
-        delete m_else_node;
     }
 
     virtual Type type() const override { return Type::Case; }
@@ -35,13 +34,13 @@ public:
         m_else_node = node;
     }
 
-    Node *subject() const { return m_subject; }
+    const Node &subject() const { return m_subject.ref(); }
     Vector<Node *> &nodes() { return m_nodes; }
-    BlockNode *else_node() const { return m_else_node; }
+    const BlockNode &else_node() const { return m_else_node.ref(); }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("case");
-        creator->append(m_subject);
+        creator->append(m_subject.ref());
         for (auto when_node : m_nodes)
             creator->append(when_node);
         if (m_else_node)
@@ -51,8 +50,8 @@ public:
     }
 
 protected:
-    Node *m_subject { nullptr };
+    OwnedPtr<Node> m_subject {};
     Vector<Node *> m_nodes {};
-    BlockNode *m_else_node { nullptr };
+    OwnedPtr<BlockNode> m_else_node {};
 };
 }

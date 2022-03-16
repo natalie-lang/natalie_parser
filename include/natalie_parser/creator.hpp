@@ -15,8 +15,10 @@ class Creator {
 public:
     Creator() { }
     virtual void set_type(const char *type) = 0;
-    virtual void append(const Node *node) = 0;
-    virtual void append_array(const ArrayNode *array) = 0;
+    virtual void append(const Node *node) { append(*node); }
+    virtual void append(const Node &node) = 0;
+    virtual void append_array(const ArrayNode *array) { append_array(*array); }
+    virtual void append_array(const ArrayNode &array) = 0;
     virtual void append_false() = 0;
     virtual void append_float(double number) = 0;
     virtual void append_integer(long long number) = 0;

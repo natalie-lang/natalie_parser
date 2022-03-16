@@ -331,7 +331,7 @@ Node *Parser::parse_begin(LocalsHashmap &locals) {
         auto condition = parse_expression(Precedence::LOWEST, locals);
         BlockNode *body;
         if (begin_node->no_rescue_nodes() && !begin_node->has_ensure_body())
-            body = begin_node->body();
+            body = new BlockNode { begin_node->body() };
         else
             body = new BlockNode { token, begin_node };
         return new UntilNode { token, condition, body, false };
@@ -341,7 +341,7 @@ Node *Parser::parse_begin(LocalsHashmap &locals) {
         auto condition = parse_expression(Precedence::LOWEST, locals);
         BlockNode *body;
         if (begin_node->no_rescue_nodes() && !begin_node->has_ensure_body())
-            body = begin_node->body();
+            body = new BlockNode { begin_node->body() };
         else
             body = new BlockNode { token, begin_node };
         return new WhileNode { token, condition, body, false };
@@ -1865,7 +1865,7 @@ Node *Parser::parse_op_attr_assign_expression(Node *left, LocalsHashmap &locals)
     return new OpAssignAccessorNode {
         token,
         op,
-        left_call->receiver()->clone(),
+        left_call->receiver().clone(),
         message,
         parse_expression(Precedence::OPASSIGNMENT, locals),
         left_call->args(),

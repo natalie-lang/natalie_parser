@@ -3,6 +3,7 @@
 #include "natalie_parser/node/node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
 #include "tm/hashmap.hpp"
+#include "tm/owned_ptr.hpp"
 #include "tm/string.hpp"
 
 namespace NatalieParser {
@@ -21,22 +22,18 @@ public:
 
     CallNode(const Token &token, CallNode &node)
         : NodeWithArgs { token }
-        , m_receiver { node.m_receiver }
+        , m_receiver { node.receiver().clone() }
         , m_message { node.m_message } {
         for (auto arg : node.m_args) {
             add_arg(arg);
         }
     }
 
-    ~CallNode() {
-        delete m_receiver;
-    }
-
     virtual Type type() const override { return Type::Call; }
 
     virtual bool is_callable() const override { return true; }
 
-    Node *receiver() const { return m_receiver; }
+    const Node &receiver() const { return m_receiver.ref(); }
 
     SharedPtr<String> message() const { return m_message; }
 
@@ -54,14 +51,14 @@ public:
         if (creator->assignment()) {
             creator->set_type("attrasgn");
             creator->with_assignment(false, [&]() {
-                creator->append(m_receiver);
+                creator->append(m_receiver.ref());
             });
             auto message = m_message->clone();
             message.append_char('=');
             creator->append_symbol(message);
         } else {
             creator->set_type("call");
-            creator->append(m_receiver);
+            creator->append(m_receiver.ref());
             creator->append_symbol(m_message);
         }
         creator->with_assignment(false, [&]() {
@@ -71,7 +68,7 @@ public:
     }
 
 protected:
-    Node *m_receiver { nullptr };
+    OwnedPtr<Node> m_receiver {};
     SharedPtr<String> m_message {};
 };
 }

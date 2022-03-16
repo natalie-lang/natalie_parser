@@ -14,6 +14,13 @@ public:
     TrueNode(const Token &token)
         : Node { token } { }
 
+    TrueNode(const TrueNode &other)
+        : TrueNode { other.token() } { }
+
+    virtual Node *clone() const override {
+        return new TrueNode(*this);
+    }
+
     virtual Type type() const override { return Type::True; }
 
     virtual void transform(Creator *creator) const override {

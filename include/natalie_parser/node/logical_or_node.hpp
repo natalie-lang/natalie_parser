@@ -3,6 +3,7 @@
 #include "natalie_parser/node/node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
 #include "tm/hashmap.hpp"
+#include "tm/owned_ptr.hpp"
 #include "tm/string.hpp"
 
 namespace NatalieParser {
@@ -19,24 +20,19 @@ public:
         assert(m_right);
     }
 
-    ~LogicalOrNode() {
-        delete m_left;
-        delete m_right;
-    }
-
     virtual Type type() const override { return Type::LogicalOr; }
 
-    Node *left() const { return m_left; }
-    Node *right() const { return m_right; }
+    const Node &left() const { return m_left.ref(); }
+    const Node &right() const { return m_right.ref(); }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("or");
-        creator->append(m_left);
-        creator->append(m_right);
+        creator->append(m_left.ref());
+        creator->append(m_right.ref());
     }
 
 protected:
-    Node *m_left { nullptr };
-    Node *m_right { nullptr };
+    OwnedPtr<Node> m_left {};
+    OwnedPtr<Node> m_right {};
 };
 }

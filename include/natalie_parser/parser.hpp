@@ -161,7 +161,7 @@ private:
     template <typename T>
     Node *regroup(Token &token, Node *left, Node *right) {
         auto left_node = static_cast<T *>(left);
-        return new T { left_node->token(), left_node->left(), new T { token, left_node->right(), right } };
+        return new T { left_node->token(), left_node->left().clone(), new T { token, left_node->right().clone(), right } };
     };
 
     // FIXME: return a Token&

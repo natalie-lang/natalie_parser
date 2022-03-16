@@ -3,6 +3,7 @@
 #include "natalie_parser/node/node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
 #include "tm/hashmap.hpp"
+#include "tm/owned_ptr.hpp"
 #include "tm/string.hpp"
 
 namespace NatalieParser {
@@ -17,20 +18,16 @@ public:
         assert(m_identifier);
     }
 
-    ~PinNode() {
-        delete m_identifier;
-    }
-
     virtual Type type() const override { return Type::Pin; }
 
-    Node *identifier() const { return m_identifier; }
+    const Node &identifier() const { return m_identifier.ref(); }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("pin");
-        creator->append(m_identifier);
+        creator->append(m_identifier.ref());
     }
 
 protected:
-    Node *m_identifier { nullptr };
+    OwnedPtr<Node> m_identifier {};
 };
 }

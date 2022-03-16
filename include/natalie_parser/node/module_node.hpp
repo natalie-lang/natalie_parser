@@ -4,6 +4,7 @@
 #include "natalie_parser/node/node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
 #include "tm/hashmap.hpp"
+#include "tm/owned_ptr.hpp"
 #include "tm/string.hpp"
 
 namespace NatalieParser {
@@ -17,20 +18,15 @@ public:
         , m_name { name }
         , m_body { body } { }
 
-    ~ModuleNode() {
-        delete m_name;
-        delete m_body;
-    }
-
     virtual Type type() const override { return Type::Module; }
 
-    Node *name() const { return m_name; }
-    BlockNode *body() const { return m_body; }
+    const Node &name() const { return m_name.ref(); }
+    const BlockNode &body() const { return m_body.ref(); }
 
     virtual void transform(Creator *creator) const override;
 
 protected:
-    Node *m_name { nullptr };
-    BlockNode *m_body { nullptr };
+    OwnedPtr<Node> m_name {};
+    OwnedPtr<BlockNode> m_body {};
 };
 }

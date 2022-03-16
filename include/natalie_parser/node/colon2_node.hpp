@@ -3,6 +3,7 @@
 #include "natalie_parser/node/node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
 #include "tm/hashmap.hpp"
+#include "tm/owned_ptr.hpp"
 #include "tm/string.hpp"
 
 namespace NatalieParser {
@@ -19,19 +20,15 @@ public:
         assert(m_name);
     }
 
-    ~Colon2Node() {
-        delete m_left;
-    }
-
     virtual Type type() const override { return Type::Colon2; }
 
-    Node *left() const { return m_left; }
+    const Node &left() const { return m_left.ref(); }
     SharedPtr<String> name() const { return m_name; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("colon2");
         creator->with_assignment(false, [&]() {
-            creator->append(m_left);
+            creator->append(m_left.ref());
         });
         creator->append_symbol(m_name);
         if (creator->assignment())
@@ -39,7 +36,7 @@ public:
     }
 
 protected:
-    Node *m_left { nullptr };
+    OwnedPtr<Node> m_left {};
     SharedPtr<String> m_name {};
 };
 }

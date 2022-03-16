@@ -21,21 +21,21 @@ public:
         rb_ary_store(m_sexp, 0, ID2SYM(rb_intern(type)));
     }
 
-    virtual void append(const Node *node) override {
-        if (node->type() == Node::Type::Nil) {
+    virtual void append(const Node &node) override {
+        if (node.type() == Node::Type::Nil) {
             rb_ary_push(m_sexp, Qnil);
             return;
         }
         MRICreator creator;
         creator.set_assignment(assignment());
-        node->transform(&creator);
+        node.transform(&creator);
         rb_ary_push(m_sexp, creator.sexp());
     }
 
-    virtual void append_array(const ArrayNode *array) override {
+    virtual void append_array(const ArrayNode &array) override {
         MRICreator creator;
         creator.set_assignment(assignment());
-        array->ArrayNode::transform(&creator);
+        array.ArrayNode::transform(&creator);
         rb_ary_push(m_sexp, creator.sexp());
     }
 

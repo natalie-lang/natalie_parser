@@ -21,25 +21,25 @@ public:
     }
 
     IterNode(const IterNode &other)
-        : IterNode { other.token(), other.call()->clone(), other.args(), static_cast<BlockNode *>(other.body()->clone()) } { }
+        : IterNode {
+            other.token(),
+            other.call().clone(),
+            other.args(),
+            new BlockNode { other.body() }
+        } { }
 
     virtual Node *clone() const override {
         return new IterNode(*this);
     }
 
-    ~IterNode() {
-        delete m_call;
-        delete m_body;
-    }
-
     virtual Type type() const override { return Type::Iter; }
 
-    Node *call() const { return m_call; }
-    BlockNode *body() const { return m_body; }
+    const Node &call() const { return m_call.ref(); }
+    const BlockNode &body() const { return m_body.ref(); }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("iter");
-        creator->append(m_call);
+        creator->append(m_call.ref());
         if (args().is_empty()) {
             creator->append_integer(0);
         } else {
@@ -50,7 +50,7 @@ public:
     }
 
 protected:
-    Node *m_call { nullptr };
-    BlockNode *m_body { nullptr };
+    OwnedPtr<Node> m_call {};
+    OwnedPtr<BlockNode> m_body {};
 };
 }

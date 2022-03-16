@@ -4,6 +4,7 @@
 #include "natalie_parser/node/node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
 #include "tm/hashmap.hpp"
+#include "tm/owned_ptr.hpp"
 #include "tm/string.hpp"
 
 namespace NatalieParser {
@@ -20,25 +21,20 @@ public:
         assert(m_body);
     }
 
-    ~CaseInNode() {
-        delete m_pattern;
-        delete m_body;
-    }
-
     virtual Type type() const override { return Type::CaseIn; }
 
-    Node *pattern() const { return m_pattern; }
-    BlockNode *body() const { return m_body; }
+    const Node &pattern() const { return m_pattern.ref(); }
+    const BlockNode &body() const { return m_body.ref(); }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("in");
-        creator->append(m_pattern);
+        creator->append(m_pattern.ref());
         for (auto node : m_body->nodes())
             creator->append(node);
     }
 
 protected:
-    Node *m_pattern { nullptr };
-    BlockNode *m_body { nullptr };
+    OwnedPtr<Node> m_pattern {};
+    OwnedPtr<BlockNode> m_body {};
 };
 }
