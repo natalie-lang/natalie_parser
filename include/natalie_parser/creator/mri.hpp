@@ -75,8 +75,7 @@ public:
     }
 
     virtual void append_symbol(TM::String &name) override {
-        // FIXME: check if there is a way to avoid creation of the Ruby String obj
-        rb_ary_push(m_sexp, ID2SYM(rb_intern_str(rb_str_new(name.c_str(), name.length()))));
+        rb_ary_push(m_sexp, ID2SYM(rb_intern2(name.c_str(), name.length())));
     }
 
     virtual void append_true() override {
