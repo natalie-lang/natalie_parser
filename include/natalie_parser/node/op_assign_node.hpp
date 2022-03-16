@@ -31,6 +31,18 @@ public:
         assert(m_value);
     }
 
+    OpAssignNode(const OpAssignNode &other)
+        : OpAssignNode {
+            other.token(),
+            other.op(),
+            new IdentifierNode { other.name() },
+            other.value().clone(),
+        } { }
+
+    virtual Node *clone() const override {
+        return new OpAssignNode(*this);
+    }
+
     virtual Type type() const override { return Type::OpAssign; }
 
     SharedPtr<String> op() const { return m_op; }
