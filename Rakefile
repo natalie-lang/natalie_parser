@@ -149,8 +149,13 @@ file 'build/libnatalie_parser.a' => HEADERS + [:objects] do |t|
   sh "ar rcs #{t.name} #{OBJECT_FILES}"
 end
 
-file "ext/natalie_parser/natalie_parser.#{so_ext}" => ['build/libnatalie_parser.a', 'ext/natalie_parser/natalie_parser.cpp'] do |t|
+file "ext/natalie_parser/natalie_parser.#{so_ext}" => [
+  'build/libnatalie_parser.a',
+  'ext/natalie_parser/natalie_parser.cpp',
+  'include/natalie_parser/creator/mri.hpp',
+] do |t|
   build_dir = File.expand_path('ext/natalie_parser', __dir__)
+  rm_rf 'ext/natalie_parser/natalie_parser.o'
   sh <<-SH
     cd #{build_dir} && \
     ruby extconf.rb && \
