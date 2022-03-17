@@ -4,7 +4,7 @@
 #include "stdio.h"
 
 // this includes MUST come after
-#include "natalie_parser/creator/mri.hpp"
+#include "mri_creator.hpp"
 #include "natalie_parser/parser.hpp"
 
 VALUE Parser;
