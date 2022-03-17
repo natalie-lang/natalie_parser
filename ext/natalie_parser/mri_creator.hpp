@@ -9,8 +9,12 @@ namespace NatalieParser {
 
 class MRICreator : public Creator {
 public:
-    MRICreator() {
+    MRICreator(const Node *node) {
         reset();
+        m_node = node;
+        rb_ivar_set(m_sexp, rb_intern("@file"), rb_str_new(node->file()->c_str(), node->file()->length()));
+        rb_ivar_set(m_sexp, rb_intern("@line"), rb_int_new(node->line() + 1));
+        rb_ivar_set(m_sexp, rb_intern("@column"), rb_int_new(node->column() + 1));
     }
 
     void reset() {
@@ -26,14 +30,14 @@ public:
             rb_ary_push(m_sexp, Qnil);
             return;
         }
-        MRICreator creator;
+        MRICreator creator { &node };
         creator.set_assignment(assignment());
         node.transform(&creator);
         rb_ary_push(m_sexp, creator.sexp());
     }
 
     virtual void append_array(const ArrayNode &array) override {
-        MRICreator creator;
+        MRICreator creator { &array };
         creator.set_assignment(assignment());
         array.ArrayNode::transform(&creator);
         rb_ary_push(m_sexp, creator.sexp());
@@ -65,7 +69,7 @@ public:
     }
 
     virtual void append_sexp(std::function<void(Creator *)> fn) override {
-        MRICreator creator;
+        MRICreator creator { m_node };
         fn(&creator);
         rb_ary_push(m_sexp, creator.sexp());
     }
@@ -93,5 +97,6 @@ public:
 
 private:
     VALUE m_sexp { Qnil };
+    const Node *m_node { nullptr };
 };
 }

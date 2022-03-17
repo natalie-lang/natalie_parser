@@ -14,3 +14,5 @@ when 'progress', nil
 end
 
 Dir[File.expand_path('*_test.rb', __dir__)].each { |path| load(path) }
+
+# TODO: run parser_test.rb with MRI also!

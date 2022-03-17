@@ -14,7 +14,7 @@ describe 'NatalieParser' do
       elsif node.first == :block
         node
       else
-        s(:block, node)
+        node.new(:block, node)
       end
     rescue Racc::ParseError, RubyParser::SyntaxError => e
       raise SyntaxError, e.message
@@ -731,6 +731,19 @@ FOOBAR
   BAR
 END
       expect(parse(doc4)).must_equal s(:block, s(:str, "FOOBAR\n"))
+    end
+
+    it 'tracks file and line/column number' do
+      ast = parse("1 +\n\n    2", 'foo.rb')
+      expect(ast.file).must_equal('foo.rb')
+      expect(ast.line).must_equal(1)
+      expect(ast.column).must_equal(1) if defined?(NatalieParser)
+
+      two = ast.last.last
+      expect(two).must_equal s(:lit, 2)
+      expect(two.file).must_equal('foo.rb')
+      expect(two.line).must_equal(3)
+      expect(two.column).must_equal(5) if defined?(NatalieParser)
     end
   end
 end

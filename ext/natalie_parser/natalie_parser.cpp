@@ -27,7 +27,7 @@ VALUE initialize(int argc, VALUE *argv, VALUE self) {
 }
 
 VALUE node_to_ruby(NatalieParser::Node *node) {
-    NatalieParser::MRICreator creator;
+    NatalieParser::MRICreator creator { node };
     node->transform(&creator);
     return creator.sexp();
 }
