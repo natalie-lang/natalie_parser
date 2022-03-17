@@ -1,9 +1,9 @@
 require_relative './test_helper'
 
-describe 'Parser' do
-  if defined?(Parser)
+describe 'NatalieParser' do
+  if defined?(NatalieParser)
     def parse(code, path = '(string)')
-      Parser.parse(code, path)
+      NatalieParser.parse(code, path)
     end
   else
     require 'ruby_parser'
@@ -116,7 +116,7 @@ describe 'Parser' do
 
     it 'raises an error if there is a syntax error' do
       # We choose to more closely match what MRI does vs what ruby_parser raises
-      if defined?(Parser)
+      if defined?(NatalieParser)
         expect(-> { parse("1 + 2\n\n)") }).must_raise(SyntaxError, "(string)#3: syntax error, unexpected ')' (expected: 'end-of-line')")
       else
         expect(-> { parse("1 + 2\n\n)") }).must_raise(SyntaxError, "(string):3 :: parse error on value \")\" (tRPAREN)")
@@ -165,7 +165,7 @@ describe 'Parser' do
     it 'parses assignment' do
       expect(parse('x = 1')).must_equal s(:block, s(:lasgn, :x, s(:lit, 1)))
       expect(parse('x = 1 + 2')).must_equal s(:block, s(:lasgn, :x, s(:call, s(:lit, 1), :+, s(:lit, 2))))
-      if defined?(Parser)
+      if defined?(NatalieParser)
         expect(-> { parse('x =') }).must_raise(SyntaxError, "(string)#1: syntax error, unexpected end-of-input (expected: 'expression')")
         expect(-> { parse('[1] = 2') }).must_raise(SyntaxError, "(string)#1: syntax error, unexpected '[' (expected: 'left side of assignment')")
       else
@@ -200,7 +200,7 @@ describe 'Parser' do
       expect(parse('x, y = *[1, 2]')).must_equal s(:block, s(:masgn, s(:array, s(:lasgn, :x), s(:lasgn, :y)), s(:splat, s(:array, s(:lit, 1), s(:lit, 2)))))
       expect(parse('::FOO = 1')).must_equal s(:block, s(:cdecl, s(:colon3, :FOO), s(:lit, 1)))
       expect(parse('Foo::BAR = 1')).must_equal s(:block, s(:cdecl, s(:colon2, s(:const, :Foo), :BAR), s(:lit, 1)))
-      if defined?(Parser)
+      if defined?(NatalieParser)
         # We replace :const with :cdecl to be consistent with single-assignment.
         expect(parse('A, B::C = 1, 2')).must_equal s(:block, s(:masgn, s(:array, s(:cdecl, :A), s(:cdecl, s(:colon2, s(:const, :B), :C))), s(:array, s(:lit, 1), s(:lit, 2))))
         expect(parse('A, ::B = 1, 2')).must_equal s(:block, s(:masgn, s(:array, s(:cdecl, :A), s(:cdecl, s(:colon3, :B))), s(:array, s(:lit, 1), s(:lit, 2))))
@@ -337,7 +337,7 @@ describe 'Parser' do
       expect(parse('foo.()')).must_equal s(:block, s(:call, s(:call, nil, :foo), :call))
       expect(parse('foo.(1, 2)')).must_equal s(:block, s(:call, s(:call, nil, :foo), :call, s(:lit, 1), s(:lit, 2)))
       expect(parse('foo(a = b, c)')).must_equal s(:block, s(:call, nil, :foo, s(:lasgn, :a, s(:call, nil, :b)), s(:call, nil, :c)))
-      if defined?(Parser)
+      if defined?(NatalieParser)
         expect(-> { parse('foo(') }).must_raise(SyntaxError, "(string)#1: syntax error, unexpected end-of-input (expected: 'expression')")
       else
         expect(-> { parse('foo(') }).must_raise(SyntaxError, '(string):1 :: parse error on value "$" ($end)')
@@ -474,7 +474,7 @@ describe 'Parser' do
       expect(parse("[\n1 , \n2,\n 3]")).must_equal s(:block, s(:array, s(:lit, 1), s(:lit, 2), s(:lit, 3)))
       expect(parse("[\n1 , \n2,\n 3\n]")).must_equal s(:block, s(:array, s(:lit, 1), s(:lit, 2), s(:lit, 3)))
       expect(parse("[\n1 , \n2,\n 3,\n]")).must_equal s(:block, s(:array, s(:lit, 1), s(:lit, 2), s(:lit, 3)))
-      if defined?(Parser)
+      if defined?(NatalieParser)
         expect(-> { parse('[ , 1]') }).must_raise(SyntaxError, "(string)#1: syntax error, unexpected ',' (expected: 'expression')")
       else
         expect(-> { parse('[ , 1]') }).must_raise(SyntaxError, '(string):1 :: parse error on value "," (tCOMMA)')
@@ -500,7 +500,7 @@ describe 'Parser' do
       expect(parse("{\n 1 => \n2,\n 'foo' =>\n'bar'\n}")).must_equal s(:block, s(:hash, s(:lit, 1), s(:lit, 2), s(:str, 'foo'), s(:str, 'bar')))
       expect(parse("{ foo: 'bar', baz: 'buz' }")).must_equal s(:block, s(:hash, s(:lit, :foo), s(:str, 'bar'), s(:lit, :baz), s(:str, 'buz')))
       expect(parse('{ a => b, c => d }')).must_equal s(:block, s(:hash, s(:call, nil, :a), s(:call, nil, :b), s(:call, nil, :c), s(:call, nil, :d)))
-      if defined?(Parser)
+      if defined?(NatalieParser)
         expect(-> { parse('{ , 1 => 2 }') }).must_raise(SyntaxError, "(string)#1: syntax error, unexpected ',' (expected: 'expression')")
       else
         expect(-> { parse('{ , 1 => 2 }') }).must_raise(SyntaxError, '(string):1 :: parse error on value "," (tCOMMA)')
@@ -573,7 +573,7 @@ describe 'Parser' do
       expect(parse("get 'foo', bar do 'baz'\n end")).must_equal s(:block, s(:iter, s(:call, nil, :get, s(:str, 'foo'), s(:call, nil, :bar)), 0, s(:str, 'baz')))
       expect(parse("get 'foo', bar do\n 'baz' end")).must_equal s(:block, s(:iter, s(:call, nil, :get, s(:str, 'foo'), s(:call, nil, :bar)), 0, s(:str, 'baz')))
       expect(parse("get 'foo', bar do 'baz' end")).must_equal s(:block, s(:iter, s(:call, nil, :get, s(:str, 'foo'), s(:call, nil, :bar)), 0, s(:str, 'baz')))
-      if defined?(Parser)
+      if defined?(NatalieParser)
         # I don't like how the RubyParser gem appends a nil on the args array; there's no reason for it.
         expect(parse('bar { |a, | a }')).must_equal s(:block, s(:iter, s(:call, nil, :bar), s(:args, :a), s(:lvar, :a)))
       else
@@ -660,7 +660,7 @@ describe 'Parser' do
       expect(parse("case 1\nin [ ]\n:a\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:in, s(:array_pat), s(:lit, :a)), nil))
       expect(parse("case 1\nin [:x, x]\n:a\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:lit, :x), s(:lvar, :x)), s(:lit, :a)), nil))
       expect(parse("case 1\nin [a, a]\n:a\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:lvar, :a), s(:lvar, :a)), s(:lit, :a)), nil))
-      if defined?(Parser)
+      if defined?(NatalieParser)
         # pinned variables not supported in ruby_parser yet
         expect(parse("case 1\nin [^a, a]\n:a\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:pin, s(:lvar, :a)), s(:lvar, :a)), s(:lit, :a)), nil))
       end

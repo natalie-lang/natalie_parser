@@ -126,7 +126,7 @@ VALUE tokens(int argc, VALUE *argv, VALUE self) {
 void Init_natalie_parser() {
     int error;
     Sexp = rb_const_get(rb_cObject, rb_intern("Sexp"));
-    Parser = rb_define_class("Parser", rb_cObject);
+    Parser = rb_define_class("NatalieParser", rb_cObject);
     rb_define_method(Parser, "initialize", initialize, -1);
     rb_define_method(Parser, "parse", parse_on_instance, 0);
     rb_define_method(Parser, "tokens", tokens_on_instance, 0);
