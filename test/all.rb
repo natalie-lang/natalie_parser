@@ -1,11 +1,5 @@
 require 'fileutils'
-require 'minitest/focus'
 require 'minitest/reporters'
-
-$LOAD_PATH << File.expand_path('../lib', __dir__)
-$LOAD_PATH << File.expand_path('../ext', __dir__)
-
-require 'natalie_parser'
 
 case ENV['REPORTER']
 when 'spec'
