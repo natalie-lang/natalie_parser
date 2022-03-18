@@ -29,6 +29,17 @@ public:
         }
     }
 
+    CallNode(const CallNode &other)
+        : CallNode { other.token(), other.receiver().clone(), other.message() } {
+        for (auto arg : other.args()) {
+            add_arg(arg);
+        }
+    }
+
+    virtual Node *clone() const override {
+        return new CallNode(*this);
+    }
+
     virtual Type type() const override { return Type::Call; }
 
     virtual bool is_callable() const override { return true; }

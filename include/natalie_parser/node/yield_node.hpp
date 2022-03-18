@@ -14,6 +14,17 @@ public:
     YieldNode(const Token &token)
         : NodeWithArgs { token } { }
 
+    YieldNode(const YieldNode &other)
+        : YieldNode { other.token() } {
+        for (auto arg : other.args()) {
+            add_arg(arg);
+        }
+    }
+
+    virtual Node *clone() const override {
+        return new YieldNode(*this);
+    }
+
     virtual Type type() const override { return Type::Yield; }
 
     virtual void transform(Creator *creator) const override {
