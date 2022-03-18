@@ -262,7 +262,7 @@ SymbolNode *Parser::parse_alias_arg(LocalsHashmap &locals, const char *expected_
     case Token::Type::Symbol:
         return static_cast<SymbolNode *>(parse_symbol(locals));
     default:
-        if (token.is_operator()) {
+        if (token.is_operator() || token.is_keyword()) {
             advance();
             if (token.can_precede_collapsible_newline() && reinsert_collapsed_newline) {
                 // Some operators at the end of a line cause the newlines to be collapsed:
