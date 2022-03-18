@@ -1348,22 +1348,12 @@ Node *Parser::parse_string(LocalsHashmap &locals) {
 };
 
 Node *Parser::parse_super(LocalsHashmap &locals) {
+    TM_UNUSED(locals);
     auto token = current_token();
     advance();
     auto node = new SuperNode { token };
-    if (current_token().is_lparen()) {
+    if (current_token().is_lparen())
         node->set_parens(true);
-        advance();
-        if (current_token().is_rparen()) {
-            advance();
-        } else {
-            parse_call_args(node, locals, false);
-            expect(Token::Type::RParen, "super closing paren");
-            advance();
-        }
-    } else if (!current_token().is_end_of_expression()) {
-        parse_call_args(node, locals, true);
-    }
     return node;
 };
 
@@ -1581,6 +1571,7 @@ Node *Parser::parse_iter_expression(Node *left, LocalsHashmap &locals) {
     switch (left->type()) {
     case Node::Type::Identifier:
     case Node::Type::Call:
+    case Node::Type::Super:
         if (current_token().is_block_arg_delimiter()) {
             advance();
             args = parse_iter_args(our_locals);
@@ -1619,7 +1610,7 @@ SharedPtr<Vector<Node *>> Parser::parse_iter_args(LocalsHashmap &locals) {
 
 Node *Parser::parse_call_expression_with_parens(Node *left, LocalsHashmap &locals) {
     auto token = current_token();
-    CallNode *call_node;
+    NodeWithArgs *call_node;
     switch (left->type()) {
     case Node::Type::Identifier:
         call_node = new CallNode {
@@ -1633,6 +1624,9 @@ Node *Parser::parse_call_expression_with_parens(Node *left, LocalsHashmap &local
         break;
     case Node::Type::SafeCall:
         call_node = static_cast<SafeCallNode *>(left);
+        break;
+    case Node::Type::Super:
+        call_node = static_cast<SuperNode *>(left);
         break;
     default:
         TM_UNREACHABLE();
@@ -1683,7 +1677,7 @@ void Parser::parse_call_args(NodeWithArgs *node, LocalsHashmap &locals, bool bar
 
 Node *Parser::parse_call_expression_without_parens(Node *left, LocalsHashmap &locals) {
     auto token = current_token();
-    CallNode *call_node;
+    NodeWithArgs *call_node;
     switch (left->type()) {
     case Node::Type::Identifier:
         call_node = new CallNode {
@@ -1697,6 +1691,9 @@ Node *Parser::parse_call_expression_without_parens(Node *left, LocalsHashmap &lo
         break;
     case Node::Type::SafeCall:
         call_node = static_cast<SafeCallNode *>(left);
+        break;
+    case Node::Type::Super:
+        call_node = static_cast<SuperNode *>(left);
         break;
     default:
         TM_UNREACHABLE();
