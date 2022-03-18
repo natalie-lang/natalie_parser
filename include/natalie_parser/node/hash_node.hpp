@@ -14,6 +14,16 @@ public:
     HashNode(const Token &token)
         : Node { token } { }
 
+    HashNode(const HashNode &other)
+        : HashNode { other.token() } {
+        for (auto node : other.nodes())
+            add_node(node->clone());
+    }
+
+    virtual Node *clone() const override {
+        return new HashNode(*this);
+    }
+
     ~HashNode() {
         for (auto node : m_nodes)
             delete node;
@@ -25,7 +35,7 @@ public:
         m_nodes.push(node);
     }
 
-    Vector<Node *> &nodes() { return m_nodes; }
+    const Vector<Node *> &nodes() const { return m_nodes; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("hash");
