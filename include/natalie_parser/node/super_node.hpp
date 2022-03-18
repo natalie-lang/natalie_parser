@@ -14,6 +14,14 @@ public:
     SuperNode(const Token &token)
         : NodeWithArgs { token } { }
 
+    SuperNode(const SuperNode &other)
+        : NodeWithArgs { other }
+        , m_parens { other.parens() } { }
+
+    virtual Node *clone() const override {
+        return new SuperNode(*this);
+    }
+
     virtual Type type() const override { return Type::Super; }
 
     virtual bool is_callable() const override { return true; }

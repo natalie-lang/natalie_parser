@@ -679,6 +679,7 @@ require_relative './test_helper'
         expect(parse("get 'foo', bar do 'baz'\n end")).must_equal s(:block, s(:iter, s(:call, nil, :get, s(:str, 'foo'), s(:call, nil, :bar)), 0, s(:str, 'baz')))
         expect(parse("get 'foo', bar do\n 'baz' end")).must_equal s(:block, s(:iter, s(:call, nil, :get, s(:str, 'foo'), s(:call, nil, :bar)), 0, s(:str, 'baz')))
         expect(parse("get 'foo', bar do 'baz' end")).must_equal s(:block, s(:iter, s(:call, nil, :get, s(:str, 'foo'), s(:call, nil, :bar)), 0, s(:str, 'baz')))
+        expect(parse("foo += bar { |x| x }")).must_equal s(:block, s(:lasgn, :foo, s(:call, s(:lvar, :foo), :+, s(:iter, s(:call, nil, :bar), s(:args, :x), s(:lvar, :x)))))
         if parser == 'NatalieParser'
           # I don't like how the RubyParser gem appends a nil on the args array; there's no reason for it.
           expect(parse('bar { |a, | a }')).must_equal s(:block, s(:iter, s(:call, nil, :bar), s(:args, :a), s(:lvar, :a)))
@@ -718,6 +719,7 @@ require_relative './test_helper'
         expect(parse('yield 1, 2')).must_equal s(:block, s(:yield, s(:lit, 1), s(:lit, 2)))
         expect(parse('yield(1, 2)')).must_equal s(:block, s(:yield, s(:lit, 1), s(:lit, 2)))
         expect(parse('yield if true')).must_equal s(:block, s(:if, s(:true), s(:yield), nil))
+        expect(parse('x += yield y')).must_equal s(:block, s(:lasgn, :x, s(:call, s(:lvar, :x), :+, s(:yield, s(:call, nil, :y)))))
       end
 
       it 'parses self' do

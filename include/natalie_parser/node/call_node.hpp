@@ -25,14 +25,16 @@ public:
         , m_receiver { node.receiver().clone() }
         , m_message { node.m_message } {
         for (auto arg : node.m_args) {
-            add_arg(arg);
+            add_arg(arg->clone());
         }
     }
 
     CallNode(const CallNode &other)
-        : CallNode { other.token(), other.receiver().clone(), other.message() } {
+        : NodeWithArgs { other.token() }
+        , m_receiver { other.receiver().clone() }
+        , m_message { other.message() } {
         for (auto arg : other.args()) {
-            add_arg(arg);
+            add_arg(arg->clone());
         }
     }
 

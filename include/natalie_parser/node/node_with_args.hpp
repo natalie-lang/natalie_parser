@@ -22,10 +22,10 @@ public:
     }
 
     NodeWithArgs(const NodeWithArgs &other)
-        : NodeWithArgs {
-            other.token(),
-            other.args(),
-        } { }
+        : NodeWithArgs { other.token() } {
+        for (auto arg : other.args())
+            add_arg(arg->clone());
+    }
 
     ~NodeWithArgs() {
         for (auto arg : m_args)

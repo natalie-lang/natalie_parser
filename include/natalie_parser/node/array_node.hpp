@@ -17,7 +17,7 @@ public:
     ArrayNode(const ArrayNode &other)
         : Node { other.m_token } {
         for (auto node : other.m_nodes)
-            m_nodes.push(node);
+            m_nodes.push(node->clone());
     }
 
     ~ArrayNode() {

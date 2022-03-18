@@ -21,12 +21,12 @@ public:
     }
 
     IterNode(const IterNode &other)
-        : IterNode {
-            other.token(),
-            other.call().clone(),
-            other.args(),
-            new BlockNode { other.body() }
-        } { }
+        : NodeWithArgs { other.token() }
+        , m_call { other.call().clone() }
+        , m_body { new BlockNode { other.body() } } {
+        for (auto arg : other.args())
+            add_arg(arg->clone());
+    }
 
     virtual Node *clone() const override {
         return new IterNode(*this);

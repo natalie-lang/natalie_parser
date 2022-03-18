@@ -15,11 +15,7 @@ public:
         : NodeWithArgs { token } { }
 
     YieldNode(const YieldNode &other)
-        : YieldNode { other.token() } {
-        for (auto arg : other.args()) {
-            add_arg(arg);
-        }
-    }
+        : NodeWithArgs { other } { }
 
     virtual Node *clone() const override {
         return new YieldNode(*this);
