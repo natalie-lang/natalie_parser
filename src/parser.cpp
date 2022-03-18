@@ -751,10 +751,11 @@ Node *Parser::parse_def(LocalsHashmap &locals) {
         name = parse_method_name(locals);
         break;
     case Token::Type::SelfKeyword:
-        advance();
-        self_node = new SelfNode { current_token() };
-        expect(Token::Type::Dot, "def obj dot");
-        advance();
+        if (peek_token().type() == Token::Type::Dot) {
+            self_node = new SelfNode { current_token() };
+            advance(); // self
+            advance(); // dot
+        }
         name = parse_method_name(locals);
         break;
     case Token::Type::Constant:
@@ -765,7 +766,7 @@ Node *Parser::parse_def(LocalsHashmap &locals) {
         name = parse_method_name(locals);
         break;
     default:
-        if (token.is_operator())
+        if (token.is_operator() || token.is_keyword())
             name = parse_method_name(locals);
         else
             throw_unexpected("method name");
@@ -1195,7 +1196,7 @@ SharedPtr<String> Parser::parse_method_name(LocalsHashmap &) {
         name = current_token().literal_string();
         break;
     default:
-        if (token.is_operator())
+        if (token.is_operator() || token.is_keyword())
             name = new String(current_token().type_value());
         else
             throw_unexpected("method name");
@@ -1948,7 +1949,7 @@ Node *Parser::parse_send_expression(Node *left, LocalsHashmap &locals) {
         advance();
         break;
     default:
-        if (name_token.is_operator()) {
+        if (name_token.is_operator() || name_token.is_keyword()) {
             *name = name_token.type_value();
             advance();
         } else {

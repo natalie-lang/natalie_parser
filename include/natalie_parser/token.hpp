@@ -515,6 +515,55 @@ public:
         }
     }
 
+    bool is_keyword() const {
+        switch (m_type) {
+        case Type::AliasKeyword:
+        case Type::AndKeyword:
+        case Type::BeginKeyword:
+        case Type::BEGINKeyword:
+        case Type::BreakKeyword:
+        case Type::CaseKeyword:
+        case Type::ClassKeyword:
+        case Type::DefinedKeyword:
+        case Type::DefKeyword:
+        case Type::DoKeyword:
+        case Type::ElseKeyword:
+        case Type::ElsifKeyword:
+        case Type::ENCODINGKeyword:
+        case Type::EndKeyword:
+        case Type::ENDKeyword:
+        case Type::EnsureKeyword:
+        case Type::FalseKeyword:
+        case Type::FILEKeyword:
+        case Type::ForKeyword:
+        case Type::IfKeyword:
+        case Type::InKeyword:
+        case Type::LINEKeyword:
+        case Type::ModuleKeyword:
+        case Type::NextKeyword:
+        case Type::NilKeyword:
+        case Type::NotKeyword:
+        case Type::OrKeyword:
+        case Type::RedoKeyword:
+        case Type::RescueKeyword:
+        case Type::RetryKeyword:
+        case Type::ReturnKeyword:
+        case Type::SelfKeyword:
+        case Type::SuperKeyword:
+        case Type::ThenKeyword:
+        case Type::TrueKeyword:
+        case Type::UndefKeyword:
+        case Type::UnlessKeyword:
+        case Type::UntilKeyword:
+        case Type::WhenKeyword:
+        case Type::WhileKeyword:
+        case Type::YieldKeyword:
+            return true;
+        default:
+            return false;
+        }
+    }
+
     bool is_operator() const {
         switch (m_type) {
         case Token::Type::BinaryOnesComplement:

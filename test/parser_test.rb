@@ -277,6 +277,55 @@ require_relative './test_helper'
         end
       end
 
+      it 'parses method definitions named after a keyword' do
+        keywords = %i[
+          alias
+          and
+          begin
+          begin
+          break
+          case
+          class
+          defined
+          def
+          do
+          else
+          elsif
+          encoding
+          end
+          end
+          ensure
+          false
+          file
+          for
+          if
+          in
+          line
+          module
+          next
+          nil
+          not
+          or
+          redo
+          rescue
+          retry
+          return
+          self
+          super
+          then
+          true
+          undef
+          unless
+          until
+          when
+          while
+          yield
+        ].each do |keyword|
+          expect(parse("def #{keyword}(x); end")).must_equal s(:block, s(:defn, keyword, s(:args, :x), s(:nil)))
+          expect(parse("def self.#{keyword} x; end")).must_equal s(:block, s(:defs, s(:self), keyword, s(:args, :x), s(:nil)))
+        end
+      end
+
       it 'parses method calls vs local variable lookup' do
         expect(parse('foo')).must_equal s(:block, s(:call, nil, :foo))
         expect(parse('foo?')).must_equal s(:block, s(:call, nil, :foo?))
@@ -371,6 +420,55 @@ require_relative './test_helper'
         operators = %w[+ - * ** / % == === != =~ !~ > >= < <= <=> & | ^ ~ << >> [] []=]
         operators.each do |operator|
           expect(parse("self.#{operator}")).must_equal s(:block, s(:call, s(:self), operator.to_sym))
+        end
+      end
+
+      it 'parses method calls named after a keyword' do
+        keywords = %i[
+          alias
+          and
+          begin
+          begin
+          break
+          case
+          class
+          defined
+          def
+          do
+          else
+          elsif
+          encoding
+          end
+          end
+          ensure
+          false
+          file
+          for
+          if
+          in
+          line
+          module
+          next
+          nil
+          not
+          or
+          redo
+          rescue
+          retry
+          return
+          self
+          super
+          then
+          true
+          undef
+          unless
+          until
+          when
+          while
+          yield
+        ].each do |keyword|
+          expect(parse("foo.#{keyword}(1)")).must_equal s(:block, s(:call, s(:call, nil, :foo), keyword, s(:lit, 1)))
+          expect(parse("foo.#{keyword} 1 ")).must_equal s(:block, s(:call, s(:call, nil, :foo), keyword, s(:lit, 1)))
         end
       end
 
