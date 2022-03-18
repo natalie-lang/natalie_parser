@@ -238,21 +238,6 @@ Token Lexer::build_next_token() {
         case '=':
             advance();
             return Token { Token::Type::ModulusEqual, m_file, m_token_line, m_token_column };
-        case '/':
-        case '|': {
-            char c = current_char();
-            advance();
-            return consume_single_quoted_string(c);
-        }
-        case '[':
-            advance();
-            return consume_single_quoted_string(']');
-        case '{':
-            advance();
-            return consume_single_quoted_string('}');
-        case '(':
-            advance();
-            return consume_single_quoted_string(')');
         case 'q':
             switch (peek()) {
             case '/':
@@ -409,9 +394,27 @@ Token Lexer::build_next_token() {
             default:
                 return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
             }
-        default:
-            return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
+        case '/':
+        case '|': {
+            char c = current_char();
+            advance();
+            return consume_single_quoted_string(c);
         }
+        case '[':
+            advance();
+            return consume_single_quoted_string(']');
+        case '{':
+            advance();
+            return consume_single_quoted_string('}');
+        case '(':
+            if (m_last_token.type() == Token::Type::DefKeyword || m_last_token.type() == Token::Type::Dot) {
+                // It's a trap! This looks like a %(string) but it's a method def/call!
+                break;
+            }
+            advance();
+            return consume_single_quoted_string(')');
+        }
+        return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
     case '!':
         advance();
         switch (current_char()) {

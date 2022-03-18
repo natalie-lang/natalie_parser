@@ -270,10 +270,11 @@ require_relative './test_helper'
       end
 
       it 'parses operator method definitions' do
-        operators = %w[+ - * ** / % == === != =~ !~ > >= < <= <=> & | ^ ~ << >> [] []=]
+        operators = %i[+ - * ** / % == === != =~ !~ > >= < <= <=> & | ^ ~ << >> [] []=]
         operators.each do |operator|
-          expect(parse("def #{operator}; end")).must_equal s(:block, s(:defn, operator.to_sym, s(:args), s(:nil)))
-          expect(parse("def self.#{operator}; end")).must_equal s(:block, s(:defs, s(:self), operator.to_sym, s(:args), s(:nil)))
+          expect(parse("def #{operator}; end")).must_equal s(:block, s(:defn, operator, s(:args), s(:nil)))
+          expect(parse("def #{operator}(x)\nend")).must_equal s(:block, s(:defn, operator, s(:args, :x), s(:nil)))
+          expect(parse("def self.#{operator}; end")).must_equal s(:block, s(:defs, s(:self), operator, s(:args), s(:nil)))
         end
       end
 

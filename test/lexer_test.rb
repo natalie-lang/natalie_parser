@@ -549,6 +549,22 @@ describe 'NatalieParser' do
         { type: :'=' },
       ]
       expect(NatalieParser.tokens('def /')).must_equal [{ type: :def }, { type: :/ }]
+      expect(NatalieParser.tokens('def %(x)')).must_equal [
+        { type: :def },
+        { type: :% },
+        { type: :'(' },
+        { type: :name, literal: :x },
+        { type: :')' },
+      ]
+      expect(NatalieParser.tokens('def self.%(x)')).must_equal [
+        { type: :def },
+        { type: :self },
+        { type: :'.' },
+        { type: :% },
+        { type: :'(' },
+        { type: :name, literal: :x },
+        { type: :')' },
+      ]
       expect(NatalieParser.tokens('foo.bar=')).must_equal [
         { type: :name, literal: :foo },
         { type: :'.' },
@@ -571,6 +587,14 @@ describe 'NatalieParser' do
         { type: :name, literal: :foo },
         { type: :'.' },
         { type: :name, literal: :nil? },
+      ]
+      expect(NatalieParser.tokens('foo.%(x)')).must_equal [
+        { type: :name, literal: :foo },
+        { type: :'.' },
+        { type: :% },
+        { type: :'(' },
+        { type: :name, literal: :x },
+        { type: :')' },
       ]
     end
 
