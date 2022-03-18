@@ -14,13 +14,13 @@ enum class Parser::Precedence {
     COMPOSITION, // and/or
     OPASSIGNMENT, // += -= *= **= /= %= |= &= ^= >>= <<= ||= &&=
     TERNARY, // ? :
+    LOGICALOR, // ||
+    LOGICALAND, // &&
     ITER_BLOCK, // do |n| ... end
     BARECALLARGS, // foo a, b
     RANGE, // ..
     ITER_CURLY, // { |n| ... }
     LOGICALNOT, // not
-    LOGICALOR, // ||
-    LOGICALAND, // &&
     EQUALITY, // <=> == === != =~ !~
     LESSGREATER, // <= < > >=
     BITWISEOR, // ^ |

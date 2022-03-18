@@ -704,6 +704,17 @@ require_relative './test_helper'
         expect(parse('defined?(:foo)')).must_equal s(:block, s(:defined, s(:lit, :foo)))
       end
 
+      it 'parses logical and/or with block' do
+        result = parse('x = foo.bar || ->(i) { baz(i) }')
+        expect(result).must_equal s(:block, s(:lasgn, :x, s(:or, s(:call, s(:call, nil, :foo), :bar), s(:iter, s(:lambda), s(:args, :i), s(:call, nil, :baz, s(:lvar, :i))))))
+        result = parse('x = foo.bar || ->(i) do baz(i) end')
+        expect(result).must_equal s(:block, s(:lasgn, :x, s(:or, s(:call, s(:call, nil, :foo), :bar), s(:iter, s(:lambda), s(:args, :i), s(:call, nil, :baz, s(:lvar, :i))))))
+        result = parse('x = foo.bar && ->(i) { baz(i) }')
+        expect(result).must_equal s(:block, s(:lasgn, :x, s(:and, s(:call, s(:call, nil, :foo), :bar), s(:iter, s(:lambda), s(:args, :i), s(:call, nil, :baz, s(:lvar, :i))))))
+        result = parse('x = foo.bar && ->(i) do baz(i) end')
+        expect(result).must_equal s(:block, s(:lasgn, :x, s(:and, s(:call, s(:call, nil, :foo), :bar), s(:iter, s(:lambda), s(:args, :i), s(:call, nil, :baz, s(:lvar, :i))))))
+      end
+
       it 'parses heredocs' do
         expect(parse("<<FOO\nFOO")).must_equal s(:block, s(:str, ""))
         doc1 = <<END
