@@ -67,7 +67,7 @@ private:
     BlockNode *parse_def_body(LocalsHashmap &);
 
     Node *parse_alias(LocalsHashmap &);
-    SymbolNode *parse_alias_arg(LocalsHashmap &, const char *);
+    SymbolNode *parse_alias_arg(LocalsHashmap &, const char *, bool);
     Node *parse_array(LocalsHashmap &);
     Node *parse_begin(LocalsHashmap &);
     void parse_rest_of_begin(BeginNode *, LocalsHashmap &);

@@ -795,6 +795,7 @@ require_relative './test_helper'
         expect(parse('alias foo bar')).must_equal s(:block, s(:alias, s(:lit, :foo), s(:lit, :bar)))
         expect(parse('alias :foo :bar')).must_equal s(:block, s(:alias, s(:lit, :foo), s(:lit, :bar)))
         expect(parse("alias write <<\ndef foo; end")).must_equal s(:block, s(:alias, s(:lit, :write), s(:lit, :<<)), s(:defn, :foo, s(:args), s(:nil)))
+        expect(parse("alias << write\ndef foo; end")).must_equal s(:block, s(:alias, s(:lit, :<<), s(:lit, :write)), s(:defn, :foo, s(:args), s(:nil)))
       end
 
       it 'parses defined?' do

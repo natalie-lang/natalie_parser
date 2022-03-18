@@ -247,12 +247,12 @@ BlockNode *Parser::parse_def_body(LocalsHashmap &locals) {
 Node *Parser::parse_alias(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    auto new_name = parse_alias_arg(locals, "alias new name (first argument)");
-    auto existing_name = parse_alias_arg(locals, "alias existing name (second argument)");
+    auto new_name = parse_alias_arg(locals, "alias new name (first argument)", false);
+    auto existing_name = parse_alias_arg(locals, "alias existing name (second argument)", true);
     return new AliasNode { token, new_name, existing_name };
 }
 
-SymbolNode *Parser::parse_alias_arg(LocalsHashmap &locals, const char *expected_message) {
+SymbolNode *Parser::parse_alias_arg(LocalsHashmap &locals, const char *expected_message, bool reinsert_collapsed_newline) {
     auto token = current_token();
     switch (token.type()) {
     case Token::Type::BareName: {
@@ -264,7 +264,7 @@ SymbolNode *Parser::parse_alias_arg(LocalsHashmap &locals, const char *expected_
     default:
         if (token.is_operator()) {
             advance();
-            if (token.can_precede_collapsible_newline()) {
+            if (token.can_precede_collapsible_newline() && reinsert_collapsed_newline) {
                 // Some operators at the end of a line cause the newlines to be collapsed:
                 //
                 //     foo <<
