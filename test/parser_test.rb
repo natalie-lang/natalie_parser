@@ -491,6 +491,9 @@ require_relative './test_helper'
         expect(parse('1 ? 2 : map { |n| n }')).must_equal s(:block, s(:if, s(:lit, 1), s(:lit, 2), s(:iter, s(:call, nil, :map), s(:args, :n), s(:lvar, :n))))
         expect(parse("1 ? 2 : map do |n|\nn\nend")).must_equal s(:block, s(:if, s(:lit, 1), s(:lit, 2), s(:iter, s(:call, nil, :map), s(:args, :n), s(:lvar, :n))))
         expect(parse('fib(num ? num.to_i : 25)')).must_equal s(:block, s(:call, nil, :fib, s(:if, s(:call, nil, :num), s(:call, s(:call, nil, :num), :to_i), s(:lit, 25))))
+        # FIXME: precedence problem
+        #expect(parse('foo x < 1 ? x : y')).must_equal s(:block, s(:call, nil, :foo, s(:if, s(:call, s(:call, nil, :x), :<, s(:lit, 1)), s(:call, nil, :x), s(:call, nil, :y))))
+        #expect(parse('return x < 1 ? x : y')).must_equal s(:block, s(:return, s(:if, s(:call, s(:call, nil, :x), :<, s(:lit, 1)), s(:call, nil, :x), s(:call, nil, :y))))
       end
 
       it 'parses if/elsif/else' do
