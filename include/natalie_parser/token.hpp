@@ -225,16 +225,6 @@ public:
         return m_literal.value();
     }
 
-    void set_literal(const char *literal) { m_literal = new String(literal); }
-    void set_literal(SharedPtr<String> literal) { m_literal = literal; }
-    void set_literal(String literal) { m_literal = new String(literal); }
-
-    Optional<SharedPtr<String>> options() { return m_options; }
-    void set_options(SharedPtr<String> options) { m_options = options; }
-
-    long long get_integer() const { return m_integer; }
-    double get_double() const { return m_double; }
-
     const char *type_value() const {
         switch (m_type) {
         case Type::AliasKeyword:
@@ -617,73 +607,74 @@ public:
     bool is_valid() const { return m_type != Type::Invalid; }
     bool is_when_keyword() const { return m_type == Type::WhenKeyword; }
 
-    void validate();
-
     bool can_follow_collapsible_newline() {
-        return m_type == Token::Type::Dot
-            || m_type == Token::Type::RCurlyBrace
-            || m_type == Token::Type::RBracket
-            || m_type == Token::Type::RParen
-            || m_type == Token::Type::TernaryColon;
+        switch (m_type) {
+        case Token::Type::Dot:
+        case Token::Type::RCurlyBrace:
+        case Token::Type::RBracket:
+        case Token::Type::RParen:
+        case Token::Type::TernaryColon:
+            return true;
+        default:
+            return false;
+        }
     }
 
     bool can_precede_collapsible_newline() {
-        return m_type == Token::Type::And
-            || m_type == Token::Type::AndKeyword
-            || m_type == Token::Type::Arrow
-            || m_type == Token::Type::BitwiseAnd
-            || m_type == Token::Type::BitwiseOr
-            || m_type == Token::Type::BitwiseXor
-            || m_type == Token::Type::CaseKeyword
-            || m_type == Token::Type::Comma
-            || m_type == Token::Type::Comparison
-            || m_type == Token::Type::ConstantResolution
-            || m_type == Token::Type::Divide
-            || m_type == Token::Type::DivideEqual
-            || m_type == Token::Type::Dot
-            || m_type == Token::Type::DotDot
-            || m_type == Token::Type::Equal
-            || m_type == Token::Type::EqualEqual
-            || m_type == Token::Type::EqualEqualEqual
-            || m_type == Token::Type::Exponent
-            || m_type == Token::Type::ExponentEqual
-            || m_type == Token::Type::GreaterThan
-            || m_type == Token::Type::GreaterThanOrEqual
-            || m_type == Token::Type::HashRocket
-            || m_type == Token::Type::InKeyword
-            || m_type == Token::Type::LCurlyBrace
-            || m_type == Token::Type::LBracket
-            || m_type == Token::Type::LeftShift
-            || m_type == Token::Type::LessThan
-            || m_type == Token::Type::LessThanOrEqual
-            || m_type == Token::Type::LParen
-            || m_type == Token::Type::Match
-            || m_type == Token::Type::Minus
-            || m_type == Token::Type::MinusEqual
-            || m_type == Token::Type::Modulus
-            || m_type == Token::Type::ModulusEqual
-            || m_type == Token::Type::Multiply
-            || m_type == Token::Type::MultiplyEqual
-            || m_type == Token::Type::Not
-            || m_type == Token::Type::NotEqual
-            || m_type == Token::Type::NotMatch
-            || m_type == Token::Type::Or
-            || m_type == Token::Type::OrKeyword
-            || m_type == Token::Type::Plus
-            || m_type == Token::Type::PlusEqual
-            || m_type == Token::Type::RightShift
-            || m_type == Token::Type::SafeNavigation
-            || m_type == Token::Type::TernaryColon
-            || m_type == Token::Type::TernaryQuestion
-            || m_type == Token::Type::Tilde;
+        switch (m_type) {
+        case Token::Type::And:
+        case Token::Type::AndKeyword:
+        case Token::Type::Arrow:
+        case Token::Type::BitwiseAnd:
+        case Token::Type::BitwiseOr:
+        case Token::Type::BitwiseXor:
+        case Token::Type::CaseKeyword:
+        case Token::Type::Comma:
+        case Token::Type::Comparison:
+        case Token::Type::ConstantResolution:
+        case Token::Type::Divide:
+        case Token::Type::DivideEqual:
+        case Token::Type::Dot:
+        case Token::Type::DotDot:
+        case Token::Type::Equal:
+        case Token::Type::EqualEqual:
+        case Token::Type::EqualEqualEqual:
+        case Token::Type::Exponent:
+        case Token::Type::ExponentEqual:
+        case Token::Type::GreaterThan:
+        case Token::Type::GreaterThanOrEqual:
+        case Token::Type::HashRocket:
+        case Token::Type::InKeyword:
+        case Token::Type::LCurlyBrace:
+        case Token::Type::LBracket:
+        case Token::Type::LeftShift:
+        case Token::Type::LessThan:
+        case Token::Type::LessThanOrEqual:
+        case Token::Type::LParen:
+        case Token::Type::Match:
+        case Token::Type::Minus:
+        case Token::Type::MinusEqual:
+        case Token::Type::Modulus:
+        case Token::Type::ModulusEqual:
+        case Token::Type::Multiply:
+        case Token::Type::MultiplyEqual:
+        case Token::Type::Not:
+        case Token::Type::NotEqual:
+        case Token::Type::NotMatch:
+        case Token::Type::Or:
+        case Token::Type::OrKeyword:
+        case Token::Type::Plus:
+        case Token::Type::PlusEqual:
+        case Token::Type::RightShift:
+        case Token::Type::SafeNavigation:
+        case Token::Type::TernaryColon:
+        case Token::Type::TernaryQuestion:
+        case Token::Type::Tilde:
+            return true;
+        default:
+            return false;
+        }
     }
-
-    SharedPtr<String> file() const { return m_file; }
-    size_t line() const { return m_line; }
-    size_t column() const { return m_column; }
-
-    bool whitespace_precedes() const { return m_whitespace_precedes; }
-    void set_whitespace_precedes(bool whitespace_precedes) { m_whitespace_precedes = whitespace_precedes; }
 
     bool can_have_interpolation() {
         switch (m_type) {
@@ -741,6 +732,25 @@ public:
             return false;
         }
     }
+
+    void set_literal(const char *literal) { m_literal = new String(literal); }
+    void set_literal(SharedPtr<String> literal) { m_literal = literal; }
+    void set_literal(String literal) { m_literal = new String(literal); }
+
+    Optional<SharedPtr<String>> options() { return m_options; }
+    void set_options(SharedPtr<String> options) { m_options = options; }
+
+    long long get_integer() const { return m_integer; }
+    double get_double() const { return m_double; }
+
+    SharedPtr<String> file() const { return m_file; }
+    size_t line() const { return m_line; }
+    size_t column() const { return m_column; }
+
+    bool whitespace_precedes() const { return m_whitespace_precedes; }
+    void set_whitespace_precedes(bool whitespace_precedes) { m_whitespace_precedes = whitespace_precedes; }
+
+    void validate();
 
 private:
     Type m_type { Type::Invalid };
