@@ -942,9 +942,33 @@ Token Lexer::consume_global_variable() {
     switch (peek()) {
     case '?':
     case '!':
-    case '=': {
+    case '=':
+    case '@':
+    case '&':
+    case '`':
+    case '\'':
+    case '"':
+    case '+':
+    case '/':
+    case '\\':
+    case ';':
+    case '<':
+    case '>':
+    case '$':
+    case '*':
+    case '.':
+    case ':':
+    case '_':
+    case '~': {
         advance();
         SharedPtr<String> buf = new String("$");
+        buf->append_char(current_char());
+        advance();
+        return Token { Token::Type::GlobalVariable, buf, m_file, m_token_line, m_token_column };
+    }
+    case '-': {
+        SharedPtr<String> buf = new String("$-");
+        advance(2);
         buf->append_char(current_char());
         advance();
         return Token { Token::Type::GlobalVariable, buf, m_file, m_token_line, m_token_column };

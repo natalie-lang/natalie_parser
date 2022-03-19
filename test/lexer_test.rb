@@ -433,7 +433,12 @@ describe 'NatalieParser' do
     it 'tokenizes global variables' do
       expect(NatalieParser.tokens('$foo')).must_equal [{ type: :gvar, literal: :$foo }]
       expect(NatalieParser.tokens('$0')).must_equal [{ type: :gvar, literal: :$0 }]
-      expect(NatalieParser.tokens('$?')).must_equal [{ type: :gvar, literal: :$? }]
+      %i[$? $! $= $~ $@ $& $` $' $+ $/ $\\ $; $< $> $$ $* $. $: $" $_].each do |sym|
+        expect(NatalieParser.tokens(sym.to_s)).must_equal [{ type: :gvar, literal: sym }]
+      end
+      %i[$-0 $-F $-l $-I $-K $-a $-d $-i $-p $-v $-w].each do |sym|
+        expect(NatalieParser.tokens(sym.to_s)).must_equal [{ type: :gvar, literal: sym }]
+      end
     end
 
     it 'tokenizes dots' do
