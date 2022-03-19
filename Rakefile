@@ -131,6 +131,7 @@ OBJECT_FILES = SOURCES.sub('src/', 'build/').pathmap('%p.o')
 require 'tempfile'
 
 task :build_dir do
+  mkdir_p 'build/lexer' unless File.exist?('build/lexer')
   mkdir_p 'build/node' unless File.exist?('build/node')
 end
 
@@ -138,6 +139,9 @@ rule '.cpp.o' => ['src/%n'] + HEADERS do |t|
   sh "#{cxx} #{cxx_flags.join(' ')} -std=#{STANDARD} -c -o #{t.name} #{t.source}"
 end
 
+rule %r{lexer/.*\.cpp\.o$} => ['src/lexer/%n'] + HEADERS do |t|
+  sh "#{cxx} #{cxx_flags.join(' ')} -std=#{STANDARD} -c -o #{t.name} #{t.source}"
+end
 
 rule %r{node/.*\.cpp\.o$} => ['src/node/%n'] + HEADERS do |t|
   sh "#{cxx} #{cxx_flags.join(' ')} -std=#{STANDARD} -c -o #{t.name} #{t.source}"
