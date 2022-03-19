@@ -760,6 +760,7 @@ require_relative './test_helper'
         expect(parse('-> x, y { puts x, y }')).must_equal s(:block, s(:iter, s(:lambda), s(:args, :x, :y), s(:call, nil, :puts, s(:lvar, :x), s(:lvar, :y))))
         expect(parse('-> (x, y) { x; y }')).must_equal s(:block, s(:iter, s(:lambda), s(:args, :x, :y), s(:block, s(:lvar, :x), s(:lvar, :y))))
         expect(-> { parse('->') }).must_raise(SyntaxError)
+        expect(parse('foo -> { x } do y end')).must_equal s(:block, s(:iter, s(:call, nil, :foo, s(:iter, s(:lambda), 0, s(:call, nil, :x))), 0, s(:call, nil, :y)))
       end
 
       it 'parses case/when/else' do

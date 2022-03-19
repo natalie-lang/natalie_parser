@@ -698,6 +698,7 @@ public:
 
     bool can_be_first_arg_of_implicit_call() {
         switch (m_type) {
+        case Token::Type::Arrow:
         case Token::Type::BareName:
         case Token::Type::ClassVariable:
         case Token::Type::Constant:
