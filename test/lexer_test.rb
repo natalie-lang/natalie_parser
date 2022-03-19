@@ -312,6 +312,18 @@ describe 'NatalieParser' do
       ]
     end
 
+    it 'parses string character escape sequences' do
+      # \nnn           octal bit pattern, where nnn is 1-3 octal digits ([0-7])
+      expect(NatalieParser.tokens('"\7 \77 \777"')).must_equal [{ type: :dstr }, { type: :string, literal: "\a ? \xFF" }, { type: :dstrend }]
+      # TODO: other escapes
+      # \xnn           hexadecimal bit pattern, where nn is 1-2 hexadecimal digits ([0-9a-fA-F])
+      #expect(NatalieParser.tokens('"\x77"')).must_equal [{ type: :dstr }, { type: :string, literal: '\x77' }, { type: :dstrend }]
+      ## \unnnn         Unicode character, where nnnn is exactly 4 hexadecimal digits ([0-9a-fA-F])
+      #expect(NatalieParser.tokens('"\u7777"')).must_equal [{ type: :dstr }, { type: :string, literal: "\u6666" }, { type: :dstrend }]
+      ## \u{nnnn ...}   Unicode character(s), where each nnnn is 1-6 hexadecimal digits ([0-9a-fA-F])
+      #expect(NatalieParser.tokens('"\u{7777}"')).must_equal [{ type: :dstr }, { type: :string, literal: "\u6666" }, { type: :dstrend }]
+    end
+
     # FIXME
     # it 'string interpolation weirdness' do
     #   expect(NatalieParser.tokens('"#{"foo"}"')).must_equal [

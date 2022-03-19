@@ -75,7 +75,7 @@ public:
     }
 
     virtual void append_string(TM::String &string) override {
-        rb_ary_push(m_sexp, rb_str_new(string.c_str(), string.length()));
+        rb_ary_push(m_sexp, rb_utf8_str_new(string.c_str(), string.length()));
     }
 
     virtual void append_symbol(TM::String &name) override {

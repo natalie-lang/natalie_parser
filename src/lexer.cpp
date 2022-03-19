@@ -1259,16 +1259,31 @@ Token Lexer::consume_double_quoted_string(char delimiter) {
         if (c == '\\') {
             advance();
             c = current_char();
-            switch (c) {
-            case 'n':
-                buf->append_char('\n');
-                break;
-            case 't':
-                buf->append_char('\t');
-                break;
-            default:
-                buf->append_char(c);
-                break;
+            if (c >= '0' && c <= '7') {
+                // octal: 1-3 digits
+                int length = 0;
+                int number = 0;
+                do {
+                    number *= 8;
+                    number += c - '0';
+                    if (number > 255) number = 255;
+                    advance();
+                    c = current_char();
+                } while (c >= '0' && c <= '7' && ++length < 3);
+                rewind();
+                buf->append_char(number);
+            } else {
+                switch (c) {
+                case 'n':
+                    buf->append_char('\n');
+                    break;
+                case 't':
+                    buf->append_char('\t');
+                    break;
+                default:
+                    buf->append_char(c);
+                    break;
+                }
             }
         } else if (c == delimiter) {
             advance();

@@ -72,9 +72,11 @@ VALUE token_to_ruby(NatalieParser::Token token) {
     case NatalieParser::Token::Type::PercentLowerW:
     case NatalieParser::Token::Type::PercentUpperW:
     case NatalieParser::Token::Type::Regexp:
-    case NatalieParser::Token::Type::String:
-        rb_hash_aset(hash, ID2SYM(rb_intern("literal")), rb_str_new2(lit));
+    case NatalieParser::Token::Type::String: {
+        auto literal = token.literal_string();
+        rb_hash_aset(hash, ID2SYM(rb_intern("literal")), rb_utf8_str_new(literal->c_str(), literal->length()));
         break;
+    }
     case NatalieParser::Token::Type::BareName:
     case NatalieParser::Token::Type::ClassVariable:
     case NatalieParser::Token::Type::Constant:
