@@ -160,7 +160,7 @@ require_relative './test_helper'
         expect(parse('/foo/')).must_equal s(:block, s(:lit, /foo/))
         expect(parse('/foo/i')).must_equal s(:block, s(:lit, /foo/i))
         expect(parse('//mix')).must_equal s(:block, s(:lit, //mix))
-        expect(parse('/#{1+1}/mix')).must_equal s(:block, s(:dregx, '', s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), 7))
+        expect(parse('/#{1+1}/mixn')).must_equal s(:block, s(:dregx, '', s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), 39))
         expect(parse('/foo #{1+1}/')).must_equal s(:block, s(:dregx, 'foo ', s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1)))))
         expect(parse('/^$(.)[.]{1}.*.+.?\^\$\.\(\)\[\]\{\}\w\W\d\D\h\H\s\S\R\*\+\?/')).must_equal s(:block, s(:lit, /^$(.)[.]{1}.*.+.?\^\$\.\(\)\[\]\{\}\w\W\d\D\h\H\s\S\R\*\+\?/))
         expect(parse("/\\n\\\\n/")).must_equal s(:block, s(:lit, /\n\\n/))

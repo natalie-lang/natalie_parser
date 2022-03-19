@@ -1098,6 +1098,9 @@ int Parser::parse_regexp_options(String &options_string) {
         case 'm':
             options |= 4;
             break;
+        case 'n':
+            options |= 32;
+            break;
         default:
             break;
         }
