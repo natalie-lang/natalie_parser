@@ -140,6 +140,7 @@ Parser::Precedence Parser::get_precedence(Token &token, Node *left) {
     case Token::Type::TernaryColon:
         return Precedence::TERNARY;
     case Token::Type::Not:
+    case Token::Type::Tilde:
         return Precedence::UNARY_PLUS;
     default:
         break;
@@ -1389,40 +1390,47 @@ Node *Parser::parse_unary_operator(LocalsHashmap &locals) {
     advance();
     auto precedence = get_precedence(token);
     auto receiver = parse_expression(precedence, locals);
-    switch (receiver->type()) {
-    case Node::Type::Integer: {
-        auto number = static_cast<IntegerNode *>(receiver)->number();
-        if (token.type() == Token::Type::Minus)
-            number = -number;
-        return new IntegerNode {
-            Token { Token::Type::Integer, number, token.file(), token.line(), token.column() },
-            number,
-        };
-    }
-    case Node::Type::Float: {
-        auto number = static_cast<FloatNode *>(receiver)->number();
-        if (token.type() == Token::Type::Minus)
-            number = -number;
-        return new FloatNode {
-            Token { Token::Type::Float, number, token.file(), token.line(), token.column() },
-            number,
-        };
-    }
-    default: {
-        SharedPtr<String> message = new String("");
-        switch (token.type()) {
-        case Token::Type::Minus:
-            *message = "-@";
-            break;
-        case Token::Type::Plus:
-            *message = "+@";
-            break;
+    if ((token.type() == Token::Type::Minus || token.type() == Token::Type::Plus) && receiver->is_numeric()) {
+        switch (receiver->type()) {
+        case Node::Type::Integer: {
+            if (token.type() == Token::Type::Minus) {
+                auto number = -(static_cast<IntegerNode *>(receiver)->number());
+                return new IntegerNode {
+                    Token { Token::Type::Integer, number, token.file(), token.line(), token.column() },
+                    number,
+                };
+            }
+            return receiver;
+        }
+        case Node::Type::Float: {
+            if (token.type() == Token::Type::Minus) {
+                auto number = -(static_cast<FloatNode *>(receiver)->number());
+                return new FloatNode {
+                    Token { Token::Type::Float, number, token.file(), token.line(), token.column() },
+                    number,
+                };
+            }
+            return receiver;
+        }
         default:
             TM_UNREACHABLE();
         }
-        return new CallNode { token, receiver, message };
     }
+    SharedPtr<String> message = new String("");
+    switch (token.type()) {
+    case Token::Type::Minus:
+        *message = "-@";
+        break;
+    case Token::Type::Plus:
+        *message = "+@";
+        break;
+    case Token::Type::Tilde:
+        *message = "~";
+        break;
+    default:
+        TM_UNREACHABLE();
     }
+    return new CallNode { token, receiver, message };
 }
 
 Node *Parser::parse_word_array(LocalsHashmap &locals) {
@@ -2062,6 +2070,7 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
         return &Parser::parse_lit;
     case Type::Minus:
     case Type::Plus:
+    case Type::Tilde:
         return &Parser::parse_unary_operator;
     case Type::ModuleKeyword:
         return &Parser::parse_module;

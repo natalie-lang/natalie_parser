@@ -549,7 +549,7 @@ Token Lexer::build_next_token() {
         }
     case '~':
         advance();
-        return Token { Token::Type::BinaryOnesComplement, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::Tilde, m_file, m_token_line, m_token_column };
     case '?':
         advance();
         return Token { Token::Type::TernaryQuestion, m_file, m_token_line, m_token_column };

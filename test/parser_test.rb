@@ -45,6 +45,8 @@ require_relative './test_helper'
         expect(parse('+2*8')).must_equal s(:block, s(:call, s(:lit, 2), :*, s(:lit, 8)))
         expect(parse('+1**2')).must_equal s(:block, s(:call, s(:lit, 1), :**, s(:lit, 2)))
         expect(parse('-1**2')).must_equal s(:block, s(:call, s(:call, s(:lit, 1), :**, s(:lit, 2)), :-@))
+        expect(parse('~1')).must_equal s(:block, s(:call, s(:lit, 1), :~))
+        expect(parse('~foo')).must_equal s(:block, s(:call, s(:call, nil, :foo), :~))
       end
 
       it 'parses operator expressions' do

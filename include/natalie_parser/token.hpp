@@ -23,7 +23,6 @@ public:
         BEGINKeyword,
         BitwiseAnd,
         BitwiseAndEqual,
-        BinaryOnesComplement,
         BitwiseOr,
         BitwiseOrEqual,
         BitwiseXor,
@@ -133,6 +132,7 @@ public:
         TernaryColon,
         TernaryQuestion,
         ThenKeyword,
+        Tilde,
         TrueKeyword,
         UndefKeyword,
         UnlessKeyword,
@@ -257,8 +257,6 @@ public:
             return "&";
         case Type::BitwiseAndEqual:
             return "&=";
-        case Type::BinaryOnesComplement:
-            return "~";
         case Type::BitwiseOr:
             return "|";
         case Type::BitwiseOrEqual:
@@ -479,6 +477,8 @@ public:
             return "?";
         case Type::ThenKeyword:
             return "then";
+        case Type::Tilde:
+            return "~";
         case Type::TrueKeyword:
             return "true";
         case Type::UndefKeyword:
@@ -566,7 +566,6 @@ public:
 
     bool is_operator() const {
         switch (m_type) {
-        case Token::Type::BinaryOnesComplement:
         case Token::Type::BitwiseAnd:
         case Token::Type::BitwiseOr:
         case Token::Type::BitwiseXor:
@@ -590,6 +589,7 @@ public:
         case Token::Type::NotMatch:
         case Token::Type::Plus:
         case Token::Type::RightShift:
+        case Token::Type::Tilde:
             return true;
         default:
             return false;
@@ -632,7 +632,6 @@ public:
             || m_type == Token::Type::AndKeyword
             || m_type == Token::Type::Arrow
             || m_type == Token::Type::BitwiseAnd
-            || m_type == Token::Type::BinaryOnesComplement
             || m_type == Token::Type::BitwiseOr
             || m_type == Token::Type::BitwiseXor
             || m_type == Token::Type::CaseKeyword
@@ -675,7 +674,8 @@ public:
             || m_type == Token::Type::RightShift
             || m_type == Token::Type::SafeNavigation
             || m_type == Token::Type::TernaryColon
-            || m_type == Token::Type::TernaryQuestion;
+            || m_type == Token::Type::TernaryQuestion
+            || m_type == Token::Type::Tilde;
     }
 
     SharedPtr<String> file() const { return m_file; }
