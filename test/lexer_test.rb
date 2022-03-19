@@ -97,11 +97,13 @@ describe 'NatalieParser' do
 
     it 'tokenizes regexps' do
       expect(NatalieParser.tokens('//mix')).must_equal [{ type: :dregx }, { type: :dregxend, options: 'mix' }]
-      expect(NatalieParser.tokens('/foo/i')).must_equal [
-        { type: :dregx },
-        { type: :string, literal: 'foo' },
-        { type: :dregxend, options: 'i' },
-      ]
+      %w[i m x o u e s n].each do |flag|
+        expect(NatalieParser.tokens("/foo/#{flag}")).must_equal [
+          { type: :dregx },
+          { type: :string, literal: 'foo' },
+          { type: :dregxend, options: flag },
+        ]
+      end
       expect(NatalieParser.tokens('/foo/')).must_equal [{ type: :dregx }, { type: :string, literal: 'foo' }, { type: :dregxend }]
       expect(NatalieParser.tokens('/\/\*\/\n/')).must_equal [
         { type: :dregx },

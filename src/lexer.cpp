@@ -1364,7 +1364,7 @@ Token Lexer::consume_regexp(char delimiter) {
             advance();
             SharedPtr<String> options = new String("");
             while ((c = current_char())) {
-                if (c == 'i' || c == 'm' || c == 'x' || c == 'o') {
+                if (c == 'i' || c == 'm' || c == 'x' || c == 'o' || c == 'u' || c == 'e' || c == 's' || c == 'n') {
                     options->append_char(c);
                     advance();
                 } else {
