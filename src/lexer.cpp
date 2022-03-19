@@ -275,8 +275,12 @@ Token Lexer::build_next_token() {
         case 'r':
             switch (peek()) {
             case '/':
-                advance(2);
-                return consume_regexp('/');
+            case '|': {
+                advance();
+                char c = current_char();
+                advance();
+                return consume_regexp(c);
+            }
             case '[':
                 advance(2);
                 return consume_regexp(']');

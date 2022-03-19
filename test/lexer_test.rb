@@ -154,6 +154,11 @@ describe 'NatalieParser' do
         { type: :string, literal: "a/b/c" },
         { type: :dregxend },
       ]
+      expect(NatalieParser.tokens("%r|a/b/c|")).must_equal [
+        { type: :dregx },
+        { type: :string, literal: "a/b/c" },
+        { type: :dregxend },
+      ]
     end
 
     it 'tokenizes operators' do
