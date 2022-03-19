@@ -29,7 +29,7 @@ enum class Parser::Precedence {
     DEFARGS, // def foo(a, b) and { |a, b| ... }
     SUM, // + -
     PRODUCT, // * / %
-    PREFIX, // -1 +1
+    NUMBERDOT, // 2.bar 2&.bar
     UNARY_MINUS, // -
     EXPONENT, // **
     UNARY_PLUS, // ! ~ +
@@ -90,6 +90,8 @@ Parser::Precedence Parser::get_precedence(Token &token, Node *left) {
         return Precedence::CONSTANTRESOLUTION;
     case Token::Type::Dot:
     case Token::Type::SafeNavigation:
+        if (left && left->is_numeric())
+            return Precedence::NUMBERDOT;
         return Precedence::DOT;
     case Token::Type::EqualEqual:
     case Token::Type::EqualEqualEqual:
@@ -2254,4 +2256,5 @@ void Parser::throw_unexpected(const Token &token, const char *expected) {
 void Parser::throw_unexpected(const char *expected) {
     throw_unexpected(current_token(), expected);
 }
+
 }

@@ -24,6 +24,8 @@ public:
 
     virtual Type type() const override { return Type::Integer; }
 
+    virtual bool is_numeric() const override { return true; }
+
     long long number() const { return m_number; }
 
     virtual void transform(Creator *creator) const override {

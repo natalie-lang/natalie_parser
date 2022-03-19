@@ -92,6 +92,8 @@ public:
 
     virtual bool is_callable() const { return false; }
 
+    virtual bool is_numeric() const { return false; }
+
     virtual Node *clone() const {
         if (type() == Type::Invalid)
             printf("Trying to clone() an invalid Node\n");

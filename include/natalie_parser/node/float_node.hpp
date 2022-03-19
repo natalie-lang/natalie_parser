@@ -17,6 +17,8 @@ public:
 
     virtual Type type() const override { return Type::Float; }
 
+    virtual bool is_numeric() const override { return true; }
+
     double number() const { return m_number; }
 
     virtual void transform(Creator *creator) const override {

@@ -35,6 +35,18 @@ require_relative './test_helper'
         expect(parse('-1.5')).must_equal s(:block, s(:lit, -1.5))
       end
 
+      it 'parses unary operators' do
+        expect(parse('-foo.odd?')).must_equal s(:block, s(:call, s(:call, s(:call, nil, :foo), :odd?), :-@))
+        expect(parse('-2.odd?')).must_equal s(:block, s(:call, s(:lit, -2), :odd?))
+        expect(parse('+2.even?')).must_equal s(:block, s(:call, s(:lit, 2), :even?))
+        expect(parse('-(2*8)')).must_equal s(:block, s(:call, s(:call, s(:lit, 2), :*, s(:lit, 8)), :-@))
+        expect(parse('+(2*8)')).must_equal s(:block, s(:call, s(:call, s(:lit, 2), :*, s(:lit, 8)), :+@))
+        expect(parse('-2*8')).must_equal s(:block, s(:call, s(:lit, -2), :*, s(:lit, 8)))
+        expect(parse('+2*8')).must_equal s(:block, s(:call, s(:lit, 2), :*, s(:lit, 8)))
+        expect(parse('+1**2')).must_equal s(:block, s(:call, s(:lit, 1), :**, s(:lit, 2)))
+        expect(parse('-1**2')).must_equal s(:block, s(:call, s(:call, s(:lit, 1), :**, s(:lit, 2)), :-@))
+      end
+
       it 'parses operator expressions' do
         expect(parse('1 + 3')).must_equal s(:block, s(:call, s(:lit, 1), :+, s(:lit, 3)))
         expect(parse('1+3')).must_equal s(:block, s(:call, s(:lit, 1), :+, s(:lit, 3)))
@@ -91,12 +103,8 @@ require_relative './test_helper'
         expect(parse('foo&.bar')).must_equal s(:block, s(:safe_call, s(:call, nil, :foo), :bar))
         expect(parse('foo&.bar 1')).must_equal s(:block, s(:safe_call, s(:call, nil, :foo), :bar, s(:lit, 1)))
         expect(parse('foo&.bar x')).must_equal s(:block, s(:safe_call, s(:call, nil, :foo), :bar, s(:call, nil, :x)))
-        expect(parse('-(2*8)')).must_equal s(:block, s(:call, s(:call, s(:lit, 2), :*, s(:lit, 8)), :-@))
-        expect(parse('+(2*8)')).must_equal s(:block, s(:call, s(:call, s(:lit, 2), :*, s(:lit, 8)), :+@))
         expect(parse('foo <=> bar')).must_equal s(:block, s(:call, s(:call, nil, :foo), :<=>, s(:call, nil, :bar)))
         expect(parse('1**2')).must_equal s(:block, s(:call, s(:lit, 1), :**, s(:lit, 2)))
-        expect(parse('+1**2')).must_equal s(:block, s(:call, s(:lit, 1), :**, s(:lit, 2)))
-        expect(parse('-1**2')).must_equal s(:block, s(:call, s(:call, s(:lit, 1), :**, s(:lit, 2)), :-@))
       end
 
       it 'parses and/or' do
