@@ -17,6 +17,8 @@ public:
         rb_ivar_set(m_sexp, rb_intern("@column"), rb_int_new(node->column() + 1));
     }
 
+    virtual ~MRICreator() { }
+
     void reset() {
         m_sexp = rb_class_new_instance(0, nullptr, Sexp);
     }

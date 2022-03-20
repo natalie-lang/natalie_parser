@@ -23,6 +23,7 @@ task :clean do
     build/build.log
     build/*.o
     build/node
+    build/asan_test
     ext/natalie_parser/*.{h,log,o}
   ]].each { |path| rm_rf path if File.exist?(path) }
 end
@@ -38,8 +39,9 @@ end
 task distclean: :clobber
 
 desc 'Run the test suite'
-task test: :build do
+task test: [:build, 'build/asan_test'] do
   sh 'bundle exec ruby test/all.rb'
+  sh 'build/asan_test'
 end
 
 desc 'Show line counts for the project'
@@ -166,6 +168,10 @@ file "ext/natalie_parser/natalie_parser.#{so_ext}" => [
   SH
 end
 
+file 'build/asan_test' => ['test/asan_test.cpp', :library] do |t|
+  sh "#{cxx} #{cxx_flags.join(' ')} -std=#{STANDARD} -o #{t.name} #{t.source} -L build -lnatalie_parser"
+end
+
 task :bundle_install do
   sh 'bundle check || bundle install'
 end
@@ -208,6 +214,7 @@ def cxx_flags
         -Wall
         -Wextra
         -Werror
+        -fsanitize=address
       ]
     end
   base_flags + include_paths.map { |path| "-I #{path}" }

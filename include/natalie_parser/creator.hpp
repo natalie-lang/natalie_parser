@@ -31,6 +31,8 @@ public:
     virtual void append_true() = 0;
     virtual void wrap(const char *type) = 0;
 
+    virtual ~Creator() { }
+
     void append_nil_sexp() {
         append_sexp([&](Creator *c) { c->set_type("nil"); });
     }
