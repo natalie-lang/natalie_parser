@@ -13,12 +13,12 @@ public:
         , m_file { token.file() }
         , m_line { token.line() }
         , m_column { token.column() }
-        , m_size { strlen(token.literal()) } { }
+        , m_size { m_input->size() } { }
 
-    SharedPtr<Vector<Token>> tokens();
+    void tokens(Vector<Token> &tokens);
 
 private:
-    void tokenize_interpolation(SharedPtr<Vector<Token>>);
+    void tokenize_interpolation(Vector<Token> &tokens);
 
     char current_char() {
         if (m_index >= m_size)

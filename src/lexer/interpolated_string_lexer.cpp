@@ -5,14 +5,13 @@
 
 namespace NatalieParser {
 
-SharedPtr<Vector<Token>> InterpolatedStringLexer::tokens() {
-    SharedPtr<Vector<Token>> tokens = new Vector<Token> {};
+void InterpolatedStringLexer::tokens(Vector<Token> &tokens) {
     SharedPtr<String> raw = new String("");
     while (m_index < m_size) {
         char c = current_char();
         if (c == '#' && peek() == '{') {
-            if (!raw->is_empty() || tokens->is_empty()) {
-                tokens->push(Token { Token::Type::String, new String(raw.ref()), m_file, m_line, m_column });
+            if (!raw->is_empty() || tokens.is_empty()) {
+                tokens.push(Token { Token::Type::String, new String(raw.ref()), m_file, m_line, m_column });
                 *raw = "";
             }
             m_index += 2;
@@ -23,11 +22,10 @@ SharedPtr<Vector<Token>> InterpolatedStringLexer::tokens() {
         }
     }
     if (!raw->is_empty())
-        tokens->push(Token { Token::Type::String, raw, m_file, m_line, m_column });
-    return tokens;
+        tokens.push(Token { Token::Type::String, raw, m_file, m_line, m_column });
 }
 
-void InterpolatedStringLexer::tokenize_interpolation(SharedPtr<Vector<Token>> tokens) {
+void InterpolatedStringLexer::tokenize_interpolation(Vector<Token> &tokens) {
     size_t start_index = m_index;
     size_t curly_brace_count = 1;
     while (m_index < m_size && curly_brace_count > 0) {
@@ -55,18 +53,18 @@ void InterpolatedStringLexer::tokenize_interpolation(SharedPtr<Vector<Token>> to
     // part = ":foo" (len = 4)
     size_t len = m_index - start_index - 1;
     auto part = m_input->substring(start_index, len);
-    auto lexer = new Lexer { new String(part), m_file };
-    tokens->push(Token { Token::Type::EvaluateToStringBegin, m_file, m_line, m_column });
-    auto part_tokens = lexer->tokens();
+    auto lexer = Lexer { new String(part), m_file };
+    tokens.push(Token { Token::Type::EvaluateToStringBegin, m_file, m_line, m_column });
+    auto part_tokens = lexer.tokens();
     for (auto token : *part_tokens) {
         if (token.is_eof()) {
-            tokens->push(Token { Token::Type::Eol, m_file, m_line, m_column });
+            tokens.push(Token { Token::Type::Eol, m_file, m_line, m_column });
             break;
         } else {
-            tokens->push(token);
+            tokens.push(token);
         }
     }
-    tokens->push(Token { Token::Type::EvaluateToStringEnd, m_file, m_line, m_column });
+    tokens.push(Token { Token::Type::EvaluateToStringEnd, m_file, m_line, m_column });
 }
 
 }

@@ -40,8 +40,9 @@ SharedPtr<Vector<Token>> Lexer::tokens() {
             }
             auto string_lexer = InterpolatedStringLexer { token };
             tokens->push(Token { begin_token_type, token.file(), token.line(), token.column() });
-            auto string_tokens = string_lexer.tokens();
-            for (auto token : *string_tokens) {
+            Vector<Token> string_tokens;
+            string_lexer.tokens(string_tokens);
+            for (auto token : string_tokens) {
                 tokens->push(token);
             }
             auto end_token = Token { end_token_type, token.file(), token.line(), token.column() };
