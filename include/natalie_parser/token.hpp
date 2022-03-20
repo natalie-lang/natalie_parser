@@ -13,6 +13,7 @@ class Token {
 public:
     enum class Type {
         Invalid, // must be first
+        InvalidUnicodeEscape,
         AliasKeyword,
         And,
         AndEqual,
@@ -358,6 +359,7 @@ public:
         case Type::InterpolatedStringEnd:
             return "dstrend";
         case Type::Invalid:
+        case Type::InvalidUnicodeEscape:
             return nullptr;
         case Type::LCurlyBrace:
             return "{";
@@ -604,8 +606,19 @@ public:
     bool is_rparen() const { return m_type == Type::RParen; }
     bool is_semicolon() const { return m_type == Type::Semicolon; }
     bool is_splat() const { return m_type == Type::Multiply || m_type == Type::Exponent; }
-    bool is_valid() const { return m_type != Type::Invalid; }
     bool is_when_keyword() const { return m_type == Type::WhenKeyword; }
+
+    bool is_valid() const {
+        switch (m_type) {
+        case Type::Invalid:
+        case Type::InvalidUnicodeEscape:
+        case Type::UnterminatedRegexp:
+        case Type::UnterminatedString:
+            return false;
+        default:
+            return true;
+        }
+    }
 
     bool can_follow_collapsible_newline() {
         switch (m_type) {

@@ -319,8 +319,10 @@ describe 'NatalieParser' do
       expect(NatalieParser.tokens('"\x77 \xaB"')).must_equal [{ type: :dstr }, { type: :string, literal: "w \xAB" }, { type: :dstrend }]
       # \unnnn         Unicode character, where nnnn is exactly 4 hexadecimal digits ([0-9a-fA-F])
       expect(NatalieParser.tokens('"\u7777 \uabcd"')).must_equal [{ type: :dstr }, { type: :string, literal: "\u7777 \uabcd" }, { type: :dstrend }]
-      ## \u{nnnn ...}   Unicode character(s), where each nnnn is 1-6 hexadecimal digits ([0-9a-fA-F])
-      #expect(NatalieParser.tokens('"\u{7777}"')).must_equal [{ type: :dstr }, { type: :string, literal: "\u7777" }, { type: :dstrend }]
+      # \u{nnnn ...}   Unicode character(s), where each nnnn is 1-6 hexadecimal digits ([0-9a-fA-F])
+      expect(NatalieParser.tokens('"\u{0066 06f 6F}"')).must_equal [{ type: :dstr }, { type: :string, literal: "foo" }, { type: :dstrend }]
+      error = expect(-> { NatalieParser.tokens('"\u{0066x}"') }).must_raise(SyntaxError)
+      expect(error.message).must_equal "1: invalid Unicode escape"
     end
 
     # FIXME

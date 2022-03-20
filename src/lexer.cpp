@@ -1258,6 +1258,8 @@ void Lexer::utf32_codepoint_to_utf8(String &buf, long long codepoint) {
         buf.append_char(0b10000000 | ((codepoint >> 12) & 0x3f));
         buf.append_char(0b10000000 | ((codepoint >> 6) & 0x3f));
         buf.append_char(0b10000000 | (codepoint & 0x3f));
+    } else {
+        TM_UNREACHABLE();
     }
 }
 
@@ -1275,10 +1277,26 @@ Token Lexer::consume_double_quoted_string(char delimiter) {
                 auto number = consume_hex_number(2);
                 buf->append_char(number);
             } else if (c == 'u') {
-                // unicode: 4 digits
-                advance();
-                auto codepoint = consume_hex_number(4);
-                utf32_codepoint_to_utf8(buf.ref(), codepoint);
+                c = next();
+                if (c == '{') {
+                    c = next();
+                    // unicode characters, space separated, 1-6 hex digits
+                    while (c != '}') {
+                        if (!isxdigit(c))
+                            return Token { Token::Type::InvalidUnicodeEscape, c, m_file, m_cursor_line, m_cursor_column };
+                        auto codepoint = consume_hex_number(6);
+                        utf32_codepoint_to_utf8(buf.ref(), codepoint);
+                        c = current_char();
+                        while (c == ' ')
+                            c = next();
+                    }
+                    if (c == '}')
+                        advance();
+                } else {
+                    // unicode: 4 hex digits
+                    auto codepoint = consume_hex_number(4);
+                    utf32_codepoint_to_utf8(buf.ref(), codepoint);
+                }
             } else {
                 switch (c) {
                 case 'n':
