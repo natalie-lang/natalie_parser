@@ -1144,13 +1144,7 @@ Token Lexer::consume_numeric(bool negative) {
             char c = current_char();
             if (!(c >= '0' && c <= '7'))
                 return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column };
-            do {
-                number *= 8;
-                number += c - '0';
-                c = next();
-                if (c == '_')
-                    c = next();
-            } while (c >= '0' && c <= '7');
+            number = consume_octal_number(0, true);
             if (negative)
                 number *= -1;
             return Token { Token::Type::Integer, number, m_file, m_token_line, m_token_column };
@@ -1161,18 +1155,7 @@ Token Lexer::consume_numeric(bool negative) {
             char c = current_char();
             if (!isxdigit(c))
                 return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column };
-            do {
-                number *= 16;
-                if (c >= 'a' && c <= 'f')
-                    number += c - 97 + 10;
-                else if (c >= 'A' && c <= 'F')
-                    number += c - 65 + 10;
-                else
-                    number += c - '0';
-                c = next();
-                if (c == '_')
-                    c = next();
-            } while (isxdigit(c));
+            number = consume_hex_number(0, true);
             if (negative)
                 number *= -1;
             return Token { Token::Type::Integer, number, m_file, m_token_line, m_token_column };
@@ -1225,41 +1208,77 @@ Token Lexer::consume_numeric(bool negative) {
     }
 }
 
+long long Lexer::consume_hex_number(int max_length, bool allow_underscore) {
+    char c = current_char();
+    int length = 0;
+    long long number = 0;
+    do {
+        number *= 16;
+        if (c >= 'a' && c <= 'f')
+            number += c - 'a' + 10;
+        else if (c >= 'A' && c <= 'F')
+            number += c - 'A' + 10;
+        else
+            number += c - '0';
+        c = next();
+        if (allow_underscore && c == '_')
+            c = next();
+    } while (isxdigit(c) && (max_length == 0 || ++length < max_length));
+    return number;
+}
+
+long long Lexer::consume_octal_number(int max_length, bool allow_underscore) {
+    char c = current_char();
+    int length = 0;
+    long long number = 0;
+    do {
+        number *= 8;
+        number += c - '0';
+        c = next();
+        if (allow_underscore && c == '_')
+            c = next();
+    } while (c >= '0' && c <= '7' && (max_length == 0 || ++length < max_length));
+    return number;
+}
+
+// public domain
+// https://gist.github.com/Miouyouyou/864130e8734afe3f806512b14022226f
+void Lexer::utf32_codepoint_to_utf8(String &buf, long long codepoint) {
+    if (codepoint < 0x80) {
+        buf.append_char(codepoint);
+    } else if (codepoint < 0x800) { // 00000yyy yyxxxxxx
+        buf.append_char(0b11000000 | (codepoint >> 6));
+        buf.append_char(0b10000000 | (codepoint & 0x3f));
+    } else if (codepoint < 0x10000) { // zzzzyyyy yyxxxxxx
+        buf.append_char(0b11100000 | (codepoint >> 12));
+        buf.append_char(0b10000000 | ((codepoint >> 6) & 0x3f));
+        buf.append_char(0b10000000 | (codepoint & 0x3f));
+    } else if (codepoint < 0x200000) { // 000uuuuu zzzzyyyy yyxxxxxx
+        buf.append_char(0b11110000 | (codepoint >> 18));
+        buf.append_char(0b10000000 | ((codepoint >> 12) & 0x3f));
+        buf.append_char(0b10000000 | ((codepoint >> 6) & 0x3f));
+        buf.append_char(0b10000000 | (codepoint & 0x3f));
+    }
+}
+
 Token Lexer::consume_double_quoted_string(char delimiter) {
     SharedPtr<String> buf = new String("");
-    char c = current_char();
-    while (c) {
+    while (auto c = current_char()) {
         if (c == '\\') {
             c = next();
             if (c >= '0' && c <= '7') {
-                // octal: 1-3 digits
-                int length = 0;
-                int number = 0;
-                do {
-                    number *= 8;
-                    number += c - '0';
-                    if (number > 255) number = 255;
-                    c = next();
-                } while (c >= '0' && c <= '7' && ++length < 3);
-                rewind();
+                auto number = consume_octal_number(3);
                 buf->append_char(number);
             } else if (c == 'x') {
                 // hex: 1-2 digits
-                c = next();
-                int length = 0;
-                int number = 0;
-                do {
-                    number *= 16;
-                    if (c >= 'a' && c <= 'f')
-                        number += c - 'a' + 10;
-                    else if (c >= 'A' && c <= 'F')
-                        number += c - 'A' + 10;
-                    else
-                        number += c - '0';
-                    c = next();
-                } while (isxdigit(c) && ++length < 2);
-                rewind();
+                advance();
+                auto number = consume_hex_number(2);
                 buf->append_char(number);
+            } else if (c == 'u') {
+                // unicode: 4 digits
+                advance();
+                auto codepoint = consume_hex_number(4);
+                utf32_codepoint_to_utf8(buf.ref(), codepoint);
             } else {
                 switch (c) {
                 case 'n':
@@ -1272,6 +1291,7 @@ Token Lexer::consume_double_quoted_string(char delimiter) {
                     buf->append_char(c);
                     break;
                 }
+                advance();
             }
         } else if (c == delimiter) {
             advance();
@@ -1279,8 +1299,8 @@ Token Lexer::consume_double_quoted_string(char delimiter) {
             return token;
         } else {
             buf->append_char(c);
+            advance();
         }
-        c = next();
     }
     return Token { Token::Type::UnterminatedString, buf, m_file, m_token_line, m_token_column };
 }

@@ -49,12 +49,15 @@ private:
     Token consume_global_variable();
     Token consume_heredoc();
     Token consume_numeric(bool negative = false);
+    long long consume_hex_number(int max_length = 0, bool allow_underscore = false);
+    long long consume_octal_number(int max_length = 0, bool allow_underscore = false);
     Token consume_double_quoted_string(char delimiter);
     Token consume_single_quoted_string(char delimiter);
     Token consume_quoted_array_without_interpolation(char delimiter, Token::Type type);
     Token consume_quoted_array_with_interpolation(char delimiter, Token::Type type);
     Token consume_regexp(char delimiter);
     SharedPtr<String> consume_non_whitespace();
+    void utf32_codepoint_to_utf8(String &buf, long long codepoint);
 
     SharedPtr<String> m_input;
     SharedPtr<String> m_file;
@@ -78,5 +81,4 @@ private:
     // the previously-matched token
     Token m_last_token {};
 };
-
 }

@@ -317,10 +317,10 @@ describe 'NatalieParser' do
       expect(NatalieParser.tokens('"\7 \77 \777"')).must_equal [{ type: :dstr }, { type: :string, literal: "\a ? \xFF" }, { type: :dstrend }]
       # \xnn           hexadecimal bit pattern, where nn is 1-2 hexadecimal digits ([0-9a-fA-F])
       expect(NatalieParser.tokens('"\x77 \xaB"')).must_equal [{ type: :dstr }, { type: :string, literal: "w \xAB" }, { type: :dstrend }]
-      ## \unnnn         Unicode character, where nnnn is exactly 4 hexadecimal digits ([0-9a-fA-F])
-      #expect(NatalieParser.tokens('"\u7777"')).must_equal [{ type: :dstr }, { type: :string, literal: "\u6666" }, { type: :dstrend }]
+      # \unnnn         Unicode character, where nnnn is exactly 4 hexadecimal digits ([0-9a-fA-F])
+      expect(NatalieParser.tokens('"\u7777 \uabcd"')).must_equal [{ type: :dstr }, { type: :string, literal: "\u7777 \uabcd" }, { type: :dstrend }]
       ## \u{nnnn ...}   Unicode character(s), where each nnnn is 1-6 hexadecimal digits ([0-9a-fA-F])
-      #expect(NatalieParser.tokens('"\u{7777}"')).must_equal [{ type: :dstr }, { type: :string, literal: "\u6666" }, { type: :dstrend }]
+      #expect(NatalieParser.tokens('"\u{7777}"')).must_equal [{ type: :dstr }, { type: :string, literal: "\u7777" }, { type: :dstrend }]
     end
 
     # FIXME
