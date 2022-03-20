@@ -276,8 +276,7 @@ Token Lexer::build_next_token() {
             switch (peek()) {
             case '/':
             case '|': {
-                advance();
-                char c = current_char();
+                char c = next();
                 advance();
                 return consume_regexp(c);
             }
@@ -326,8 +325,7 @@ Token Lexer::build_next_token() {
             switch (peek()) {
             case '/':
             case '|': {
-                advance();
-                char c = current_char();
+                char c = next();
                 advance();
                 return consume_quoted_array_without_interpolation(c, Token::Type::PercentLowerW);
             }
@@ -347,8 +345,7 @@ Token Lexer::build_next_token() {
             switch (peek()) {
             case '/':
             case '|': {
-                advance();
-                char c = current_char();
+                char c = next();
                 advance();
                 return consume_quoted_array_without_interpolation(c, Token::Type::PercentUpperW);
             }
@@ -554,8 +551,7 @@ Token Lexer::build_next_token() {
         advance();
         return Token { Token::Type::TernaryQuestion, m_file, m_token_line, m_token_column };
     case ':': {
-        advance();
-        auto c = current_char();
+        auto c = next();
         if (c == ':') {
             advance();
             return Token { Token::Type::ConstantResolution, m_file, m_token_line, m_token_column };
@@ -665,8 +661,7 @@ Token Lexer::build_next_token() {
     case '#':
         char c;
         do {
-            advance();
-            c = current_char();
+            c = next();
         } while (c && c != '\n' && c != '\r');
         return Token { Token::Type::Comment, m_file, m_token_line, m_token_column };
     case '0':
@@ -786,7 +781,7 @@ Token Lexer::build_next_token() {
 Token Lexer::consume_symbol() {
     char c = current_char();
     SharedPtr<String> buf = new String("");
-    auto gobble = [&buf, this](char c) -> char { buf->append_char(c); advance(); return current_char(); };
+    auto gobble = [&buf, this](char c) -> char { buf->append_char(c); return next(); };
     switch (c) {
     case '@':
         c = gobble(c);
@@ -903,8 +898,7 @@ Token Lexer::consume_word(Token::Type type) {
     SharedPtr<String> buf = new String("");
     do {
         buf->append_char(c);
-        advance();
-        c = current_char();
+        c = next();
     } while (is_identifier_char(c));
     switch (c) {
     case '?':
@@ -1067,8 +1061,7 @@ Token Lexer::consume_heredoc() {
     }
 
     if (delimiter) {
-        advance();
-        char c = current_char();
+        char c = next();
         while (c != delimiter) {
             switch (c) {
             case '\n':
@@ -1076,9 +1069,8 @@ Token Lexer::consume_heredoc() {
             case 0:
                 return Token { Token::Type::UnterminatedString, "heredoc identifier", m_file, m_token_line, m_token_column };
             default:
-                advance();
                 heredoc_name.append_char(c);
-                c = current_char();
+                c = next();
             }
         }
         advance();
@@ -1138,12 +1130,9 @@ Token Lexer::consume_numeric(bool negative) {
             do {
                 number *= 10;
                 number += c - '0';
-                advance();
-                c = current_char();
-                if (c == '_') {
-                    advance();
-                    c = current_char();
-                }
+                c = next();
+                if (c == '_')
+                    c = next();
             } while (isdigit(c));
             if (negative)
                 number *= -1;
@@ -1158,12 +1147,9 @@ Token Lexer::consume_numeric(bool negative) {
             do {
                 number *= 8;
                 number += c - '0';
-                advance();
-                c = current_char();
-                if (c == '_') {
-                    advance();
-                    c = current_char();
-                }
+                c = next();
+                if (c == '_')
+                    c = next();
             } while (c >= '0' && c <= '7');
             if (negative)
                 number *= -1;
@@ -1183,12 +1169,9 @@ Token Lexer::consume_numeric(bool negative) {
                     number += c - 65 + 10;
                 else
                     number += c - '0';
-                advance();
-                c = current_char();
-                if (c == '_') {
-                    advance();
-                    c = current_char();
-                }
+                c = next();
+                if (c == '_')
+                    c = next();
             } while (isxdigit(c));
             if (negative)
                 number *= -1;
@@ -1203,12 +1186,9 @@ Token Lexer::consume_numeric(bool negative) {
             do {
                 number *= 2;
                 number += c - '0';
-                advance();
-                c = current_char();
-                if (c == '_') {
-                    advance();
-                    c = current_char();
-                }
+                c = next();
+                if (c == '_')
+                    c = next();
             } while (c == '0' || c == '1');
             if (negative)
                 number *= -1;
@@ -1220,27 +1200,20 @@ Token Lexer::consume_numeric(bool negative) {
     do {
         number *= 10;
         number += c - '0';
-        advance();
-        c = current_char();
-        if (c == '_') {
-            advance();
-            c = current_char();
-        }
+        c = next();
+        if (c == '_')
+            c = next();
     } while (isdigit(c));
     if (c == '.' && isdigit(peek())) {
-        advance();
-        c = current_char();
+        c = next();
         double dbl = number;
         int place = 10; // tenths
         do {
             dbl += (double)(c - '0') / place;
             place *= 10;
-            advance();
-            c = current_char();
-            if (c == '_') {
-                advance();
-                c = current_char();
-            }
+            c = next();
+            if (c == '_')
+                c = next();
         } while (isdigit(c));
         if (negative)
             dbl *= -1;
@@ -1257,8 +1230,7 @@ Token Lexer::consume_double_quoted_string(char delimiter) {
     char c = current_char();
     while (c) {
         if (c == '\\') {
-            advance();
-            c = current_char();
+            c = next();
             if (c >= '0' && c <= '7') {
                 // octal: 1-3 digits
                 int length = 0;
@@ -1267,15 +1239,13 @@ Token Lexer::consume_double_quoted_string(char delimiter) {
                     number *= 8;
                     number += c - '0';
                     if (number > 255) number = 255;
-                    advance();
-                    c = current_char();
+                    c = next();
                 } while (c >= '0' && c <= '7' && ++length < 3);
                 rewind();
                 buf->append_char(number);
             } else if (c == 'x') {
                 // hex: 1-2 digits
-                advance();
-                c = current_char();
+                c = next();
                 int length = 0;
                 int number = 0;
                 do {
@@ -1286,8 +1256,7 @@ Token Lexer::consume_double_quoted_string(char delimiter) {
                         number += c - 'A' + 10;
                     else
                         number += c - '0';
-                    advance();
-                    c = current_char();
+                    c = next();
                 } while (isxdigit(c) && ++length < 2);
                 rewind();
                 buf->append_char(number);
@@ -1311,8 +1280,7 @@ Token Lexer::consume_double_quoted_string(char delimiter) {
         } else {
             buf->append_char(c);
         }
-        advance();
-        c = current_char();
+        c = next();
     }
     return Token { Token::Type::UnterminatedString, buf, m_file, m_token_line, m_token_column };
 }
@@ -1322,8 +1290,7 @@ Token Lexer::consume_single_quoted_string(char delimiter) {
     char c = current_char();
     while (c) {
         if (c == '\\') {
-            advance();
-            c = current_char();
+            c = next();
             switch (c) {
             case '\\':
             case '\'':
@@ -1340,8 +1307,7 @@ Token Lexer::consume_single_quoted_string(char delimiter) {
         } else {
             buf->append_char(c);
         }
-        advance();
-        c = current_char();
+        c = next();
     }
     return Token { Token::Type::UnterminatedString, buf, m_file, m_token_line, m_token_column };
 }
@@ -1369,8 +1335,7 @@ Token Lexer::consume_quoted_array_without_interpolation(char delimiter, Token::T
             seen_space = false;
             seen_start = true;
         }
-        advance();
-        c = current_char();
+        c = next();
     }
     if (!buf->is_empty() && buf->last_char() == ' ') buf->chomp();
     return Token { type, buf, m_file, m_token_line, m_token_column };
@@ -1399,8 +1364,7 @@ Token Lexer::consume_quoted_array_with_interpolation(char delimiter, Token::Type
             seen_space = false;
             seen_start = true;
         }
-        advance();
-        c = current_char();
+        c = next();
     }
     if (!buf->is_empty() && buf->last_char() == ' ') buf->chomp();
     return Token { type, buf, m_file, m_token_line, m_token_column };
@@ -1411,8 +1375,7 @@ Token Lexer::consume_regexp(char delimiter) {
     char c = current_char();
     while (c) {
         if (c == '\\') {
-            advance();
-            c = current_char();
+            c = next();
             switch (c) {
             case '/':
                 buf->append_char(c);
@@ -1423,15 +1386,11 @@ Token Lexer::consume_regexp(char delimiter) {
                 break;
             }
         } else if (c == delimiter) {
-            advance();
+            c = next();
             SharedPtr<String> options = new String("");
-            while ((c = current_char())) {
-                if (c == 'i' || c == 'm' || c == 'x' || c == 'o' || c == 'u' || c == 'e' || c == 's' || c == 'n') {
-                    options->append_char(c);
-                    advance();
-                } else {
-                    break;
-                }
+            while (c == 'i' || c == 'm' || c == 'x' || c == 'o' || c == 'u' || c == 'e' || c == 's' || c == 'n') {
+                options->append_char(c);
+                c = next();
             }
             auto token = Token { Token::Type::Regexp, buf, m_file, m_token_line, m_token_column };
             if (!options->is_empty())
@@ -1440,8 +1399,7 @@ Token Lexer::consume_regexp(char delimiter) {
         } else {
             buf->append_char(c);
         }
-        advance();
-        c = current_char();
+        c = next();
     }
     return Token { Token::Type::UnterminatedRegexp, buf, m_file, m_token_line, m_token_column };
 }
@@ -1451,8 +1409,7 @@ SharedPtr<String> Lexer::consume_non_whitespace() {
     SharedPtr<String> buf = new String("");
     do {
         buf->append_char(c);
-        advance();
-        c = current_char();
+        c = next();
     } while (c && c != ' ' && c != '\t' && c != '\n' && c != '\r');
     return buf;
 }

@@ -29,6 +29,11 @@ private:
     void advance(size_t bytes);
     void rewind(size_t bytes = 1);
 
+    char next() {
+        advance();
+        return current_char();
+    }
+
     char peek() {
         if (m_index + 1 >= m_size)
             return 0;
