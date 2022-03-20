@@ -1137,7 +1137,7 @@ Token Lexer::consume_numeric(bool negative) {
                 return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column };
             do {
                 number *= 10;
-                number += c - 48;
+                number += c - '0';
                 advance();
                 c = current_char();
                 if (c == '_') {
@@ -1157,7 +1157,7 @@ Token Lexer::consume_numeric(bool negative) {
                 return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column };
             do {
                 number *= 8;
-                number += c - 48;
+                number += c - '0';
                 advance();
                 c = current_char();
                 if (c == '_') {
@@ -1182,7 +1182,7 @@ Token Lexer::consume_numeric(bool negative) {
                 else if (c >= 'A' && c <= 'F')
                     number += c - 65 + 10;
                 else
-                    number += c - 48;
+                    number += c - '0';
                 advance();
                 c = current_char();
                 if (c == '_') {
@@ -1202,7 +1202,7 @@ Token Lexer::consume_numeric(bool negative) {
                 return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column };
             do {
                 number *= 2;
-                number += c - 48;
+                number += c - '0';
                 advance();
                 c = current_char();
                 if (c == '_') {
@@ -1219,7 +1219,7 @@ Token Lexer::consume_numeric(bool negative) {
     char c = current_char();
     do {
         number *= 10;
-        number += c - 48;
+        number += c - '0';
         advance();
         c = current_char();
         if (c == '_') {
@@ -1233,7 +1233,7 @@ Token Lexer::consume_numeric(bool negative) {
         double dbl = number;
         int place = 10; // tenths
         do {
-            dbl += (double)(c - 48) / place;
+            dbl += (double)(c - '0') / place;
             place *= 10;
             advance();
             c = current_char();
@@ -1270,6 +1270,25 @@ Token Lexer::consume_double_quoted_string(char delimiter) {
                     advance();
                     c = current_char();
                 } while (c >= '0' && c <= '7' && ++length < 3);
+                rewind();
+                buf->append_char(number);
+            } else if (c == 'x') {
+                // hex: 1-2 digits
+                advance();
+                c = current_char();
+                int length = 0;
+                int number = 0;
+                do {
+                    number *= 16;
+                    if (c >= 'a' && c <= 'f')
+                        number += c - 'a' + 10;
+                    else if (c >= 'A' && c <= 'F')
+                        number += c - 'A' + 10;
+                    else
+                        number += c - '0';
+                    advance();
+                    c = current_char();
+                } while (isxdigit(c) && ++length < 2);
                 rewind();
                 buf->append_char(number);
             } else {
