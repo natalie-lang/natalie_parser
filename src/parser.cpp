@@ -1641,13 +1641,16 @@ Node *Parser::parse_call_expression_with_parens(Node *left, LocalsHashmap &local
     auto token = current_token();
     NodeWithArgs *call_node;
     switch (left->type()) {
-    case Node::Type::Identifier:
+    case Node::Type::Identifier: {
+        auto identifier = static_cast<IdentifierNode *>(left);
         call_node = new CallNode {
             token,
             new NilNode { token },
-            static_cast<IdentifierNode *>(left)->name(),
+            identifier->name(),
         };
+        delete identifier;
         break;
+    }
     case Node::Type::Call:
         call_node = static_cast<CallNode *>(left);
         break;
@@ -1708,13 +1711,16 @@ Node *Parser::parse_call_expression_without_parens(Node *left, LocalsHashmap &lo
     auto token = current_token();
     NodeWithArgs *call_node;
     switch (left->type()) {
-    case Node::Type::Identifier:
+    case Node::Type::Identifier: {
+        auto identifier = static_cast<IdentifierNode *>(left);
         call_node = new CallNode {
             token,
             new NilNode { token },
-            static_cast<IdentifierNode *>(left)->name(),
+            identifier->name(),
         };
+        delete identifier;
         break;
+    }
     case Node::Type::Call:
         call_node = static_cast<CallNode *>(left);
         break;
@@ -1746,18 +1752,24 @@ Node *Parser::parse_constant_resolution_expression(Node *left, LocalsHashmap &lo
     advance();
     auto name_token = current_token();
     auto identifier = static_cast<IdentifierNode *>(parse_identifier(locals));
+    Node *node;
     switch (identifier->token_type()) {
     case Token::Type::BareName: {
         auto name = identifier->name();
-        return new CallNode { token, left, name };
+        node = new CallNode { token, left, name };
+        delete identifier;
+        break;
     }
     case Token::Type::Constant: {
         auto name = identifier->name();
-        return new Colon2Node { token, left, name };
+        node = new Colon2Node { token, left, name };
+        delete identifier;
+        break;
     }
     default:
         throw_unexpected(name_token, ":: identifier name");
     }
+    return node;
 }
 
 Node *Parser::parse_infix_expression(Node *left, LocalsHashmap &locals) {
