@@ -119,8 +119,8 @@ public:
     }
 
     void insert(size_t index, T val) {
-        if (m_size >= m_capacity)
-            grow_at_least(m_size + 1);
+        assert(index <= m_size);
+        grow_at_least(m_size + 1);
 
         if (index == m_size) {
             m_size++;
@@ -128,9 +128,10 @@ public:
             return;
         }
 
-        for (size_t i = m_size - 1; i >= index; --i) {
+        for (size_t i = m_size - 1; i > index; --i) {
             m_data[i + 1] = m_data[i];
         }
+        m_data[index + 1] = m_data[index];
 
         m_data[index] = val;
         m_size++;
