@@ -128,12 +128,8 @@ public:
             return;
         }
 
-        if constexpr (std::is_trivially_copyable<T>::value) {
-            memmove(m_data + index + 1, m_data + index, (m_size - index) * sizeof(T));
-        } else {
-            for (size_t i = m_size - 1; i >= index; --i) {
-                m_data[i + 1] = m_data[i];
-            }
+        for (size_t i = m_size - 1; i >= index; --i) {
+            m_data[i + 1] = m_data[i];
         }
 
         m_data[index] = val;
@@ -248,24 +244,17 @@ private:
         , m_data(data) { }
 
     static T *array_of_size(size_t size) {
-        if constexpr (std::is_trivially_copyable<T>::value)
-            return reinterpret_cast<T *>(new unsigned char[size * sizeof(T)] {});
-        else
-            return new T[size] {};
+        return new T[size] {};
     }
 
     void grow(size_t capacity) {
         if (m_capacity >= capacity)
             return;
-        if constexpr (std::is_trivially_copyable<T>::value) {
-            m_data = static_cast<T *>(realloc(m_data, capacity * sizeof(T)));
-        } else {
-            auto old_data = m_data;
-            m_data = new T[capacity] {};
-            for (size_t i = 0; i < m_size; ++i)
-                m_data[i] = old_data[i];
-            delete[] old_data;
-        }
+        auto old_data = m_data;
+        m_data = new T[capacity] {};
+        for (size_t i = 0; i < m_size; ++i)
+            m_data[i] = old_data[i];
+        delete[] old_data;
         m_capacity = capacity;
     }
 

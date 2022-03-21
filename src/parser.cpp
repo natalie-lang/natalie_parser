@@ -199,8 +199,10 @@ BlockNode *Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Toke
             next_expression();
         } else {
             auto token = current_token();
-            if (token.type() != end_token_type && !token.is_end_of_expression())
+            if (token.type() != end_token_type && !token.is_end_of_expression()) {
+                delete body;
                 throw_unexpected("end-of-line");
+            }
             skip_newlines();
         }
     }
@@ -1011,9 +1013,17 @@ Node *Parser::parse_if_body(LocalsHashmap &locals) {
         current_token().validate();
         next_expression();
     }
-    if (!current_token().is_elsif_keyword() && !current_token().is_else_keyword() && !current_token().is_end_keyword())
+    if (!current_token().is_elsif_keyword() && !current_token().is_else_keyword() && !current_token().is_end_keyword()) {
+        delete body;
         throw_unexpected("if end");
-    return body->without_unnecessary_nesting();
+    }
+    if (body->has_one_node()) {
+        auto node = body->take_first_node();
+        delete body;
+        return node;
+    } else {
+        return body;
+    }
 }
 
 void Parser::parse_interpolated_body(LocalsHashmap &locals, InterpolatedNode *node, Token::Type end_token) {
@@ -1028,11 +1038,12 @@ void Parser::parse_interpolated_body(LocalsHashmap &locals, InterpolatedNode *no
             }
             advance();
             if (block->has_one_node()) {
-                auto first = block->first();
+                auto first = block->take_first_node();
                 if (first->type() == Node::Type::String)
                     node->add_node(first);
                 else
                     node->add_node(new EvaluateToStringNode { current_token(), first });
+                delete block;
             } else {
                 node->add_node(new EvaluateToStringNode { current_token(), block });
             }
@@ -1630,13 +1641,16 @@ Node *Parser::parse_call_expression_with_parens(Node *left, LocalsHashmap &local
     auto token = current_token();
     NodeWithArgs *call_node;
     switch (left->type()) {
-    case Node::Type::Identifier:
+    case Node::Type::Identifier: {
+        auto identifier = static_cast<IdentifierNode *>(left);
         call_node = new CallNode {
             token,
             new NilNode { token },
-            static_cast<IdentifierNode *>(left)->name(),
+            identifier->name(),
         };
+        delete identifier;
         break;
+    }
     case Node::Type::Call:
         call_node = static_cast<CallNode *>(left);
         break;
@@ -1697,13 +1711,16 @@ Node *Parser::parse_call_expression_without_parens(Node *left, LocalsHashmap &lo
     auto token = current_token();
     NodeWithArgs *call_node;
     switch (left->type()) {
-    case Node::Type::Identifier:
+    case Node::Type::Identifier: {
+        auto identifier = static_cast<IdentifierNode *>(left);
         call_node = new CallNode {
             token,
             new NilNode { token },
-            static_cast<IdentifierNode *>(left)->name(),
+            identifier->name(),
         };
+        delete identifier;
         break;
+    }
     case Node::Type::Call:
         call_node = static_cast<CallNode *>(left);
         break;
@@ -1735,18 +1752,24 @@ Node *Parser::parse_constant_resolution_expression(Node *left, LocalsHashmap &lo
     advance();
     auto name_token = current_token();
     auto identifier = static_cast<IdentifierNode *>(parse_identifier(locals));
+    Node *node;
     switch (identifier->token_type()) {
     case Token::Type::BareName: {
         auto name = identifier->name();
-        return new CallNode { token, left, name };
+        node = new CallNode { token, left, name };
+        delete identifier;
+        break;
     }
     case Token::Type::Constant: {
         auto name = identifier->name();
-        return new Colon2Node { token, left, name };
+        node = new Colon2Node { token, left, name };
+        delete identifier;
+        break;
     }
     default:
         throw_unexpected(name_token, ":: identifier name");
     }
+    return node;
 }
 
 Node *Parser::parse_infix_expression(Node *left, LocalsHashmap &locals) {
@@ -1954,9 +1977,12 @@ Node *Parser::parse_send_expression(Node *left, LocalsHashmap &locals) {
     auto name_token = current_token();
     SharedPtr<String> name = new String("");
     switch (name_token.type()) {
-    case Token::Type::BareName:
-        name = static_cast<IdentifierNode *>(parse_identifier(locals))->name();
+    case Token::Type::BareName: {
+        auto identifier = static_cast<IdentifierNode *>(parse_identifier(locals));
+        name = identifier->name();
+        delete identifier;
         break;
+    }
     case Token::Type::ClassKeyword:
     case Token::Type::BeginKeyword:
     case Token::Type::EndKeyword:

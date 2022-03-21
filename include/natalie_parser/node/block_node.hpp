@@ -35,13 +35,18 @@ public:
             delete node;
     }
 
+    virtual Type type() const override { return Type::Block; }
+
+    const Vector<Node *> &nodes() const { return m_nodes; }
+
     void add_node(Node *node) {
         m_nodes.push(node);
     }
 
-    virtual Type type() const override { return Type::Block; }
+    Node *take_first_node() {
+        return m_nodes.pop_front();
+    }
 
-    const Vector<Node *> &nodes() const { return m_nodes; }
     bool is_empty() const { return m_nodes.is_empty(); }
 
     bool has_one_node() const { return m_nodes.size() == 1; }
