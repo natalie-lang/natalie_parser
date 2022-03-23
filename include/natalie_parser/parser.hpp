@@ -44,7 +44,7 @@ public:
         // SharedPtr ftw
     }
 
-    using LocalsHashmap = TM::Hashmap<const char *>;
+    using LocalsHashmap = TM::Hashmap<TM::String>;
 
     enum class Precedence;
 

@@ -69,7 +69,7 @@ public:
         return ref;
     }
 
-    void add_to_locals(TM::Hashmap<const char *> &locals) const {
+    void add_to_locals(TM::Hashmap<TM::String> &locals) const {
         if (token_type() == Token::Type::BareName)
             locals.set(name()->c_str());
     }

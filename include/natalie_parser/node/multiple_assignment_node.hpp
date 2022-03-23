@@ -17,7 +17,7 @@ public:
 
     virtual Type type() const override { return Type::MultipleAssignment; }
 
-    void add_locals(TM::Hashmap<const char *> &);
+    void add_locals(TM::Hashmap<TM::String> &);
 
     virtual void transform(Creator *creator) const override {
         creator->with_assignment(true, [&]() {

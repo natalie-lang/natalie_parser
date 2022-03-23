@@ -4,7 +4,7 @@
 
 namespace NatalieParser {
 
-void MultipleAssignmentNode::add_locals(TM::Hashmap<const char *> &locals) {
+void MultipleAssignmentNode::add_locals(TM::Hashmap<TM::String> &locals) {
     for (auto node : m_nodes) {
         switch (node->type()) {
         case Node::Type::Identifier: {

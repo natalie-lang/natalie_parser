@@ -67,7 +67,7 @@ public:
 
     void set_value(Node *value) { m_value = value; }
 
-    void add_to_locals(TM::Hashmap<const char *> &locals) {
+    void add_to_locals(TM::Hashmap<TM::String> &locals) {
         locals.set(m_name->c_str());
     }
 

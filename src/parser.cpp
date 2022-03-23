@@ -176,7 +176,7 @@ Node *Parser::parse_expression(Parser::Precedence precedence, LocalsHashmap &loc
 Node *Parser::tree() {
     auto tree = new BlockNode { current_token() };
     current_token().validate();
-    LocalsHashmap locals { TM::HashType::String };
+    LocalsHashmap locals { TM::HashType::TMString };
     skip_newlines();
     while (!current_token().is_eof()) {
         auto exp = parse_expression(Precedence::LOWEST, locals);
@@ -683,7 +683,7 @@ Node *Parser::parse_class(LocalsHashmap &locals) {
     if (peek_token().type() == Token::Type::LeftShift)
         return parse_sclass(locals);
     advance();
-    LocalsHashmap our_locals { TM::HashType::String };
+    LocalsHashmap our_locals { TM::HashType::TMString };
     auto name = parse_class_or_module_name(our_locals);
     Node *superclass;
     if (current_token().type() == Token::Type::LessThan) {
@@ -743,7 +743,7 @@ Node *Parser::parse_constant(LocalsHashmap &locals) {
 Node *Parser::parse_def(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    LocalsHashmap our_locals { TM::HashType::String };
+    LocalsHashmap our_locals { TM::HashType::TMString };
     Node *self_node = nullptr;
     SharedPtr<String> name = new String("");
     token = current_token();
@@ -1230,7 +1230,7 @@ SharedPtr<String> Parser::parse_method_name(LocalsHashmap &) {
 Node *Parser::parse_module(LocalsHashmap &) {
     auto token = current_token();
     advance();
-    LocalsHashmap our_locals { TM::HashType::String };
+    LocalsHashmap our_locals { TM::HashType::TMString };
     auto name = parse_class_or_module_name(our_locals);
     auto body = parse_body(our_locals, Precedence::LOWEST);
     expect(Token::Type::EndKeyword, "module end");
