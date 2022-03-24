@@ -299,7 +299,7 @@ Node *Parser::parse_array(LocalsHashmap &locals) {
     advance();
     if (current_token().type() != Token::Type::RBracket) {
         if (peek_token().type() == Token::Type::HashRocket || current_token().type() == Token::Type::SymbolKey) {
-            array->add_node(parse_hash_inner(locals, Token::Type::RBracket));
+            array->add_node(parse_hash_inner(locals, Precedence::HASH, Token::Type::RBracket));
         } else {
             array->add_node(parse_expression(Precedence::ARRAY, locals));
             while (current_token().is_comma()) {
@@ -307,7 +307,7 @@ Node *Parser::parse_array(LocalsHashmap &locals) {
                 if (current_token().type() == Token::Type::RBracket)
                     break;
                 else if (peek_token().type() == Token::Type::HashRocket || current_token().type() == Token::Type::SymbolKey)
-                    array->add_node(parse_hash_inner(locals, Token::Type::RBracket));
+                    array->add_node(parse_hash_inner(locals, Precedence::HASH, Token::Type::RBracket));
                 else
                     array->add_node(parse_expression(Precedence::ARRAY, locals));
             }
@@ -949,38 +949,41 @@ Node *Parser::parse_group(LocalsHashmap &locals) {
 
 Node *Parser::parse_hash(LocalsHashmap &locals) {
     expect(Token::Type::LCurlyBrace, "hash opening curly brace");
+    auto token = current_token();
     advance();
-    auto hash = parse_hash_inner(locals, Token::Type::RCurlyBrace);
+    Node *hash;
+    if (current_token().type() == Token::Type::RCurlyBrace)
+        hash = new HashNode { token };
+    else
+        hash = parse_hash_inner(locals, Precedence::HASH, Token::Type::RCurlyBrace);
     expect(Token::Type::RCurlyBrace, "hash closing curly brace");
     advance();
     return hash;
 }
 
-Node *Parser::parse_hash_inner(LocalsHashmap &locals, Token::Type closing_token) {
+Node *Parser::parse_hash_inner(LocalsHashmap &locals, Precedence precedence, Token::Type closing_token) {
     auto token = current_token();
     auto hash = new HashNode { token };
-    if (current_token().type() != closing_token) {
+    if (current_token().type() == Token::Type::SymbolKey) {
+        hash->add_node(parse_symbol(locals));
+    } else {
+        hash->add_node(parse_expression(precedence, locals));
+        expect(Token::Type::HashRocket, "hash rocket");
+        advance();
+    }
+    hash->add_node(parse_expression(precedence, locals));
+    while (current_token().type() == Token::Type::Comma) {
+        advance();
+        if (current_token().type() == closing_token)
+            break;
         if (current_token().type() == Token::Type::SymbolKey) {
             hash->add_node(parse_symbol(locals));
         } else {
-            hash->add_node(parse_expression(Precedence::HASH, locals));
+            hash->add_node(parse_expression(precedence, locals));
             expect(Token::Type::HashRocket, "hash rocket");
             advance();
         }
-        hash->add_node(parse_expression(Precedence::HASH, locals));
-        while (current_token().type() == Token::Type::Comma) {
-            advance();
-            if (current_token().type() == closing_token)
-                break;
-            if (current_token().type() == Token::Type::SymbolKey) {
-                hash->add_node(parse_symbol(locals));
-            } else {
-                hash->add_node(parse_expression(Precedence::HASH, locals));
-                expect(Token::Type::HashRocket, "hash rocket");
-                advance();
-            }
-            hash->add_node(parse_expression(Precedence::HASH, locals));
-        }
+        hash->add_node(parse_expression(precedence, locals));
     }
     return hash;
 }
@@ -1191,31 +1194,6 @@ Node *Parser::parse_lit(LocalsHashmap &locals) {
         TM_UNREACHABLE();
     }
 };
-
-Node *Parser::parse_keyword_args(LocalsHashmap &locals, bool bare) {
-    auto precedence = bare ? Precedence::BARECALLARGS : Precedence::CALLARGS;
-    auto hash = new HashNode { current_token() };
-    if (current_token().type() == Token::Type::SymbolKey) {
-        hash->add_node(parse_symbol(locals));
-    } else {
-        hash->add_node(parse_expression(precedence, locals));
-        expect(Token::Type::HashRocket, "hash rocket");
-        advance();
-    }
-    hash->add_node(parse_expression(precedence, locals));
-    while (current_token().type() == Token::Type::Comma) {
-        advance();
-        if (current_token().type() == Token::Type::SymbolKey) {
-            hash->add_node(parse_symbol(locals));
-        } else {
-            hash->add_node(parse_expression(precedence, locals));
-            expect(Token::Type::HashRocket, "hash rocket");
-            advance();
-        }
-        hash->add_node(parse_expression(precedence, locals));
-    }
-    return hash;
-}
 
 Node *Parser::parse_keyword_splat(LocalsHashmap &locals) {
     auto token = current_token();
@@ -1684,40 +1662,42 @@ Node *Parser::parse_call_expression_with_parens(Node *left, LocalsHashmap &local
     return call_node;
 }
 
-Node *Parser::parse_call_arg(LocalsHashmap &locals, bool bare, bool *keyword_args) {
-    if ((current_token().type() == Token::Type::Symbol && peek_token().type() == Token::Type::HashRocket) || current_token().type() == Token::Type::SymbolKey) {
-        auto hash = parse_keyword_args(locals, bare);
-        *keyword_args = true;
-        return hash;
+Node *Parser::parse_call_arg(LocalsHashmap &locals, bool bare) {
+    auto arg = parse_expression(bare ? Precedence::BARECALLARGS : Precedence::CALLARGS, locals);
+    if (current_token().type() == Token::Type::Equal) {
+        return parse_assignment_expression(arg, locals, false);
     } else {
-        auto arg = parse_expression(bare ? Precedence::BARECALLARGS : Precedence::CALLARGS, locals);
-        *keyword_args = false;
-        if (current_token().type() == Token::Type::Equal) {
-            return parse_assignment_expression(arg, locals, false);
-        } else {
-            return arg;
-        }
+        return arg;
     }
 }
 
 void Parser::parse_call_args(NodeWithArgs *node, LocalsHashmap &locals, bool bare) {
-    bool keyword_args;
-    node->add_arg(parse_call_arg(locals, bare, &keyword_args));
-    if (keyword_args) {
-        return;
-    }
-    while (current_token().is_comma()) {
-        advance();
-        auto token = current_token();
-        if (token.is_rparen()) {
-            // trailing comma with no additional arg
-            break;
+    if (peek_token().type() == Token::Type::HashRocket || current_token().type() == Token::Type::SymbolKey) {
+        node->add_arg(parse_call_hash_args(locals, bare));
+    } else {
+        node->add_arg(parse_call_arg(locals, bare));
+        while (current_token().is_comma()) {
+            advance();
+            auto token = current_token();
+            if (token.is_rparen()) {
+                // trailing comma with no additional arg
+                break;
+            }
+            if (peek_token().type() == Token::Type::HashRocket || current_token().type() == Token::Type::SymbolKey) {
+                node->add_arg(parse_call_hash_args(locals, bare));
+                break;
+            } else {
+                node->add_arg(parse_call_arg(locals, bare));
+            }
         }
-        node->add_arg(parse_call_arg(locals, bare, &keyword_args));
-        if (keyword_args) {
-            break;
-        }
     }
+}
+
+Node *Parser::parse_call_hash_args(LocalsHashmap &locals, bool bare) {
+    if (bare)
+        return parse_hash_inner(locals, Precedence::BARECALLARGS, Token::Type::Invalid);
+    else
+        return parse_hash_inner(locals, Precedence::CALLARGS, Token::Type::RParen);
 }
 
 Node *Parser::parse_call_expression_without_parens(Node *left, LocalsHashmap &locals) {

@@ -89,7 +89,7 @@ private:
     Node *parse_file_constant(LocalsHashmap &);
     Node *parse_group(LocalsHashmap &);
     Node *parse_hash(LocalsHashmap &);
-    Node *parse_hash_inner(LocalsHashmap &, Token::Type);
+    Node *parse_hash_inner(LocalsHashmap &, Precedence, Token::Type);
     Node *parse_identifier(LocalsHashmap &);
     Node *parse_if(LocalsHashmap &);
     void parse_interpolated_body(LocalsHashmap &, InterpolatedNode *, Token::Type);
@@ -98,7 +98,6 @@ private:
     Node *parse_interpolated_shell(LocalsHashmap &);
     Node *parse_interpolated_string(LocalsHashmap &);
     Node *parse_lit(LocalsHashmap &);
-    Node *parse_keyword_args(LocalsHashmap &, bool);
     Node *parse_keyword_splat(LocalsHashmap &);
     SharedPtr<String> parse_method_name(LocalsHashmap &);
     Node *parse_module(LocalsHashmap &);
@@ -128,8 +127,9 @@ private:
     Node *parse_assignment_expression_value(bool, LocalsHashmap &, bool);
     Node *parse_call_expression_without_parens(Node *, LocalsHashmap &);
     Node *parse_call_expression_with_parens(Node *, LocalsHashmap &);
-    Node *parse_call_arg(LocalsHashmap &, bool, bool *);
+    Node *parse_call_arg(LocalsHashmap &, bool);
     void parse_call_args(NodeWithArgs *, LocalsHashmap &, bool = false);
+    Node *parse_call_hash_args(LocalsHashmap &, bool);
     Node *parse_constant_resolution_expression(Node *, LocalsHashmap &);
     Node *parse_infix_expression(Node *, LocalsHashmap &);
     Node *parse_proc_call_expression(Node *, LocalsHashmap &);
