@@ -298,12 +298,19 @@ Node *Parser::parse_array(LocalsHashmap &locals) {
     }
     advance();
     if (current_token().type() != Token::Type::RBracket) {
-        array->add_node(parse_expression(Precedence::ARRAY, locals));
-        while (current_token().is_comma()) {
-            advance();
-            if (current_token().type() == Token::Type::RBracket)
-                break;
+        if (peek_token().type() == Token::Type::HashRocket || current_token().type() == Token::Type::SymbolKey) {
+            array->add_node(parse_hash_inner(locals, Token::Type::RBracket));
+        } else {
             array->add_node(parse_expression(Precedence::ARRAY, locals));
+            while (current_token().is_comma()) {
+                advance();
+                if (current_token().type() == Token::Type::RBracket)
+                    break;
+                else if (peek_token().type() == Token::Type::HashRocket || current_token().type() == Token::Type::SymbolKey)
+                    array->add_node(parse_hash_inner(locals, Token::Type::RBracket));
+                else
+                    array->add_node(parse_expression(Precedence::ARRAY, locals));
+            }
         }
     }
     expect(Token::Type::RBracket, "array closing bracket");
@@ -941,10 +948,18 @@ Node *Parser::parse_group(LocalsHashmap &locals) {
 };
 
 Node *Parser::parse_hash(LocalsHashmap &locals) {
-    auto token = current_token();
+    expect(Token::Type::LCurlyBrace, "hash opening curly brace");
     advance();
+    auto hash = parse_hash_inner(locals, Token::Type::RCurlyBrace);
+    expect(Token::Type::RCurlyBrace, "hash closing curly brace");
+    advance();
+    return hash;
+}
+
+Node *Parser::parse_hash_inner(LocalsHashmap &locals, Token::Type closing_token) {
+    auto token = current_token();
     auto hash = new HashNode { token };
-    if (current_token().type() != Token::Type::RCurlyBrace) {
+    if (current_token().type() != closing_token) {
         if (current_token().type() == Token::Type::SymbolKey) {
             hash->add_node(parse_symbol(locals));
         } else {
@@ -955,7 +970,7 @@ Node *Parser::parse_hash(LocalsHashmap &locals) {
         hash->add_node(parse_expression(Precedence::HASH, locals));
         while (current_token().type() == Token::Type::Comma) {
             advance();
-            if (current_token().type() == Token::Type::RCurlyBrace)
+            if (current_token().type() == closing_token)
                 break;
             if (current_token().type() == Token::Type::SymbolKey) {
                 hash->add_node(parse_symbol(locals));
@@ -967,8 +982,6 @@ Node *Parser::parse_hash(LocalsHashmap &locals) {
             hash->add_node(parse_expression(Precedence::HASH, locals));
         }
     }
-    expect(Token::Type::RCurlyBrace, "hash closing curly brace");
-    advance();
     return hash;
 }
 

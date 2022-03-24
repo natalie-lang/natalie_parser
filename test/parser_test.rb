@@ -22,6 +22,11 @@ require_relative './test_helper'
       end
     end
 
+    def expect_raise_with_message(callable, error, message)
+      actual_error = expect(callable).must_raise(error)
+      expect(actual_error.message).must_equal(message)
+    end
+
     describe '#parse' do
       it 'parses an empty program' do
         expect(parse('')).must_equal s(:block)
@@ -128,9 +133,9 @@ require_relative './test_helper'
       it 'raises an error if there is a syntax error' do
         # We choose to more closely match what MRI does vs what ruby_parser raises
         if parser == 'NatalieParser'
-          expect(-> { parse("1 + 2\n\n)") }).must_raise(SyntaxError, "(string)#3: syntax error, unexpected ')' (expected: 'end-of-line')")
+          expect_raise_with_message(-> { parse("1 + 2\n\n)") }, SyntaxError, "(string)#3: syntax error, unexpected ')' (expected: 'end-of-line')")
         else
-          expect(-> { parse("1 + 2\n\n)") }).must_raise(SyntaxError, "(string):3 :: parse error on value \")\" (tRPAREN)")
+          expect_raise_with_message(-> { parse("1 + 2\n\n)") }, SyntaxError, "(string):3 :: parse error on value \")\" (tRPAREN)")
         end
       end
 
@@ -180,11 +185,11 @@ require_relative './test_helper'
         expect(parse('x = 1')).must_equal s(:block, s(:lasgn, :x, s(:lit, 1)))
         expect(parse('x = 1 + 2')).must_equal s(:block, s(:lasgn, :x, s(:call, s(:lit, 1), :+, s(:lit, 2))))
         if parser == 'NatalieParser'
-          expect(-> { parse('x =') }).must_raise(SyntaxError, "(string)#1: syntax error, unexpected end-of-input (expected: 'expression')")
-          expect(-> { parse('[1] = 2') }).must_raise(SyntaxError, "(string)#1: syntax error, unexpected '[' (expected: 'left side of assignment')")
+          expect_raise_with_message(-> { parse('x =') }, SyntaxError, "(string)#1: syntax error, unexpected end-of-input (expected: 'expression')")
+          expect_raise_with_message(-> { parse('[1] = 2') }, SyntaxError, "(string)#1: syntax error, unexpected '[' (expected: 'left side of assignment')")
         else
-          expect(-> { parse('x =') }).must_raise(SyntaxError, '(string):1 :: parse error on value "$" ($end)')
-          expect(-> { parse('[1] = 2') }).must_raise(SyntaxError, '(string):1 :: parse error on value "=" (tEQL)')
+          expect_raise_with_message(-> { parse('x =') }, SyntaxError, '(string):1 :: parse error on value "$" ($end)')
+          expect_raise_with_message(-> { parse('[1] = 2') }, SyntaxError, '(string):1 :: parse error on value "=" (tEQL)')
         end
         expect(parse('@foo = 1')).must_equal s(:block, s(:iasgn, :@foo, s(:lit, 1)))
         expect(parse('@@abc_123 = 1')).must_equal s(:block, s(:cvdecl, :@@abc_123, s(:lit, 1)))
@@ -402,9 +407,9 @@ require_relative './test_helper'
         expect(parse('foo.(1, 2)')).must_equal s(:block, s(:call, s(:call, nil, :foo), :call, s(:lit, 1), s(:lit, 2)))
         expect(parse('foo(a = b, c)')).must_equal s(:block, s(:call, nil, :foo, s(:lasgn, :a, s(:call, nil, :b)), s(:call, nil, :c)))
         if parser == 'NatalieParser'
-          expect(-> { parse('foo(') }).must_raise(SyntaxError, "(string)#1: syntax error, unexpected end-of-input (expected: 'expression')")
+          expect_raise_with_message(-> { parse('foo(') }, SyntaxError, "(string)#1: syntax error, unexpected end-of-input (expected: 'expression')")
         else
-          expect(-> { parse('foo(') }).must_raise(SyntaxError, '(string):1 :: parse error on value "$" ($end)')
+          expect_raise_with_message(-> { parse('foo(') }, SyntaxError, '(string):1 :: parse error on value "$" ($end)')
         end
       end
 
@@ -557,7 +562,7 @@ require_relative './test_helper'
         expect(parse("class Foo\nend")).must_equal s(:block, s(:class, :Foo, nil))
         expect(parse('class Foo;end')).must_equal s(:block, s(:class, :Foo, nil))
         expect(parse('class FooBar; 1; 2; end')).must_equal s(:block, s(:class, :FooBar, nil, s(:lit, 1), s(:lit, 2)))
-        expect(-> { parse('class foo;end') }).must_raise(SyntaxError, 'class/module name must be CONSTANT')
+        expect_raise_with_message(-> { parse('class foo;end') }, SyntaxError, 'class/module name must be CONSTANT')
         expect(parse("class Foo < Bar; 3\n 4\n end")).must_equal s(:block, s(:class, :Foo, s(:const, :Bar), s(:lit, 3), s(:lit, 4)))
         expect(parse("class Foo < bar; 3\n 4\n end")).must_equal s(:block, s(:class, :Foo, s(:call, nil, :bar), s(:lit, 3), s(:lit, 4)))
         expect(parse('class Foo::Bar; end')).must_equal s(:block, s(:class, s(:colon2, s(:const, :Foo), :Bar), nil))
@@ -574,7 +579,7 @@ require_relative './test_helper'
         expect(parse("module Foo\nend")).must_equal s(:block, s(:module, :Foo))
         expect(parse('module Foo;end')).must_equal s(:block, s(:module, :Foo))
         expect(parse('module FooBar; 1; 2; end')).must_equal s(:block, s(:module, :FooBar, s(:lit, 1), s(:lit, 2)))
-        expect(-> { parse('module foo;end') }).must_raise(SyntaxError, 'class/module name must be CONSTANT')
+        expect_raise_with_message(-> { parse('module foo;end') }, SyntaxError, 'class/module name must be CONSTANT')
         expect(parse('module Foo::Bar; end')).must_equal s(:block, s(:module, s(:colon2, s(:const, :Foo), :Bar)))
         expect(parse('module ::Foo; end')).must_equal s(:block, s(:module, s(:colon3, :Foo)))
       end
@@ -591,9 +596,9 @@ require_relative './test_helper'
         expect(parse("[\n1 , \n2,\n 3\n]")).must_equal s(:block, s(:array, s(:lit, 1), s(:lit, 2), s(:lit, 3)))
         expect(parse("[\n1 , \n2,\n 3,\n]")).must_equal s(:block, s(:array, s(:lit, 1), s(:lit, 2), s(:lit, 3)))
         if parser == 'NatalieParser'
-          expect(-> { parse('[ , 1]') }).must_raise(SyntaxError, "(string)#1: syntax error, unexpected ',' (expected: 'expression')")
+          expect_raise_with_message(-> { parse('[ , 1]') }, SyntaxError, "(string)#1: syntax error, unexpected ',' (expected: 'expression')")
         else
-          expect(-> { parse('[ , 1]') }).must_raise(SyntaxError, '(string):1 :: parse error on value "," (tCOMMA)')
+          expect_raise_with_message(-> { parse('[ , 1]') }, SyntaxError, '(string):1 :: parse error on value "," (tCOMMA)')
         end
       end
 
@@ -617,9 +622,19 @@ require_relative './test_helper'
         expect(parse("{ foo: 'bar', baz: 'buz' }")).must_equal s(:block, s(:hash, s(:lit, :foo), s(:str, 'bar'), s(:lit, :baz), s(:str, 'buz')))
         expect(parse('{ a => b, c => d }')).must_equal s(:block, s(:hash, s(:call, nil, :a), s(:call, nil, :b), s(:call, nil, :c), s(:call, nil, :d)))
         if parser == 'NatalieParser'
-          expect(-> { parse('{ , 1 => 2 }') }).must_raise(SyntaxError, "(string)#1: syntax error, unexpected ',' (expected: 'expression')")
+          expect_raise_with_message(-> { parse('{ , 1 => 2 }') }, SyntaxError, "(string)#1: syntax error, unexpected ',' (expected: 'expression')")
         else
-          expect(-> { parse('{ , 1 => 2 }') }).must_raise(SyntaxError, '(string):1 :: parse error on value "," (tCOMMA)')
+          expect_raise_with_message(-> { parse('{ , 1 => 2 }') }, SyntaxError, '(string):1 :: parse error on value "," (tCOMMA)')
+        end
+        expect(parse('[1 => 2]')).must_equal s(:block, s(:array, s(:hash, s(:lit, 1), s(:lit, 2))))
+        expect(parse('[0, 1 => 2]')).must_equal s(:block, s(:array, s(:lit, 0), s(:hash, s(:lit, 1), s(:lit, 2))))
+        expect(parse('[0, foo: "bar"]')).must_equal s(:block, s(:array, s(:lit, 0), s(:hash, s(:lit, :foo), s(:str, 'bar'))))
+        if parser == 'NatalieParser'
+          expect_raise_with_message(-> { parse('[1 => 2, 3]') }, SyntaxError, "(string)#1: syntax error, unexpected ']' (expected: 'hash rocket')")
+          expect_raise_with_message(-> { parse('[0, 1 => 2, 3]') }, SyntaxError, "(string)#1: syntax error, unexpected ']' (expected: 'hash rocket')")
+        else
+          expect_raise_with_message(-> { parse('[1 => 2, 3]') }, SyntaxError, '(string):1 :: parse error on value "]" (tRBRACK)')
+          expect_raise_with_message(-> { parse('[0, 1 => 2, 3]') }, SyntaxError, '(string):1 :: parse error on value "]" (tRBRACK)')
         end
       end
 
