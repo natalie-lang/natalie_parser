@@ -285,6 +285,7 @@ require_relative './test_helper'
         expect(parse('def foo(a, &b); end')).must_equal s(:block, s(:defn, :foo, s(:args, :a, :'&b'), s(:nil)))
         expect(parse('def foo(a = nil, b = foo, c = FOO); end')).must_equal s(:block, s(:defn, :foo, s(:args, s(:lasgn, :a, s(:nil)), s(:lasgn, :b, s(:call, nil, :foo)), s(:lasgn, :c, s(:const, :FOO))), s(:nil)))
         expect(parse('def foo(a, b: :c, d:); end')).must_equal s(:block, s(:defn, :foo, s(:args, :a, s(:kwarg, :b, s(:lit, :c)), s(:kwarg, :d)), s(:nil)))
+        expect(parse('bar def foo() end')).must_equal s(:block, s(:call, nil, :bar, s(:defn, :foo, s(:args), s(:nil))))
       end
 
       it 'parses operator method definitions' do

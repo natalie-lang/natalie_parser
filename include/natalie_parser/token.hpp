@@ -707,6 +707,7 @@ public:
         case Token::Type::ClassVariable:
         case Token::Type::Constant:
         case Token::Type::ConstantResolution:
+        case Token::Type::DefKeyword:
         case Token::Type::DefinedKeyword:
         case Token::Type::DoubleQuotedString:
         case Token::Type::ENCODINGKeyword:
