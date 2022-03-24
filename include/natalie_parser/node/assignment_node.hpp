@@ -20,6 +20,13 @@ public:
         assert(m_value);
     }
 
+    AssignmentNode(const AssignmentNode &other)
+        : AssignmentNode { other.token(), other.identifier().clone(), other.value().clone() } { }
+
+    virtual Node *clone() const override {
+        return new AssignmentNode(*this);
+    }
+
     virtual Type type() const override { return Type::Assignment; }
 
     const Node &identifier() const { return m_identifier.ref(); }

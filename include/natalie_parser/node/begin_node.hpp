@@ -20,6 +20,13 @@ public:
         assert(m_body);
     }
 
+    BeginNode(const BeginNode &other)
+        : BeginNode { other.token(), new BlockNode { other.body() } } { }
+
+    virtual Node *clone() const override {
+        return new BeginNode(*this);
+    }
+
     ~BeginNode();
 
     virtual Type type() const override { return Type::Begin; }
