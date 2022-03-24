@@ -86,6 +86,8 @@ require_relative './test_helper'
         expect(parse('1 & 2 | 3 ^ 4')).must_equal s(:block, s(:call, s(:call, s(:call, s(:lit, 1), :&, s(:lit, 2)), :|, s(:lit, 3)), :^, s(:lit, 4)))
         expect(parse('10 % 3')).must_equal s(:block, s(:call, s(:lit, 10), :%, s(:lit, 3)))
         expect(parse('x << 1')).must_equal s(:block, s(:call, s(:call, nil, :x), :<<, s(:lit, 1)))
+        expect(parse('x<<1')).must_equal s(:block, s(:call, s(:call, nil, :x), :<<, s(:lit, 1)))
+        expect(parse('x<<y')).must_equal s(:block, s(:call, s(:call, nil, :x), :<<, s(:call, nil, :y)))
         expect(parse('x =~ y')).must_equal s(:block, s(:call, s(:call, nil, :x), :=~, s(:call, nil, :y)))
         expect(parse('x =~ /foo/')).must_equal s(:block, s(:match3, s(:lit, /foo/), s(:call, nil, :x)))
         expect(parse('/foo/ =~ x')).must_equal s(:block, s(:match2, s(:lit, /foo/), s(:call, nil, :x)))

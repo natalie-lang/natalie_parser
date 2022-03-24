@@ -664,37 +664,53 @@ END
         { type: :"\n" },
       ]
       expect(NatalieParser.tokens("<<'FOO BAR'\n\#{foo}\nFOO BAR")).must_equal [
-        { type: :string, literal: "\#{foo}\n"},
-        { type: :"\n"},
+        { type: :string, literal: "\#{foo}\n" },
+        { type: :"\n" },
       ]
       expect(NatalieParser.tokens(%(<<"FOO BAR"\n\#{foo}\nFOO BAR))).must_equal [
         { type: :dstr},
-        { type: :string, literal: ""},
-        { type: :evstr},
-        { type: :name, literal: :foo},
-        { type: :"\n"},
-        { type: :evstrend},
-        { type: :string, literal: "\n"},
-        { type: :dstrend},
-        { type: :"\n"},
+        { type: :string, literal: "" },
+        { type: :evstr },
+        { type: :name, literal: :foo },
+        { type: :"\n" },
+        { type: :evstrend },
+        { type: :string, literal: "\n" },
+        { type: :dstrend },
+        { type: :"\n" },
       ]
       expect(NatalieParser.tokens("<<`FOO BAR`\n\#{foo}\nFOO BAR")).must_equal [
-        { type: :dxstr},
-        { type: :string, literal: ""},
-        { type: :evstr},
-        { type: :name, literal: :foo},
-        { type: :"\n"},
-        { type: :evstrend},
-        { type: :string, literal: "\n"},
-        { type: :dxstrend},
-        { type: :"\n"},
+        { type: :dxstr },
+        { type: :string, literal: "" },
+        { type: :evstr },
+        { type: :name, literal: :foo },
+        { type: :"\n" },
+        { type: :evstrend },
+        { type: :string, literal: "\n" },
+        { type: :dxstrend },
+        { type: :"\n" },
       ]
       expect(NatalieParser.tokens("<<~FOO\n foo\n  bar\n   \nFOO")).must_equal [
-        { type: :dstr},
-        { type: :string, literal: "foo\n bar\n  \n"},
-        { type: :dstrend},
-        { type: :"\n"}
+        { type: :dstr },
+        { type: :string, literal: "foo\n bar\n  \n" },
+        { type: :dstrend },
+        { type: :"\n" }
       ]
+      expect(NatalieParser.tokens("x=<<FOO\nfoo\nFOO")).must_include(type: :dstr)
+      expect(NatalieParser.tokens("x*<<FOO\nfoo\nFOO")).must_include(type: :dstr)
+    end
+
+    it 'tokenizes left shift (vs heredoc)' do
+      # These look kinda like the start of heredocs, but they're not!
+      expect(NatalieParser.tokens('x<<y')).must_equal [
+        { type: :name, literal: :x },
+        { type: :<< },
+        { type: :name, literal: :y },
+      ]
+      expect(NatalieParser.tokens('1<<y')).must_include(type: :<<)
+      expect(NatalieParser.tokens('x<<_foo')).must_include(type: :<<)
+      expect(NatalieParser.tokens('x<<"foo"')).must_include(type: :<<)
+      expect(NatalieParser.tokens('x<<`foo`')).must_include(type: :<<)
+      expect(NatalieParser.tokens("x<<'foo'")).must_include(type: :<<)
     end
 
     # FIXME
