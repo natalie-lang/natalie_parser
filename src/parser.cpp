@@ -1610,6 +1610,7 @@ SharedPtr<Vector<Node *>> Parser::parse_iter_args(LocalsHashmap &locals) {
         advance();
         if (current_token().is_block_arg_delimiter()) {
             // trailing comma with no additional arg
+            args->push(new NilNode { current_token() });
             break;
         }
         args->push(parse_def_single_arg(locals));

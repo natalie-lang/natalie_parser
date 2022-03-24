@@ -20,6 +20,9 @@ void NodeWithArgs::append_method_or_block_args(Creator *creator) const {
             case Node::Type::MultipleAssignmentArg:
                 c->append(arg);
                 break;
+            case Node::Type::Nil:
+                c->append_nil();
+                break;
             default:
                 TM_UNREACHABLE();
             }

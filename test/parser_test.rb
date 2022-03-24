@@ -683,7 +683,7 @@ require_relative './test_helper'
         expect(parse('return foo if true')).must_equal s(:block, s(:if, s(:true), s(:return, s(:call, nil, :foo)), nil))
       end
 
-      it 'parses block' do
+      it 'parses block iter' do
         expect(parse("foo do\nend")).must_equal s(:block, s(:iter, s(:call, nil, :foo), 0))
         expect(parse("foo do\n1\n2\nend")).must_equal s(:block, s(:iter, s(:call, nil, :foo), 0, s(:block, s(:lit, 1), s(:lit, 2))))
         expect(parse("foo do |x, y|\nx\ny\nend")).must_equal s(:block, s(:iter, s(:call, nil, :foo), s(:args, :x, :y), s(:block, s(:lvar, :x), s(:lvar, :y))))
@@ -717,12 +717,7 @@ require_relative './test_helper'
         expect(parse("get 'foo', bar do\n 'baz' end")).must_equal s(:block, s(:iter, s(:call, nil, :get, s(:str, 'foo'), s(:call, nil, :bar)), 0, s(:str, 'baz')))
         expect(parse("get 'foo', bar do 'baz' end")).must_equal s(:block, s(:iter, s(:call, nil, :get, s(:str, 'foo'), s(:call, nil, :bar)), 0, s(:str, 'baz')))
         expect(parse("foo += bar { |x| x }")).must_equal s(:block, s(:lasgn, :foo, s(:call, s(:lvar, :foo), :+, s(:iter, s(:call, nil, :bar), s(:args, :x), s(:lvar, :x)))))
-        if parser == 'NatalieParser'
-          # I don't like how the RubyParser gem appends a nil on the args array; there's no reason for it.
-          expect(parse('bar { |a, | a }')).must_equal s(:block, s(:iter, s(:call, nil, :bar), s(:args, :a), s(:lvar, :a)))
-        else
-          expect(parse('bar { |a, | a }')).must_equal s(:block, s(:iter, s(:call, nil, :bar), s(:args, :a, nil), s(:lvar, :a)))
-        end
+        expect(parse('bar { |a, | a }')).must_equal s(:block, s(:iter, s(:call, nil, :bar), s(:args, :a, nil), s(:lvar, :a)))
       end
 
       it 'parses block pass (ampersand operator)' do
