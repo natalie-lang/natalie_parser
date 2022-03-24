@@ -160,7 +160,8 @@ file "ext/natalie_parser/natalie_parser.#{so_ext}" => [
   'ext/natalie_parser/mri_creator.hpp',
 ] + SOURCES + HEADERS do |t|
   build_dir = File.expand_path('ext/natalie_parser', __dir__)
-  rm_rf 'ext/natalie_parser/natalie_parser.o'
+  Rake::FileList['ext/natalie_parser/*.o'].each { |path| rm path }
+  rm_rf 'ext/natalie_parser/natalie_parser.so'
   sh <<-SH
     cd #{build_dir} && \
     ruby extconf.rb && \
