@@ -1482,23 +1482,10 @@ Node *Parser::parse_word_symbol_array(LocalsHashmap &locals) {
     return array;
 }
 
-Node *Parser::parse_yield(LocalsHashmap &locals) {
+Node *Parser::parse_yield(LocalsHashmap &) {
     auto token = current_token();
     advance();
-    auto node = new YieldNode { token };
-    if (current_token().is_lparen()) {
-        advance();
-        if (current_token().is_rparen()) {
-            advance();
-        } else {
-            parse_call_args(node, locals, false);
-            expect(Token::Type::RParen, "yield closing paren");
-            advance();
-        }
-    } else if (!current_token().is_end_of_expression()) {
-        parse_call_args(node, locals, true);
-    }
-    return node;
+    return new YieldNode { token };
 };
 
 Node *Parser::parse_assignment_expression(Node *left, LocalsHashmap &locals) {
@@ -1620,30 +1607,7 @@ SharedPtr<Vector<Node *>> Parser::parse_iter_args(LocalsHashmap &locals) {
 
 Node *Parser::parse_call_expression_with_parens(Node *left, LocalsHashmap &locals) {
     auto token = current_token();
-    NodeWithArgs *call_node;
-    switch (left->type()) {
-    case Node::Type::Identifier: {
-        auto identifier = static_cast<IdentifierNode *>(left);
-        call_node = new CallNode {
-            token,
-            new NilNode { token },
-            identifier->name(),
-        };
-        delete identifier;
-        break;
-    }
-    case Node::Type::Call:
-        call_node = static_cast<CallNode *>(left);
-        break;
-    case Node::Type::SafeCall:
-        call_node = static_cast<SafeCallNode *>(left);
-        break;
-    case Node::Type::Super:
-        call_node = static_cast<SuperNode *>(left);
-        break;
-    default:
-        TM_UNREACHABLE();
-    }
+    NodeWithArgs *call_node = left->to_node_with_args();
     advance();
     if (!current_token().is_rparen())
         parse_call_args(call_node, locals, false);
@@ -1692,30 +1656,7 @@ Node *Parser::parse_call_hash_args(LocalsHashmap &locals, bool bare) {
 
 Node *Parser::parse_call_expression_without_parens(Node *left, LocalsHashmap &locals) {
     auto token = current_token();
-    NodeWithArgs *call_node;
-    switch (left->type()) {
-    case Node::Type::Identifier: {
-        auto identifier = static_cast<IdentifierNode *>(left);
-        call_node = new CallNode {
-            token,
-            new NilNode { token },
-            identifier->name(),
-        };
-        delete identifier;
-        break;
-    }
-    case Node::Type::Call:
-        call_node = static_cast<CallNode *>(left);
-        break;
-    case Node::Type::SafeCall:
-        call_node = static_cast<SafeCallNode *>(left);
-        break;
-    case Node::Type::Super:
-        call_node = static_cast<SuperNode *>(left);
-        break;
-    default:
-        TM_UNREACHABLE();
-    }
+    auto call_node = left->to_node_with_args();
     switch (token.type()) {
     case Token::Type::Comma:
     case Token::Type::Eof:

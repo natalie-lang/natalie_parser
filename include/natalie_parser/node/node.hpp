@@ -5,6 +5,8 @@
 
 namespace NatalieParser {
 
+class NodeWithArgs;
+
 class Node {
 public:
     enum class Type {
@@ -122,6 +124,8 @@ public:
     operator bool() const {
         return type() != Type::Invalid;
     }
+
+    NodeWithArgs *to_node_with_args();
 
 protected:
     static inline Node *s_invalid { nullptr };

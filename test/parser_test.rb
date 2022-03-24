@@ -752,6 +752,7 @@ require_relative './test_helper'
         expect(parse('yield(1, 2)')).must_equal s(:block, s(:yield, s(:lit, 1), s(:lit, 2)))
         expect(parse('yield if true')).must_equal s(:block, s(:if, s(:true), s(:yield), nil))
         expect(parse('x += yield y')).must_equal s(:block, s(:lasgn, :x, s(:call, s(:lvar, :x), :+, s(:yield, s(:call, nil, :y)))))
+        expect(parse('while yield == :foo; end')).must_equal s(:block, s(:while, s(:call, s(:yield), :==, s(:lit, :foo)), nil, true))
       end
 
       it 'parses self' do

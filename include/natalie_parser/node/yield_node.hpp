@@ -23,6 +23,8 @@ public:
 
     virtual Type type() const override { return Type::Yield; }
 
+    virtual bool is_callable() const override { return true; }
+
     virtual void transform(Creator *creator) const override {
         creator->set_type("yield");
         if (args().is_empty())
