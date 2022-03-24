@@ -428,20 +428,8 @@ Node *Parser::parse_beginless_range(LocalsHashmap &locals) {
 Node *Parser::parse_block_pass(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    switch (current_token().type()) {
-    case Token::Type::BareName:
-    case Token::Type::ClassVariable:
-    case Token::Type::Constant:
-    case Token::Type::GlobalVariable:
-    case Token::Type::InstanceVariable:
-    case Token::Type::NilKeyword:
-        return new BlockPassNode { token, parse_expression(Precedence::LOWEST, locals) };
-    case Token::Type::Symbol:
-        return new BlockPassNode { token, parse_symbol(locals) };
-    default:
-        expect(Token::Type::BareName, "block");
-    }
-    TM_UNREACHABLE();
+    auto value = parse_expression(Precedence::UNARY_PLUS, locals);
+    return new BlockPassNode { token, value };
 }
 
 Node *Parser::parse_bool(LocalsHashmap &) {
@@ -1349,7 +1337,8 @@ Node *Parser::parse_stabby_proc(LocalsHashmap &locals) {
     }
     if (current_token().type() != Token::Type::DoKeyword && current_token().type() != Token::Type::LCurlyBrace)
         throw_unexpected("block");
-    return new StabbyProcNode { token, *args };
+    auto left = new StabbyProcNode { token, *args };
+    return parse_iter_expression(left, locals);
 };
 
 Node *Parser::parse_string(LocalsHashmap &locals) {
