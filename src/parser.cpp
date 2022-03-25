@@ -758,18 +758,16 @@ Node *Parser::parse_def(LocalsHashmap &locals) {
         }
         name = parse_method_name(locals);
         break;
-    case Token::Type::Constant:
-        if (peek_token().type() == Token::Type::Dot) {
-            self_node = parse_constant(locals);
-            advance();
-        }
-        name = parse_method_name(locals);
-        break;
-    default:
-        if (token.is_operator() || token.is_keyword())
+    default: {
+        if (token.is_operator() || token.is_keyword()) {
             name = parse_method_name(locals);
-        else
-            throw_unexpected("method name");
+        } else {
+            self_node = parse_expression(Precedence::DOT, locals);
+            expect(Token::Type::Dot, "dot followed by method name");
+            advance();
+            name = parse_method_name(locals);
+        }
+    }
     }
     if (current_token().type() == Token::Type::Equal && !current_token().whitespace_precedes()) {
         advance();

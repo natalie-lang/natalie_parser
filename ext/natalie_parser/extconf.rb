@@ -1,5 +1,5 @@
 require 'mkmf'
-$CXXFLAGS += ' -std=c++17'
+$CXXFLAGS += ' -g -std=c++17'
 $INCFLAGS += ' -I ../../include'
 $srcs = Dir['../../src/**/*.cpp', 'natalie_parser.cpp']
 $VPATH << "$(srcdir)/../../src"
