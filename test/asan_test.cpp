@@ -21,7 +21,13 @@ void test() {
     auto tree = parser.tree();
     auto creator = DebugCreator { tree };
     tree->transform(&creator);
-    printf("%s\n", creator.to_string().c_str());
+    auto output = creator.to_string();
+    size_t expected_output_size = 4354;
+    if (output.size() != expected_output_size) {
+        printf("Expected output to be %zu bytes, but it was %zu bytes.\n", expected_output_size, output.size());
+        printf("%s\n", output.c_str());
+        abort();
+    }
     delete tree;
 }
 
