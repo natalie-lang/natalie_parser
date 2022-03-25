@@ -179,6 +179,8 @@ private:
     void advance() { m_index++; }
     void rewind() { m_index--; }
 
+    String current_line();
+
     SharedPtr<String> m_code;
     SharedPtr<String> m_file;
     size_t m_index { 0 };

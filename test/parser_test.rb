@@ -24,7 +24,7 @@ require_relative './test_helper'
 
     def expect_raise_with_message(callable, error, message)
       actual_error = expect(callable).must_raise(error)
-      expect(actual_error.message).must_equal(message)
+      expect(actual_error.message.split(/\n/).first).must_equal(message)
     end
 
     describe '#parse' do

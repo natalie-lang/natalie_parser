@@ -1583,7 +1583,7 @@ Node *Parser::parse_iter_expression(Node *left, LocalsHashmap &locals) {
     }
     auto end_token_type = curly_brace ? Token::Type::RCurlyBrace : Token::Type::EndKeyword;
     auto body = parse_body(our_locals, Precedence::LOWEST, end_token_type);
-    expect(end_token_type, "block end");
+    expect(end_token_type, curly_brace ? "}" : "end");
     advance();
     return new IterNode { token, left, *args, body };
 }
@@ -2206,20 +2206,54 @@ void Parser::throw_unexpected(const Token &token, const char *expected) {
     auto line = token.line() + 1;
     auto type = token.type_value();
     auto literal = token.literal();
-    if (token.type() == Token::Type::Invalid)
-        throw SyntaxError { String::format("{}#{}: syntax error, unexpected '{}' (expected: '{}')", file, line, token.literal(), expected) };
-    else if (!type)
-        throw SyntaxError { String::format("{}#{}: syntax error, expected '{}' (token type: {})", file, line, expected, (long long)token.type()) };
-    else if (strcmp(type, "EOF") == 0)
-        throw SyntaxError { String::format("{}#{}: syntax error, unexpected end-of-input (expected: '{}')", file, line, expected) };
-    else if (literal)
-        throw SyntaxError { String::format("{}#{}: syntax error, unexpected {} '{}' (expected: '{}')", file, line, type, literal, expected) };
-    else
-        throw SyntaxError { String::format("{}#{}: syntax error, unexpected '{}' (expected: '{}')", file, line, type, expected) };
+    String message;
+    if (token.type() == Token::Type::Invalid) {
+        message = String::format("{}#{}: syntax error, unexpected '{}' (expected: '{}')", file, line, token.literal(), expected);
+    } else if (!type) {
+        message = String::format("{}#{}: syntax error, expected '{}' (token type: {})", file, line, expected, (long long)token.type());
+    } else if (token.type() == Token::Type::Eof) {
+        auto indent = String { current_token().column(), ' ' };
+        message = String::format(
+            "{}#{}: syntax error, unexpected end-of-input (expected: '{}')\n"
+            "{}\n"
+            "{}^ stopped here, expected '{}'",
+            file, line, expected, current_line(), indent, expected);
+    } else if (literal) {
+        auto indent = String { current_token().column(), ' ' };
+        message = String::format(
+            "{}#{}: syntax error, unexpected {} '{}' (expected: '{}')\n"
+            "{}\n"
+            "{}^ stopped here, expected '{}'",
+            file, line, type, literal, expected, current_line(), indent, expected);
+    } else {
+        auto indent = String { current_token().column(), ' ' };
+        message = String::format(
+            "{}#{}: syntax error, unexpected '{}' (expected: '{}')\n"
+            "{}\n"
+            "{}^ stopped here, expected '{}'",
+            file, line, type, expected, current_line(), indent, expected);
+    }
+    throw SyntaxError { message };
 }
 
 void Parser::throw_unexpected(const char *expected) {
     throw_unexpected(current_token(), expected);
+}
+
+String Parser::current_line() {
+    size_t line = 0;
+    size_t current_line = current_token().line();
+    String buf;
+    for (size_t i = 0; i < m_code->size(); ++i) {
+        char c = (*m_code)[i];
+        if (line == current_line)
+            buf.append_char(c);
+        else if (line > current_line)
+            break;
+        if (c == '\n')
+            line++;
+    }
+    return buf;
 }
 
 }
