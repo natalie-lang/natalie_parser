@@ -167,6 +167,14 @@ Token Lexer::build_next_token() {
         case '=':
             advance();
             return Token { Token::Type::PlusEqual, m_file, m_token_line, m_token_column };
+        case '@':
+            if (m_last_token.is_def_keyword() || m_last_token.is_dot()) {
+                advance();
+                SharedPtr<String> lit = new String("+@");
+                return Token { Token::Type::BareName, lit, m_file, m_token_line, m_token_column };
+            } else {
+                return Token { Token::Type::Plus, m_file, m_token_line, m_token_column };
+            }
         default:
             return Token { Token::Type::Plus, m_file, m_token_line, m_token_column };
         }
@@ -176,14 +184,19 @@ Token Lexer::build_next_token() {
         case '>':
             advance();
             return Token { Token::Type::Arrow, m_file, m_token_line, m_token_column };
-        default:
-            switch (current_char()) {
-            case '=':
+        case '=':
+            advance();
+            return Token { Token::Type::MinusEqual, m_file, m_token_line, m_token_column };
+        case '@':
+            if (m_last_token.is_def_keyword() || m_last_token.is_dot()) {
                 advance();
-                return Token { Token::Type::MinusEqual, m_file, m_token_line, m_token_column };
-            default:
+                SharedPtr<String> lit = new String("-@");
+                return Token { Token::Type::BareName, lit, m_file, m_token_line, m_token_column };
+            } else {
                 return Token { Token::Type::Minus, m_file, m_token_line, m_token_column };
             }
+        default:
+            return Token { Token::Type::Minus, m_file, m_token_line, m_token_column };
         }
     case '*':
         advance();

@@ -636,6 +636,15 @@ describe 'NatalieParser' do
       ]
     end
 
+    it 'parses unary method names' do
+      expect(NatalieParser.tokens('def -@')).must_equal [{ type: :def }, { type: :name, literal: :-@ }]
+      expect(NatalieParser.tokens('def +@')).must_equal [{ type: :def }, { type: :name, literal: :+@ }]
+      expect(NatalieParser.tokens('foo.-@')).must_equal [{:type=>:name, :literal=>:foo}, {:type=>:"."}, {:type=>:name, :literal=>:-@}]
+      expect(NatalieParser.tokens('foo.+@')).must_equal [{:type=>:name, :literal=>:foo}, {:type=>:"."}, {:type=>:name, :literal=>:+@}]
+      expect(NatalieParser.tokens('foo.+@bar')).must_equal [{:type=>:name, :literal=>:foo}, {:type=>:"."}, {:type=>:name, :literal=>:+@}, {:type=>:name, :literal=>:bar}]
+      expect(NatalieParser.tokens('foo.+ @bar')).must_equal [{:type=>:name, :literal=>:foo}, {:type=>:"."}, {:type=>:+}, {:type=>:ivar, :literal=>:@bar}]
+    end
+
     it 'tokenizes heredocs' do
       doc1 = <<END
 foo = <<FOO
