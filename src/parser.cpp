@@ -1921,6 +1921,10 @@ Node *Parser::parse_send_expression(Node *left, LocalsHashmap &locals) {
         delete identifier;
         break;
     }
+    case Token::Type::Constant:
+        name = name_token.literal_string();
+        advance();
+        break;
     case Token::Type::ClassKeyword:
     case Token::Type::BeginKeyword:
     case Token::Type::EndKeyword:

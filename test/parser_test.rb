@@ -410,10 +410,12 @@ require_relative './test_helper'
 
       it 'parses method calls with parentheses' do
         expect(parse('foo()')).must_equal s(:block, s(:call, nil, :foo))
+        expect(parse('Foo()')).must_equal s(:block, s(:call, nil, :Foo))
         expect(parse('foo() + bar()')).must_equal s(:block, s(:call, s(:call, nil, :foo), :+, s(:call, nil, :bar)))
         expect(parse("foo(1, 'baz')")).must_equal s(:block, s(:call, nil, :foo, s(:lit, 1), s(:str, 'baz')))
         expect(parse('foo(a, b)')).must_equal s(:block, s(:call, nil, :foo, s(:call, nil, :a), s(:call, nil, :b)))
-        expect(parse('foo(a, b)')).must_equal s(:block, s(:call, nil, :foo, s(:call, nil, :a), s(:call, nil, :b)))
+        expect(parse('foo.bar(a, b)')).must_equal s(:block, s(:call, s(:call, nil, :foo), :bar, s(:call, nil, :a), s(:call, nil, :b)))
+        expect(parse('foo.Bar(a, b)')).must_equal s(:block, s(:call, s(:call, nil, :foo), :Bar, s(:call, nil, :a), s(:call, nil, :b)))
         expect(parse("foo(a,\nb,\n)")).must_equal s(:block, s(:call, nil, :foo, s(:call, nil, :a), s(:call, nil, :b)))
         expect(parse("foo(\n1 + 2  ,\n  'baz'  \n )")).must_equal s(:block, s(:call, nil, :foo, s(:call, s(:lit, 1), :+, s(:lit, 2)), s(:str, 'baz')))
         expect(parse('foo(1, a: 2)')).must_equal s(:block, s(:call, nil, :foo, s(:lit, 1), s(:hash, s(:lit, :a), s(:lit, 2))))
