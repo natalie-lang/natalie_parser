@@ -46,6 +46,10 @@ public:
         m_nodes.push(String(number));
     }
 
+    virtual void append_integer(TM::String &number) override {
+        m_nodes.push(String(number));
+    }
+
     virtual void append_nil() override {
         m_nodes.push("nil");
     }

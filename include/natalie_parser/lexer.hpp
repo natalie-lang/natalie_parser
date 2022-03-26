@@ -48,7 +48,7 @@ private:
     Token consume_constant();
     Token consume_global_variable();
     Token consume_heredoc();
-    Token consume_numeric(bool negative = false);
+    Token consume_numeric();
     long long consume_hex_number(int max_length = 0, bool allow_underscore = false);
     long long consume_octal_number(int max_length = 0, bool allow_underscore = false);
     Token consume_double_quoted_string(char delimiter);

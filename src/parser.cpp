@@ -598,7 +598,8 @@ Node *Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         node = hash;
         break;
     }
-    case Token::Type::Integer:
+    case Token::Type::Bignum:
+    case Token::Type::Fixnum:
     case Token::Type::Float:
         node = parse_lit(locals);
         break;
@@ -1170,9 +1171,12 @@ Node *Parser::parse_lit(LocalsHashmap &locals) {
     TM_UNUSED(locals);
     auto token = current_token();
     switch (token.type()) {
-    case Token::Type::Integer:
+    case Token::Type::Bignum:
         advance();
-        return new IntegerNode { token, token.get_integer() };
+        return new BignumNode { token, token.literal_string() };
+    case Token::Type::Fixnum:
+        advance();
+        return new FixnumNode { token, token.get_fixnum() };
     case Token::Type::Float:
         advance();
         return new FloatNode { token, token.get_double() };
@@ -1389,23 +1393,27 @@ Node *Parser::parse_unary_operator(LocalsHashmap &locals) {
     auto receiver = parse_expression(precedence, locals);
     if ((token.type() == Token::Type::Minus || token.type() == Token::Type::Plus) && receiver->is_numeric()) {
         switch (receiver->type()) {
-        case Node::Type::Integer: {
+        case Node::Type::Bignum: {
             if (token.type() == Token::Type::Minus) {
-                auto number = -(static_cast<IntegerNode *>(receiver)->number());
-                return new IntegerNode {
-                    Token { Token::Type::Integer, number, token.file(), token.line(), token.column() },
-                    number,
-                };
+                auto num = static_cast<BignumNode *>(receiver);
+                num->negate();
+                return num;
+            }
+            return receiver;
+        }
+        case Node::Type::Fixnum: {
+            if (token.type() == Token::Type::Minus) {
+                auto num = static_cast<FixnumNode *>(receiver);
+                num->negate();
+                return num;
             }
             return receiver;
         }
         case Node::Type::Float: {
             if (token.type() == Token::Type::Minus) {
-                auto number = -(static_cast<FloatNode *>(receiver)->number());
-                return new FloatNode {
-                    Token { Token::Type::Float, number, token.file(), token.line(), token.column() },
-                    number,
-                };
+                auto num = static_cast<FloatNode *>(receiver);
+                num->negate();
+                return num;
             }
             return receiver;
         }
@@ -2021,7 +2029,8 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
         return &Parser::parse_interpolated_shell;
     case Type::InterpolatedStringBegin:
         return &Parser::parse_interpolated_string;
-    case Type::Integer:
+    case Type::Bignum:
+    case Type::Fixnum:
     case Type::Float:
         return &Parser::parse_lit;
     case Type::Minus:

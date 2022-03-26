@@ -67,6 +67,7 @@ VALUE token_to_ruby(NatalieParser::Token token) {
     rb_hash_aset(hash, ID2SYM(rb_intern("type")), ID2SYM(rb_intern(type)));
     auto lit = token.literal_or_blank();
     switch (token.type()) {
+    case NatalieParser::Token::Type::Bignum:
     case NatalieParser::Token::Type::PercentLowerI:
     case NatalieParser::Token::Type::PercentUpperI:
     case NatalieParser::Token::Type::PercentLowerW:
@@ -86,11 +87,11 @@ VALUE token_to_ruby(NatalieParser::Token token) {
     case NatalieParser::Token::Type::SymbolKey:
         rb_hash_aset(hash, ID2SYM(rb_intern("literal")), ID2SYM(rb_intern(lit)));
         break;
+    case NatalieParser::Token::Type::Fixnum:
+        rb_hash_aset(hash, ID2SYM(rb_intern("literal")), rb_int_new(token.get_fixnum()));
+        break;
     case NatalieParser::Token::Type::Float:
         rb_hash_aset(hash, ID2SYM(rb_intern("literal")), rb_float_new(token.get_double()));
-        break;
-    case NatalieParser::Token::Type::Integer:
-        rb_hash_aset(hash, ID2SYM(rb_intern("literal")), rb_int_new(token.get_integer()));
         break;
     case NatalieParser::Token::Type::InterpolatedRegexpEnd:
         if (token.options()) {

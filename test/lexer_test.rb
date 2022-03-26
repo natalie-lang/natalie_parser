@@ -51,24 +51,24 @@ describe 'NatalieParser' do
       expect(NatalieParser.tokens('defx = 1')).must_equal [
         { type: :name, literal: :defx },
         { type: :'=' },
-        { type: :integer, literal: 1 },
+        { type: :fixnum, literal: 1 },
       ]
     end
 
     it 'tokenizes division and regexp' do
-      expect(NatalieParser.tokens('1/2')).must_equal [{ type: :integer, literal: 1 }, { type: :'/' }, { type: :integer, literal: 2 }]
-      expect(NatalieParser.tokens('1 / 2')).must_equal [{ type: :integer, literal: 1 }, { type: :'/' }, { type: :integer, literal: 2 }]
+      expect(NatalieParser.tokens('1/2')).must_equal [{ type: :fixnum, literal: 1 }, { type: :'/' }, { type: :fixnum, literal: 2 }]
+      expect(NatalieParser.tokens('1 / 2')).must_equal [{ type: :fixnum, literal: 1 }, { type: :'/' }, { type: :fixnum, literal: 2 }]
       expect(NatalieParser.tokens('1 / 2 / 3')).must_equal [
-        { type: :integer, literal: 1 },
+        { type: :fixnum, literal: 1 },
         { type: :'/' },
-        { type: :integer, literal: 2 },
+        { type: :fixnum, literal: 2 },
         { type: :'/' },
-        { type: :integer, literal: 3 },
+        { type: :fixnum, literal: 3 },
       ]
       expect(NatalieParser.tokens('foo / 2')).must_equal [
         { type: :name, literal: :foo },
         { type: :'/' },
-        { type: :integer, literal: 2 },
+        { type: :fixnum, literal: 2 },
       ]
       expect(NatalieParser.tokens('foo /2/')).must_equal [
         { type: :name, literal: :foo },
@@ -76,7 +76,7 @@ describe 'NatalieParser' do
         { type: :string, literal: '2' },
         { type: :dregxend },
       ]
-      expect(NatalieParser.tokens('foo/2')).must_equal [{ type: :name, literal: :foo }, { type: :'/' }, { type: :integer, literal: 2 }]
+      expect(NatalieParser.tokens('foo/2')).must_equal [{ type: :name, literal: :foo }, { type: :'/' }, { type: :fixnum, literal: 2 }]
       expect(NatalieParser.tokens('foo( /2/ )')).must_equal [
         { type: :name, literal: :foo },
         { type: :'(' },
@@ -87,7 +87,7 @@ describe 'NatalieParser' do
       ]
       expect(NatalieParser.tokens('foo 1,/2/')).must_equal [
         { type: :name, literal: :foo },
-        { type: :integer, literal: 1 },
+        { type: :fixnum, literal: 1 },
         { type: :',' },
         { type: :dregx },
         { type: :string, literal: '2' },
@@ -114,9 +114,9 @@ describe 'NatalieParser' do
         { type: :dregx },
         { type: :string, literal: 'foo ' },
         { type: :evstr },
-        { type: :integer, literal: 1 },
+        { type: :fixnum, literal: 1 },
         { type: :'+' },
-        { type: :integer, literal: 1 },
+        { type: :fixnum, literal: 1 },
         { type: :"\n" },
         { type: :evstrend },
         { type: :string, literal: ' bar' },
@@ -211,45 +211,58 @@ describe 'NatalieParser' do
       expect(NatalieParser.tokens(operators.join(' '))).must_equal operators.map { |o| { type: o.to_sym } }
     end
 
-    it 'tokenizes numbers' do
+    it 'tokenizes bignums' do
+      expect(NatalieParser.tokens('100000000000000000000 0d100000000000000000000 0xFFFFFFFFFFFFFFFF 0o7777777777777777777777 0b1111111111111111111111111111111111111111111111111111111111111111')).must_equal [
+        { type: :bignum, literal: '100000000000000000000' },
+        { type: :bignum, literal: '100000000000000000000' },
+        { type: :bignum, literal: '0xFFFFFFFFFFFFFFFF' },
+        { type: :bignum, literal: '0o7777777777777777777777' },
+        { type: :bignum, literal: '0b1111111111111111111111111111111111111111111111111111111111111111' },
+      ]
+    end
+
+    it 'tokenizes fixnums' do
       expect(NatalieParser.tokens('1 123 +1 -456 - 0 100_000_000 0d5 0D6 0o10 0O11 0xff 0XFF 0b110 0B111')).must_equal [
-        { type: :integer, literal: 1 },
-        { type: :integer, literal: 123 },
+        { type: :fixnum, literal: 1 },
+        { type: :fixnum, literal: 123 },
         { type: :'+' },
-        { type: :integer, literal: 1 },
+        { type: :fixnum, literal: 1 },
         { type: :'-' },
-        { type: :integer, literal: 456 },
+        { type: :fixnum, literal: 456 },
         { type: :'-' },
-        { type: :integer, literal: 0 },
-        { type: :integer, literal: 100_000_000 },
-        { type: :integer, literal: 5 }, # 0d5
-        { type: :integer, literal: 6 }, # 0D6
-        { type: :integer, literal: 8 }, # 0o10
-        { type: :integer, literal: 9 }, # 0O11
-        { type: :integer, literal: 255 }, # 0xff
-        { type: :integer, literal: 255 }, # 0XFF
-        { type: :integer, literal: 6 }, # 0b110
-        { type: :integer, literal: 7 }, # 0B111
+        { type: :fixnum, literal: 0 },
+        { type: :fixnum, literal: 100_000_000 },
+        { type: :fixnum, literal: 5 }, # 0d5
+        { type: :fixnum, literal: 6 }, # 0D6
+        { type: :fixnum, literal: 8 }, # 0o10
+        { type: :fixnum, literal: 9 }, # 0O11
+        { type: :fixnum, literal: 255 }, # 0xff
+        { type: :fixnum, literal: 255 }, # 0XFF
+        { type: :fixnum, literal: 6 }, # 0b110
+        { type: :fixnum, literal: 7 }, # 0B111
       ]
       expect(NatalieParser.tokens('1, (123)')).must_equal [
-        { type: :integer, literal: 1 },
+        { type: :fixnum, literal: 1 },
         { type: :',' },
         { type: :'(' },
-        { type: :integer, literal: 123 },
+        { type: :fixnum, literal: 123 },
         { type: :')' },
       ]
       expect(-> { NatalieParser.tokens('1x') }).must_raise(SyntaxError)
+      expect(-> { NatalieParser.tokens('0bb') }).must_raise(SyntaxError, "1: syntax error, unexpected 'b'")
+      expect(-> { NatalieParser.tokens('0dc') }).must_raise(SyntaxError, "1: syntax error, unexpected 'c'")
+      expect(-> { NatalieParser.tokens('0d2d') }).must_raise(SyntaxError, "1: syntax error, unexpected 'd'")
+      expect(-> { NatalieParser.tokens('0o2e') }).must_raise(SyntaxError, "1: syntax error, unexpected 'e'")
+      expect(-> { NatalieParser.tokens('0x2z') }).must_raise(SyntaxError, "1: syntax error, unexpected 'z'")
+    end
+
+    it 'tokenizes floats' do
       expect(NatalieParser.tokens('1.234')).must_equal [{ type: :float, literal: 1.234 }]
       expect(NatalieParser.tokens('-1.234')).must_equal [{ type: :'-' }, { type: :float, literal: 1.234 }]
       expect(NatalieParser.tokens('0.1')).must_equal [{ type: :float, literal: 0.1 }]
       expect(NatalieParser.tokens('-0.1')).must_equal [{ type: :'-' }, { type: :float, literal: 0.1 }]
       expect(NatalieParser.tokens('123_456.00')).must_equal [{ type: :float, literal: 123456.0 }]
       expect(-> { NatalieParser.tokens('0.1a') }).must_raise(SyntaxError, "1: syntax error, unexpected 'a'")
-      expect(-> { NatalieParser.tokens('0bb') }).must_raise(SyntaxError, "1: syntax error, unexpected 'b'")
-      expect(-> { NatalieParser.tokens('0dc') }).must_raise(SyntaxError, "1: syntax error, unexpected 'c'")
-      expect(-> { NatalieParser.tokens('0d2d') }).must_raise(SyntaxError, "1: syntax error, unexpected 'd'")
-      expect(-> { NatalieParser.tokens('0o2e') }).must_raise(SyntaxError, "1: syntax error, unexpected 'e'")
-      expect(-> { NatalieParser.tokens('0x2z') }).must_raise(SyntaxError, "1: syntax error, unexpected 'z'")
     end
 
     it 'tokenizes strings' do
@@ -280,9 +293,9 @@ describe 'NatalieParser' do
         { type: :evstrend },
         { type: :string, literal: ' bar ' },
         { type: :evstr },
-        { type: :integer, literal: 1 },
+        { type: :fixnum, literal: 1 },
         { type: :'+' },
-        { type: :integer, literal: 1 },
+        { type: :fixnum, literal: 1 },
         { type: :"\n" },
         { type: :evstrend },
         { type: :dstrend },
@@ -301,11 +314,11 @@ describe 'NatalieParser' do
         { type: :dstr },
         { type: :string, literal: '' },
         { type: :evstr },
-        { type: :integer, literal: 1 },
+        { type: :fixnum, literal: 1 },
         { type: :"\n" },
         { type: :evstrend },
         { type: :evstr },
-        { type: :integer, literal: 2 },
+        { type: :fixnum, literal: 2 },
         { type: :"\n" },
         { type: :evstrend },
         { type: :dstrend },
@@ -411,7 +424,7 @@ describe 'NatalieParser' do
         { type: :'[' },
         { type: :string, literal: 'foo' },
         { type: :',' },
-        { type: :integer, literal: 1 },
+        { type: :fixnum, literal: 1 },
         { type: :']' },
       ]
       expect(NatalieParser.tokens("%w[    foo\n 1\t 2  ]")).must_equal [{ type: :'%w', literal: 'foo 1 2' }]
@@ -427,10 +440,10 @@ describe 'NatalieParser' do
         { type: :'{' },
         { type: :string, literal: 'foo' },
         { type: :'=>' },
-        { type: :integer, literal: 1 },
+        { type: :fixnum, literal: 1 },
         { type: :',' },
         { type: :symbol_key, literal: :bar },
-        { type: :integer, literal: 2 },
+        { type: :fixnum, literal: 2 },
         { type: :'}' },
       ]
     end
@@ -484,7 +497,7 @@ describe 'NatalieParser' do
       expect(NatalieParser.tokens("foo(\n1\n)")).must_equal [
         { type: :name, literal: :foo },
         { type: :'(' },
-        { type: :integer, literal: 1 },
+        { type: :fixnum, literal: 1 },
         { type: :')' },
       ]
     end
@@ -606,7 +619,7 @@ describe 'NatalieParser' do
         { type: :'::' },
         { type: :name, literal: :bar! },
       ]
-      expect(NatalieParser.tokens('bar=1')).must_equal [{ type: :name, literal: :bar }, { type: :'=' }, { type: :integer, literal: 1 }]
+      expect(NatalieParser.tokens('bar=1')).must_equal [{ type: :name, literal: :bar }, { type: :'=' }, { type: :fixnum, literal: 1 }]
       expect(NatalieParser.tokens('nil?')).must_equal [{ type: :name, literal: :nil? }]
       expect(NatalieParser.tokens('foo.nil?')).must_equal [
         { type: :name, literal: :foo },
@@ -651,13 +664,13 @@ END
       expect(NatalieParser.tokens(doc2)).must_equal [
         { type: :name, literal: :foo },
         { type: :'(' },
-        { type: :integer, literal: 1 },
+        { type: :fixnum, literal: 1 },
         { type: :',' },
         { type: :dstr },
         { type: :string, literal: " 1\n2\n" },
         { type: :dstrend },
         { type: :',' },
-        { type: :integer, literal: 2 },
+        { type: :fixnum, literal: 2 },
         { type: :')' },
         { type: :"\n" },
         { type: :name, literal: :bar },
@@ -718,9 +731,9 @@ END
     #   expect(NatalieParser.tokens("foo = 1 + 2 # comment\n# comment\nbar.baz", true)).must_equal [
     #     { type: :name, literal: :foo, line: 0, column: 0 },
     #     { type: :'=', line: 0, column: 4 },
-    #     { type: :integer, literal: 1, line: 0, column: 6 },
+    #     { type: :fixnum, literal: 1, line: 0, column: 6 },
     #     { type: :'+', line: 0, column: 8 },
-    #     { type: :integer, literal: 2, line: 0, column: 10 },
+    #     { type: :fixnum, literal: 2, line: 0, column: 10 },
     #     { type: :"\n", line: 0, column: 21 },
     #     { type: :"\n", line: 1, column: 9 },
     #     { type: :name, literal: :bar, line: 2, column: 0 },

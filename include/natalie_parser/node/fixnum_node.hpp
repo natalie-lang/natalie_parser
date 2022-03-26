@@ -9,20 +9,20 @@ namespace NatalieParser {
 
 using namespace TM;
 
-class IntegerNode : public Node {
+class FixnumNode : public Node {
 public:
-    IntegerNode(const Token &token, long long number)
+    FixnumNode(const Token &token, long long number)
         : Node { token }
         , m_number { number } { }
 
-    IntegerNode(const IntegerNode &other)
-        : IntegerNode { other.token(), other.number() } { }
+    FixnumNode(const FixnumNode &other)
+        : FixnumNode { other.token(), other.number() } { }
 
     virtual Node *clone() const override {
-        return new IntegerNode(*this);
+        return new FixnumNode(*this);
     }
 
-    virtual Type type() const override { return Type::Integer; }
+    virtual Type type() const override { return Type::Fixnum; }
 
     virtual bool is_numeric() const override { return true; }
 
@@ -31,6 +31,10 @@ public:
     virtual void transform(Creator *creator) const override {
         creator->set_type("lit");
         creator->append_integer(m_number);
+    }
+
+    void negate() {
+        m_number *= -1;
     }
 
 protected:

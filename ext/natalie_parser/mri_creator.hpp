@@ -57,6 +57,11 @@ public:
         rb_ary_push(m_sexp, rb_int_new(number));
     }
 
+    virtual void append_integer(TM::String &number) override {
+        auto string_obj = rb_utf8_str_new(number.c_str(), number.length());
+        rb_ary_push(m_sexp, rb_Integer(string_obj));
+    }
+
     virtual void append_nil() override {
         rb_ary_push(m_sexp, Qnil);
     }

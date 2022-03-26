@@ -32,9 +32,19 @@ require_relative './test_helper'
         expect(parse('')).must_equal s(:block)
       end
 
-      it 'parses numbers' do
+      it 'parses bignums' do
+        expect(parse('100000000000000000000')).must_equal s(:block, s(:lit, 100000000000000000000))
+        expect(parse('-100000000000000000000')).must_equal s(:block, s(:lit, -100000000000000000000))
+      end
+
+      it 'parses fixnums' do
         expect(parse('1')).must_equal s(:block, s(:lit, 1))
         expect(parse(' 1234')).must_equal s(:block, s(:lit, 1234))
+        expect(parse('9223372036854775808')).must_equal s(:block, s(:lit, 9223372036854775808))
+        expect(parse('-9223372036854775808')).must_equal s(:block, s(:lit, -9223372036854775808))
+      end
+
+      it 'parses floats' do
         expect(parse('1.5 ')).must_equal s(:block, s(:lit, 1.5))
         expect(parse('-1')).must_equal s(:block, s(:lit, -1))
         expect(parse('-1.5')).must_equal s(:block, s(:lit, -1.5))

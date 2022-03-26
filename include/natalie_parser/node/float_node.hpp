@@ -26,6 +26,10 @@ public:
         creator->append_float(m_number);
     }
 
+    void negate() {
+        m_number *= -1;
+    }
+
 protected:
     double m_number;
 };

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "natalie_parser/node/integer_node.hpp"
+#include "natalie_parser/node/fixnum_node.hpp"
 #include "natalie_parser/node/node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
 #include "tm/hashmap.hpp"
@@ -29,10 +29,10 @@ public:
     bool exclude_end() const { return m_exclude_end; }
 
     virtual void transform(Creator *creator) const override {
-        if (m_first->type() == Node::Type::Integer && m_last->type() == Node::Type::Integer) {
+        if (m_first->type() == Node::Type::Fixnum && m_last->type() == Node::Type::Fixnum) {
             creator->set_type("lit");
-            auto first_num = static_cast<const IntegerNode *>(&first())->number();
-            auto last_num = static_cast<const IntegerNode *>(&last())->number();
+            auto first_num = static_cast<const FixnumNode *>(&first())->number();
+            auto last_num = static_cast<const FixnumNode *>(&last())->number();
             creator->append_range(first_num, last_num, m_exclude_end);
         } else {
             if (m_exclude_end)

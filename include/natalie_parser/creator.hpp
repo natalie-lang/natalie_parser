@@ -22,6 +22,7 @@ public:
     virtual void append_false() = 0;
     virtual void append_float(double number) = 0;
     virtual void append_integer(long long number) = 0;
+    virtual void append_integer(TM::String &number) = 0;
     virtual void append_nil() = 0;
     virtual void append_range(long long first, long long last, bool exclude_end) = 0;
     virtual void append_regexp(TM::String &pattern, int options) = 0;

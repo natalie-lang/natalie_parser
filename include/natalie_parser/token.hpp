@@ -22,6 +22,7 @@ public:
         BareName,
         BeginKeyword,
         BEGINKeyword,
+        Bignum,
         BitwiseAnd,
         BitwiseAndEqual,
         BitwiseOr,
@@ -63,6 +64,7 @@ public:
         ExponentEqual,
         FalseKeyword,
         FILEKeyword,
+        Fixnum,
         Float,
         ForKeyword,
         GlobalVariable,
@@ -72,7 +74,6 @@ public:
         IfKeyword,
         InKeyword,
         InstanceVariable,
-        Integer,
         InterpolatedRegexpBegin,
         InterpolatedRegexpEnd,
         InterpolatedShellBegin,
@@ -184,9 +185,10 @@ public:
         assert(file);
     }
 
-    Token(Type type, long long integer, SharedPtr<String> file, size_t line, size_t column)
+    Token(Type type, long long fixnum, SharedPtr<String> literal, SharedPtr<String> file, size_t line, size_t column)
         : m_type { type }
-        , m_integer { integer }
+        , m_literal { literal }
+        , m_fixnum { fixnum }
         , m_file { file }
         , m_line { line }
         , m_column { column } {
@@ -244,6 +246,8 @@ public:
             return "begin";
         case Type::BEGINKeyword:
             return "BEGIN";
+        case Type::Bignum:
+            return "bignum";
         case Type::BitwiseAnd:
             return "&";
         case Type::BitwiseAndEqual:
@@ -344,8 +348,8 @@ public:
             return "in";
         case Type::InstanceVariable:
             return "ivar";
-        case Type::Integer:
-            return "integer";
+        case Type::Fixnum:
+            return "fixnum";
         case Type::InterpolatedRegexpBegin:
             return "dregx";
         case Type::InterpolatedRegexpEnd:
@@ -704,6 +708,7 @@ public:
         switch (m_type) {
         case Token::Type::Arrow:
         case Token::Type::BareName:
+        case Token::Type::Bignum:
         case Token::Type::ClassVariable:
         case Token::Type::Constant:
         case Token::Type::ConstantResolution:
@@ -713,10 +718,10 @@ public:
         case Token::Type::ENCODINGKeyword:
         case Token::Type::FalseKeyword:
         case Token::Type::FILEKeyword:
+        case Token::Type::Fixnum:
         case Token::Type::Float:
         case Token::Type::GlobalVariable:
         case Token::Type::InstanceVariable:
-        case Token::Type::Integer:
         case Token::Type::InterpolatedRegexpBegin:
         case Token::Type::InterpolatedShellBegin:
         case Token::Type::InterpolatedStringBegin:
@@ -754,7 +759,7 @@ public:
     Optional<SharedPtr<String>> options() { return m_options; }
     void set_options(SharedPtr<String> options) { m_options = options; }
 
-    long long get_integer() const { return m_integer; }
+    long long get_fixnum() const { return m_fixnum; }
     double get_double() const { return m_double; }
 
     SharedPtr<String> file() const { return m_file; }
@@ -770,7 +775,7 @@ private:
     Type m_type { Type::Invalid };
     Optional<SharedPtr<String>> m_literal {};
     Optional<SharedPtr<String>> m_options {};
-    long long m_integer { 0 };
+    long long m_fixnum { 0 };
     double m_double { 0 };
     SharedPtr<String> m_file;
     size_t m_line { 0 };

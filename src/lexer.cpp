@@ -1128,94 +1128,133 @@ Token Lexer::consume_heredoc() {
     return token;
 }
 
-Token Lexer::consume_numeric(bool negative) {
-    long long number = 0;
+Token Lexer::consume_numeric() {
+    long long fixnum = 0;
+    bool overflow = false;
+    SharedPtr<String> chars = new String;
     if (current_char() == '0') {
         switch (peek()) {
         case 'd':
         case 'D': {
-            advance(2);
-            char c = current_char();
+            advance();
+            char c = next();
             if (!isdigit(c))
                 return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column };
             do {
-                number *= 10;
-                number += c - '0';
+                fixnum *= 10;
+                fixnum += c - '0';
+                if (fixnum < 0) overflow = true;
+                chars->append_char(c);
                 c = next();
                 if (c == '_')
                     c = next();
             } while (isdigit(c));
-            if (negative)
-                number *= -1;
-            return Token { Token::Type::Integer, number, m_file, m_token_line, m_token_column };
+            if (overflow)
+                return Token { Token::Type::Bignum, chars, m_file, m_token_line, m_token_column };
+            else
+                return Token { Token::Type::Fixnum, fixnum, chars, m_file, m_token_line, m_token_column };
         }
         case 'o':
         case 'O': {
-            advance(2);
-            char c = current_char();
+            chars->append_char('0');
+            chars->append_char('o');
+            advance();
+            char c = next();
             if (!(c >= '0' && c <= '7'))
                 return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column };
-            number = consume_octal_number(0, true);
-            if (negative)
-                number *= -1;
-            return Token { Token::Type::Integer, number, m_file, m_token_line, m_token_column };
+            do {
+                fixnum *= 8;
+                fixnum += c - '0';
+                if (fixnum < 0) overflow = true;
+                chars->append_char(c);
+                c = next();
+                if (c == '_')
+                    c = next();
+            } while (c >= '0' && c <= '7');
+            if (overflow)
+                return Token { Token::Type::Bignum, chars, m_file, m_token_line, m_token_column };
+            else
+                return Token { Token::Type::Fixnum, fixnum, chars, m_file, m_token_line, m_token_column };
         }
         case 'x':
         case 'X': {
-            advance(2);
-            char c = current_char();
+            chars->append_char('0');
+            chars->append_char('x');
+            advance();
+            char c = next();
             if (!isxdigit(c))
                 return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column };
-            number = consume_hex_number(0, true);
-            if (negative)
-                number *= -1;
-            return Token { Token::Type::Integer, number, m_file, m_token_line, m_token_column };
+            do {
+                fixnum *= 16;
+                if (c >= 'a' && c <= 'f')
+                    fixnum += c - 'a' + 10;
+                else if (c >= 'A' && c <= 'F')
+                    fixnum += c - 'A' + 10;
+                else
+                    fixnum += c - '0';
+                if (fixnum < 0) overflow = true;
+                chars->append_char(c);
+                c = next();
+                if (c == '_')
+                    c = next();
+            } while (isxdigit(c));
+            if (overflow)
+                return Token { Token::Type::Bignum, chars, m_file, m_token_line, m_token_column };
+            else
+                return Token { Token::Type::Fixnum, fixnum, chars, m_file, m_token_line, m_token_column };
         }
         case 'b':
         case 'B': {
-            advance(2);
-            char c = current_char();
+            chars->append_char('0');
+            chars->append_char('b');
+            advance();
+            char c = next();
             if (c != '0' && c != '1')
                 return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column };
             do {
-                number *= 2;
-                number += c - '0';
+                fixnum *= 2;
+                fixnum += c - '0';
+                if (fixnum < 0) overflow = true;
+                chars->append_char(c);
                 c = next();
                 if (c == '_')
                     c = next();
             } while (c == '0' || c == '1');
-            if (negative)
-                number *= -1;
-            return Token { Token::Type::Integer, number, m_file, m_token_line, m_token_column };
+            if (overflow)
+                return Token { Token::Type::Bignum, chars, m_file, m_token_line, m_token_column };
+            else
+                return Token { Token::Type::Fixnum, fixnum, chars, m_file, m_token_line, m_token_column };
         }
         }
     }
     char c = current_char();
     do {
-        number *= 10;
-        number += c - '0';
+        fixnum *= 10;
+        fixnum += c - '0';
+        if (fixnum < 0) overflow = true;
+        chars->append_char(c);
         c = next();
         if (c == '_')
             c = next();
     } while (isdigit(c));
     if (c == '.' && isdigit(peek())) {
-        c = next();
-        double dbl = number;
+        double dbl = fixnum;
         int place = 10; // tenths
+        chars->append_char('.');
+        c = next();
         do {
             dbl += (double)(c - '0') / place;
             place *= 10;
+            chars->append_char(c);
             c = next();
             if (c == '_')
                 c = next();
         } while (isdigit(c));
-        if (negative)
-            dbl *= -1;
         return Token { Token::Type::Float, dbl, m_file, m_token_line, m_token_column };
+    } else if (overflow) {
+        return Token { Token::Type::Bignum, chars, m_file, m_token_line, m_token_column };
     } else {
-        if (negative)
-            number *= -1;
-        return Token { Token::Type::Integer, number, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::Fixnum, fixnum, chars, m_file, m_token_line, m_token_column };
     }
 }
 
