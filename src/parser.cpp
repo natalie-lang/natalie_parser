@@ -747,7 +747,14 @@ Node *Parser::parse_def(LocalsHashmap &locals) {
     case Token::Type::BareName:
         if (peek_token().type() == Token::Type::Dot) {
             self_node = parse_identifier(locals);
-            advance();
+            advance(); // dot
+        }
+        name = parse_method_name(locals);
+        break;
+    case Token::Type::Constant:
+        if (peek_token().type() == Token::Type::Dot) {
+            self_node = parse_constant(locals);
+            advance(); // dot
         }
         name = parse_method_name(locals);
         break;
@@ -765,7 +772,7 @@ Node *Parser::parse_def(LocalsHashmap &locals) {
         } else {
             self_node = parse_expression(Precedence::DOT, locals);
             expect(Token::Type::Dot, "dot followed by method name");
-            advance();
+            advance(); // dot
             name = parse_method_name(locals);
         }
     }
@@ -1196,6 +1203,7 @@ SharedPtr<String> Parser::parse_method_name(LocalsHashmap &) {
     auto token = current_token();
     switch (token.type()) {
     case Token::Type::BareName:
+    case Token::Type::Constant:
         name = current_token().literal_string();
         break;
     default:

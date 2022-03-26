@@ -270,6 +270,7 @@ require_relative './test_helper'
 
       it 'parses method definition' do
         expect(parse("def foo\nend")).must_equal s(:block, s(:defn, :foo, s(:args), s(:nil)))
+        expect(parse("def Foo\nend")).must_equal s(:block, s(:defn, :Foo, s(:args), s(:nil)))
         expect(parse('def foo;end')).must_equal s(:block, s(:defn, :foo, s(:args), s(:nil)))
         expect(parse("def foo\n1\nend")).must_equal s(:block, s(:defn, :foo, s(:args), s(:lit, 1)))
         expect(parse('def foo;1;end')).must_equal s(:block, s(:defn, :foo, s(:args), s(:lit, 1)))
@@ -287,6 +288,10 @@ require_relative './test_helper'
         expect(parse('def foo!; end')).must_equal s(:block, s(:defn, :foo!, s(:args), s(:nil)))
         expect(parse('def foo?; end')).must_equal s(:block, s(:defn, :foo?, s(:args), s(:nil)))
         expect(parse('def foo=; end')).must_equal s(:block, s(:defn, :foo=, s(:args), s(:nil)))
+        expect(parse('def self.foo; end')).must_equal s(:block, s(:defs, s(:self), :foo, s(:args), s(:nil)))
+        expect(parse('def self.Foo; end')).must_equal s(:block, s(:defs, s(:self), :Foo, s(:args), s(:nil)))
+        expect(parse('def Foo.bar; end')).must_equal s(:block, s(:defs, s(:const, :Foo), :bar, s(:args), s(:nil)))
+        expect(parse('def Foo.Bar; end')).must_equal s(:block, s(:defs, s(:const, :Foo), :Bar, s(:args), s(:nil)))
         expect(parse('def self.foo=; end')).must_equal s(:block, s(:defs, s(:self), :foo=, s(:args), s(:nil)))
         expect(parse('def foo.bar=; end')).must_equal s(:block, s(:defs, s(:call, nil, :foo), :bar=, s(:args), s(:nil)))
         expect(parse('def Foo.foo; end')).must_equal s(:block, s(:defs, s(:const, :Foo), :foo, s(:args), s(:nil)))
