@@ -851,6 +851,11 @@ require_relative './test_helper'
         expect(parse('begin;0;ensure;1;end')).must_equal s(:block, s(:ensure, s(:lit, 0), s(:lit, 1)))
       end
 
+      it 'parses inline rescue' do
+        expect(parse('foo rescue bar')).must_equal s(:block, s(:rescue, s(:call, nil, :foo), s(:resbody, s(:array), s(:call, nil, :bar))))
+        expect(parse('foo(1) { 2 } rescue [1, 2]')).must_equal s(:block, s(:rescue, s(:iter, s(:call, nil, :foo, s(:lit, 1)), 0, s(:lit, 2)), s(:resbody, s(:array), s(:array, s(:lit, 1), s(:lit, 2)))))
+      end
+
       it 'parses backticks and %x()' do
         expect(parse('`ls`')).must_equal s(:block, s(:xstr, 'ls'))
         expect(parse('%x(ls)')).must_equal s(:block, s(:xstr, 'ls'))

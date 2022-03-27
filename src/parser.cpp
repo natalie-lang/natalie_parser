@@ -105,6 +105,7 @@ Parser::Precedence Parser::get_precedence(Token &token, Node *left) {
     case Token::Type::UnlessKeyword:
     case Token::Type::WhileKeyword:
     case Token::Type::UntilKeyword:
+    case Token::Type::RescueKeyword:
         return Precedence::EXPRMODIFIER;
     case Token::Type::DoKeyword:
         return Precedence::ITER_BLOCK;
@@ -1896,6 +1897,18 @@ Node *Parser::parse_ref_expression(Node *left, LocalsHashmap &locals) {
     return call_node;
 }
 
+Node *Parser::parse_rescue_expression(Node *left, LocalsHashmap &locals) {
+    auto token = current_token();
+    advance();
+    auto value = parse_expression(Precedence::LOWEST, locals);
+    auto body = new BlockNode { left->token(), left };
+    auto begin_node = new BeginNode { token, body };
+    auto rescue_node = new BeginRescueNode { token };
+    rescue_node->set_body(new BlockNode { value->token(), value });
+    begin_node->add_rescue_node(rescue_node);
+    return begin_node;
+}
+
 Node *Parser::parse_safe_send_expression(Node *left, LocalsHashmap &locals) {
     auto token = current_token();
     advance();
@@ -2125,8 +2138,6 @@ Parser::parse_left_fn Parser::left_denotation(Token &token, Node *left) {
     case Type::Plus:
     case Type::RightShift:
         return &Parser::parse_infix_expression;
-    case Type::Comma:
-        return &Parser::parse_multiple_assignment_expression;
     case Type::DoKeyword:
     case Type::LCurlyBrace:
         return &Parser::parse_iter_expression;
@@ -2142,6 +2153,8 @@ Parser::parse_left_fn Parser::left_denotation(Token &token, Node *left) {
     case Type::WhileKeyword:
     case Type::UntilKeyword:
         return &Parser::parse_modifier_expression;
+    case Type::Comma:
+        return &Parser::parse_multiple_assignment_expression;
     case Type::NotMatch:
         return &Parser::parse_not_match_expression;
     case Type::AndEqual:
@@ -2167,6 +2180,8 @@ Parser::parse_left_fn Parser::left_denotation(Token &token, Node *left) {
             return &Parser::parse_ref_expression;
         break;
     }
+    case Type::RescueKeyword:
+        return &Parser::parse_rescue_expression;
     case Type::SafeNavigation:
         return &Parser::parse_safe_send_expression;
     case Type::Dot:

@@ -144,6 +144,7 @@ private:
     Node *parse_op_attr_assign_expression(Node *, LocalsHashmap &);
     Node *parse_range_expression(Node *, LocalsHashmap &);
     Node *parse_ref_expression(Node *, LocalsHashmap &);
+    Node *parse_rescue_expression(Node *, LocalsHashmap &);
     Node *parse_safe_send_expression(Node *, LocalsHashmap &);
     Node *parse_send_expression(Node *, LocalsHashmap &);
     Node *parse_ternary_expression(Node *, LocalsHashmap &);
