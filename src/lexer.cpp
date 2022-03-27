@@ -1251,18 +1251,15 @@ Token Lexer::consume_numeric() {
             c = next();
     } while (isdigit(c));
     if (c == '.' && isdigit(peek())) {
-        double dbl = fixnum;
-        int place = 10; // tenths
         chars->append_char('.');
         c = next();
         do {
-            dbl += (double)(c - '0') / place;
-            place *= 10;
             chars->append_char(c);
             c = next();
             if (c == '_')
                 c = next();
         } while (isdigit(c));
+        double dbl = atof(chars->c_str());
         return Token { Token::Type::Float, dbl, m_file, m_token_line, m_token_column };
     } else if (overflow) {
         return Token { Token::Type::Bignum, chars, m_file, m_token_line, m_token_column };
