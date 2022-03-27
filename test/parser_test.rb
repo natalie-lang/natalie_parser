@@ -391,6 +391,7 @@ require_relative './test_helper'
       it 'parses global variables' do
         expect(parse('$foo')).must_equal s(:block, s(:gvar, :$foo))
         expect(parse('$0')).must_equal s(:block, s(:gvar, :$0))
+        expect(parse('$_')).must_equal s(:block, s(:gvar, :$_))
       end
 
       it 'parses regexp nth refs' do
@@ -457,6 +458,12 @@ require_relative './test_helper'
         expect(parse('describe :enumeratorize, shared: true')).must_equal s(:block, s(:call, nil, :describe, s(:lit, :enumeratorize), s(:hash, s(:lit, :shared), s(:true))))
         expect(parse("describe :enumeratorize, shared: true do\nnil\nend")).must_equal s(:block, s(:iter, s(:call, nil, :describe, s(:lit, :enumeratorize), s(:hash, s(:lit, :shared), s(:true))), 0, s(:nil)))
         expect(parse('foo a = b, c')).must_equal s(:block, s(:call, nil, :foo, s(:lasgn, :a, s(:call, nil, :b)), s(:call, nil, :c)))
+        expect(parse('foo a = b if bar')).must_equal s(:block, s(:if, s(:call, nil, :bar), s(:call, nil, :foo, s(:lasgn, :a, s(:call, nil, :b))), nil))
+        expect(parse('foo a && b')).must_equal s(:block, s(:call, nil, :foo, s(:and, s(:call, nil, :a), s(:call, nil, :b))))
+        expect(parse('foo a || b')).must_equal s(:block, s(:call, nil, :foo, s(:or, s(:call, nil, :a), s(:call, nil, :b))))
+        expect(parse('foo a ? b : c')).must_equal s(:block, s(:call, nil, :foo, s(:if, s(:call, nil, :a), s(:call, nil, :b), s(:call, nil, :c))))
+        expect(parse('foo a += 1')).must_equal s(:block, s(:call, nil, :foo, s(:lasgn, :a, s(:call, s(:lvar, :a), :+, s(:lit, 1)))))
+        expect(parse('foo a and b')).must_equal s(:block, s(:and, s(:call, nil, :foo, s(:call, nil, :a)), s(:call, nil, :b)))
       end
 
       it 'parses operator method calls' do
@@ -533,9 +540,8 @@ require_relative './test_helper'
         expect(parse('1 ? 2 : map { |n| n }')).must_equal s(:block, s(:if, s(:lit, 1), s(:lit, 2), s(:iter, s(:call, nil, :map), s(:args, :n), s(:lvar, :n))))
         expect(parse("1 ? 2 : map do |n|\nn\nend")).must_equal s(:block, s(:if, s(:lit, 1), s(:lit, 2), s(:iter, s(:call, nil, :map), s(:args, :n), s(:lvar, :n))))
         expect(parse('fib(num ? num.to_i : 25)')).must_equal s(:block, s(:call, nil, :fib, s(:if, s(:call, nil, :num), s(:call, s(:call, nil, :num), :to_i), s(:lit, 25))))
-        # FIXME: precedence problem
-        #expect(parse('foo x < 1 ? x : y')).must_equal s(:block, s(:call, nil, :foo, s(:if, s(:call, s(:call, nil, :x), :<, s(:lit, 1)), s(:call, nil, :x), s(:call, nil, :y))))
-        #expect(parse('return x < 1 ? x : y')).must_equal s(:block, s(:return, s(:if, s(:call, s(:call, nil, :x), :<, s(:lit, 1)), s(:call, nil, :x), s(:call, nil, :y))))
+        expect(parse('foo x < 1 ? x : y')).must_equal s(:block, s(:call, nil, :foo, s(:if, s(:call, s(:call, nil, :x), :<, s(:lit, 1)), s(:call, nil, :x), s(:call, nil, :y))))
+        expect(parse('return x < 1 ? x : y')).must_equal s(:block, s(:return, s(:if, s(:call, s(:call, nil, :x), :<, s(:lit, 1)), s(:call, nil, :x), s(:call, nil, :y))))
       end
 
       it 'parses if/elsif/else' do
@@ -701,6 +707,7 @@ require_relative './test_helper'
         expect(parse('return foo')).must_equal s(:block, s(:return, s(:call, nil, :foo)))
         expect(parse('return 1, 2')).must_equal s(:block, s(:return, s(:array, s(:lit, 1), s(:lit, 2))))
         expect(parse('return foo if true')).must_equal s(:block, s(:if, s(:true), s(:return, s(:call, nil, :foo)), nil))
+        expect(parse('return x = 1')).must_equal s(:block, s(:return, s(:lasgn, :x, s(:lit, 1))))
       end
 
       it 'parses block iter' do

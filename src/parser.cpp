@@ -12,12 +12,13 @@ enum class Parser::Precedence {
     SPLAT, // *args, **kwargs
     CALLARGS, // foo(a, b)
     COMPOSITION, // and/or
-    OPASSIGNMENT, // += -= *= **= /= %= |= &= ^= >>= <<= ||= &&=
-    TERNARY, // ? :
-    LOGICALOR, // ||
-    LOGICALAND, // &&
+    TERNARYFALSE, // _ ? _ : (_)
     ITER_BLOCK, // do |n| ... end
     BARECALLARGS, // foo a, b
+    OPASSIGNMENT, // += -= *= **= /= %= |= &= ^= >>= <<= ||= &&=
+    TERNARYTRUE, // _ ? (_) : _
+    LOGICALOR, // ||
+    LOGICALAND, // &&
     RANGE, // ..
     ITER_CURLY, // { |n| ... }
     LOGICALNOT, // not
@@ -138,8 +139,9 @@ Parser::Precedence Parser::get_precedence(Token &token, Node *left) {
         break;
     }
     case Token::Type::TernaryQuestion:
+        return Precedence::TERNARYTRUE;
     case Token::Type::TernaryColon:
-        return Precedence::TERNARY;
+        return Precedence::TERNARYFALSE;
     case Token::Type::Not:
     case Token::Type::Tilde:
         return Precedence::UNARY_PLUS;
@@ -1296,14 +1298,14 @@ Node *Parser::parse_return(LocalsHashmap &locals) {
     if (current_token().is_end_of_expression()) {
         value = new NilNode { token };
     } else {
-        value = parse_expression(Precedence::BARECALLARGS, locals);
+        value = parse_call_arg(locals, true);
     }
     if (current_token().is_comma()) {
         auto array = new ArrayNode { current_token() };
         array->add_node(value);
         while (current_token().is_comma()) {
             advance();
-            array->add_node(parse_expression(Precedence::BARECALLARGS, locals));
+            array->add_node(parse_call_arg(locals, true));
         }
         value = array;
     }
@@ -1963,10 +1965,10 @@ Node *Parser::parse_ternary_expression(Node *left, LocalsHashmap &locals) {
     auto token = current_token();
     expect(Token::Type::TernaryQuestion, "ternary question");
     advance();
-    auto true_expr = parse_expression(Precedence::TERNARY, locals);
+    auto true_expr = parse_expression(Precedence::TERNARYTRUE, locals);
     expect(Token::Type::TernaryColon, "ternary colon");
     advance();
-    auto false_expr = parse_expression(Precedence::TERNARY, locals);
+    auto false_expr = parse_expression(Precedence::TERNARYFALSE, locals);
     return new IfNode { token, left, true_expr, false_expr };
 }
 
