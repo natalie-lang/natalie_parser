@@ -18,6 +18,6 @@ Gem::Specification.new do |spec|
   end
 
   spec.require_paths = ['lib', 'ext']
-  spec.extensions = %w[ext/natalie_parser/extconf.rb]
+  spec.extensions    = %w[ext/natalie_parser/extconf.rb]
 end
 
