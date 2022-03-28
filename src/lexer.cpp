@@ -1250,7 +1250,18 @@ Token Lexer::consume_numeric() {
         if (c == '_')
             c = next();
     } while (isdigit(c));
-    if (c == '.' && isdigit(peek())) {
+    if ((c == '.' && isdigit(peek())) || (c == 'e' || c == 'E')) {
+        return consume_numeric_as_float(chars);
+    } else if (overflow) {
+        return Token { Token::Type::Bignum, chars, m_file, m_token_line, m_token_column };
+    } else {
+        return Token { Token::Type::Fixnum, fixnum, chars, m_file, m_token_line, m_token_column };
+    }
+}
+
+Token Lexer::consume_numeric_as_float(SharedPtr<String> chars) {
+    char c = current_char();
+    if (c == '.') {
         chars->append_char('.');
         c = next();
         do {
@@ -1259,13 +1270,25 @@ Token Lexer::consume_numeric() {
             if (c == '_')
                 c = next();
         } while (isdigit(c));
-        double dbl = atof(chars->c_str());
-        return Token { Token::Type::Float, dbl, m_file, m_token_line, m_token_column };
-    } else if (overflow) {
-        return Token { Token::Type::Bignum, chars, m_file, m_token_line, m_token_column };
-    } else {
-        return Token { Token::Type::Fixnum, fixnum, chars, m_file, m_token_line, m_token_column };
     }
+    if (c == 'e' || c == 'E') {
+        chars->append_char('e');
+        c = next();
+        if (c == '-') {
+            chars->append_char(c);
+            c = next();
+        }
+        if (!isdigit(c))
+            return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column };
+        do {
+            chars->append_char(c);
+            c = next();
+            if (c == '_')
+                c = next();
+        } while (isdigit(c));
+    }
+    double dbl = atof(chars->c_str());
+    return Token { Token::Type::Float, dbl, m_file, m_token_line, m_token_column };
 }
 
 long long Lexer::consume_hex_number(int max_length, bool allow_underscore) {
