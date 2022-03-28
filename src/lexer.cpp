@@ -975,6 +975,7 @@ Token Lexer::consume_global_variable() {
     case '$':
     case '*':
     case '.':
+    case ',':
     case ':':
     case '_':
     case '~': {
