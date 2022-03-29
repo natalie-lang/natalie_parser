@@ -68,6 +68,7 @@ VALUE token_to_ruby(NatalieParser::Token token) {
     auto lit = token.literal_or_blank();
     switch (token.type()) {
     case NatalieParser::Token::Type::Bignum:
+    case NatalieParser::Token::Type::Doc:
     case NatalieParser::Token::Type::PercentLowerI:
     case NatalieParser::Token::Type::PercentUpperI:
     case NatalieParser::Token::Type::PercentLowerW:

@@ -7,7 +7,7 @@ class Sexp < Array
     Sexp.new(*ary)
   end
 
-  attr_accessor :file, :line, :column
+  attr_accessor :file, :line, :column, :comments
 
   def inspect
     "s(#{map(&:inspect).join(', ')})"

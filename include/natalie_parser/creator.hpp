@@ -14,6 +14,7 @@ class ArrayNode;
 class Creator {
 public:
     Creator() { }
+    virtual void set_comments(const TM::String &comments) = 0;
     virtual void set_type(const char *type) = 0;
     virtual void append(const Node *node) { append(*node); }
     virtual void append(const Node &node) = 0;

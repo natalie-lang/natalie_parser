@@ -42,6 +42,7 @@ public:
         DefKeyword,
         Divide,
         DivideEqual,
+        Doc,
         DoKeyword,
         Dot,
         DotDot,
@@ -286,6 +287,8 @@ public:
             return "/=";
         case Type::Divide:
             return "/";
+        case Type::Doc:
+            return "doc";
         case Type::DoKeyword:
             return "do";
         case Type::DotDotDot:
@@ -598,6 +601,7 @@ public:
     bool is_comma() const { return m_type == Type::Comma; }
     bool is_comment() const { return m_type == Type::Comment; }
     bool is_def_keyword() const { return m_type == Type::DefKeyword; }
+    bool is_doc() const { return m_type == Type::Doc; }
     bool is_dot() const { return m_type == Type::Dot; }
     bool is_else_keyword() const { return m_type == Type::ElseKeyword; }
     bool is_elsif_keyword() const { return m_type == Type::ElsifKeyword; }
@@ -695,6 +699,17 @@ public:
         }
     }
 
+    bool can_have_doc() {
+        switch (m_type) {
+        case Token::Type::ClassKeyword:
+        case Token::Type::DefKeyword:
+        case Token::Type::ModuleKeyword:
+            return true;
+        default:
+            return false;
+        }
+    }
+
     bool can_have_interpolation() {
         switch (m_type) {
         case Token::Type::DoubleQuotedString:
@@ -761,6 +776,9 @@ public:
     Optional<SharedPtr<String>> options() { return m_options; }
     void set_options(SharedPtr<String> options) { m_options = options; }
 
+    Optional<SharedPtr<String>> doc() const { return m_doc; }
+    void set_doc(SharedPtr<String> doc) { m_doc = doc; }
+
     long long get_fixnum() const { return m_fixnum; }
     double get_double() const { return m_double; }
 
@@ -777,6 +795,7 @@ private:
     Type m_type { Type::Invalid };
     Optional<SharedPtr<String>> m_literal {};
     Optional<SharedPtr<String>> m_options {};
+    Optional<SharedPtr<String>> m_doc {};
     long long m_fixnum { 0 };
     double m_double { 0 };
     SharedPtr<String> m_file;

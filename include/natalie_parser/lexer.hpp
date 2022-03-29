@@ -60,6 +60,8 @@ private:
     SharedPtr<String> consume_non_whitespace();
     void utf32_codepoint_to_utf8(String &buf, long long codepoint);
 
+    bool token_is_first_on_line() const;
+
     SharedPtr<String> m_input;
     SharedPtr<String> m_file;
     size_t m_size { 0 };

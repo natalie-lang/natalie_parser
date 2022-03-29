@@ -39,6 +39,9 @@ public:
         } else {
             creator->set_type("defn");
         }
+        auto doc_comment = doc();
+        if (doc_comment)
+            creator->set_comments(doc_comment.value().ref());
         creator->append_symbol(m_name);
         append_method_or_block_args(creator);
         if (m_body->is_empty()) {

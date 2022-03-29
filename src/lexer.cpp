@@ -8,10 +8,19 @@ namespace NatalieParser {
 SharedPtr<Vector<Token>> Lexer::tokens() {
     SharedPtr<Vector<Token>> tokens = new Vector<Token> {};
     bool skip_next_newline = false;
+    Token last_doc_token;
     for (;;) {
         auto token = next_token();
         if (token.is_comment())
             continue;
+
+        if (token.is_doc()) {
+            if (last_doc_token)
+                last_doc_token.literal_string()->append(*token.literal_string());
+            else
+                last_doc_token = token;
+            continue;
+        }
 
         // get rid of newlines after certain tokens
         if (skip_next_newline && token.is_newline())
@@ -50,6 +59,11 @@ SharedPtr<Vector<Token>> Lexer::tokens() {
                 end_token.set_options(token.options().value());
             tokens->push(end_token);
             continue;
+        }
+
+        if (last_doc_token && token.can_have_doc()) {
+            token.set_doc(last_doc_token.literal_string());
+            last_doc_token = {};
         }
 
         tokens->push(token);
@@ -158,6 +172,16 @@ Token Lexer::build_next_token() {
             advance();
             return Token { Token::Type::Match, m_file, m_token_line, m_token_column };
         default:
+            if (m_cursor_column == 1 && match(5, "begin")) {
+                SharedPtr<String> doc = new String("=begin");
+                char c = current_char();
+                do {
+                    doc->append_char(c);
+                    c = next();
+                } while (!(m_cursor_column == 0 && match(4, "=end")));
+                doc->append("=end\n");
+                return Token { Token::Type::Doc, doc, m_file, m_token_line, m_token_column };
+            }
             return Token { Token::Type::Equal, m_file, m_token_line, m_token_column };
         }
     }
@@ -683,11 +707,21 @@ Token Lexer::build_next_token() {
         return token;
     }
     case '#':
-        char c;
-        do {
-            c = next();
-        } while (c && c != '\n' && c != '\r');
-        return Token { Token::Type::Comment, m_file, m_token_line, m_token_column };
+        if (token_is_first_on_line()) {
+            SharedPtr<String> doc = new String("#");
+            char c;
+            do {
+                c = next();
+                doc->append_char(c);
+            } while (c && c != '\n' && c != '\r');
+            return Token { Token::Type::Doc, doc, m_file, m_token_line, m_token_column };
+        } else {
+            char c;
+            do {
+                c = next();
+            } while (c && c != '\n' && c != '\r');
+            return Token { Token::Type::Comment, m_file, m_token_line, m_token_column };
+        }
     case '0':
     case '1':
     case '2':
@@ -1347,6 +1381,10 @@ void Lexer::utf32_codepoint_to_utf8(String &buf, long long codepoint) {
     }
 }
 
+bool Lexer::token_is_first_on_line() const {
+    return !m_last_token || m_last_token.is_eol();
+}
+
 Token Lexer::consume_double_quoted_string(char delimiter) {
     SharedPtr<String> buf = new String("");
     while (auto c = current_char()) {
@@ -1536,4 +1574,4 @@ SharedPtr<String> Lexer::consume_non_whitespace() {
     return buf;
 }
 
-}
+};

@@ -740,6 +740,16 @@ END
       expect(NatalieParser.tokens("x<<'foo'")).must_include(type: :<<)
     end
 
+    it 'attaches embedded docs delimited by =begin and =end to next token' do
+      expect(NatalieParser.tokens("=begin\nstuff\n=end\nclass Foo;end")).must_equal [
+        { type: :"\n" },
+        { type: :class },
+        { type: :constant, literal: :Foo },
+        { type: :"\n" },
+        { type: :end },
+      ]
+    end
+
     # FIXME
     # it 'stores line and column numbers with each token' do
     #   expect(NatalieParser.tokens("foo = 1 + 2 # comment\n# comment\nbar.baz", true)).must_equal [

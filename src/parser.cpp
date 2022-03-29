@@ -740,12 +740,12 @@ Node *Parser::parse_constant(LocalsHashmap &locals) {
 };
 
 Node *Parser::parse_def(LocalsHashmap &locals) {
-    auto token = current_token();
+    auto def_token = current_token();
     advance();
     LocalsHashmap our_locals { TM::HashType::TMString };
     Node *self_node = nullptr;
     SharedPtr<String> name = new String("");
-    token = current_token();
+    auto token = current_token();
     switch (token.type()) {
     case Token::Type::BareName:
         if (peek_token().type() == Token::Type::Dot) {
@@ -800,7 +800,7 @@ Node *Parser::parse_def(LocalsHashmap &locals) {
     auto body = parse_def_body(our_locals);
     expect(Token::Type::EndKeyword, "def end");
     advance();
-    return new DefNode { token, self_node, name, *args, body };
+    return new DefNode { def_token, self_node, name, *args, body };
 };
 
 Node *Parser::parse_defined(LocalsHashmap &locals) {

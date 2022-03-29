@@ -114,6 +114,8 @@ public:
     size_t line() const { return m_token.line(); }
     size_t column() const { return m_token.column(); }
 
+    Optional<SharedPtr<String>> doc() const { return m_token.doc(); }
+
     const Token &token() const { return m_token; }
 
     const static Node &invalid() {

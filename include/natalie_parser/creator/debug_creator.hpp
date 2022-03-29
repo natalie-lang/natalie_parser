@@ -9,6 +9,10 @@ public:
 
     virtual ~DebugCreator() { }
 
+    virtual void set_comments(const TM::String &) override {
+        // ignore for now
+    }
+
     virtual void set_type(const char *type) override {
         if (m_nodes.size() >= 1)
             m_nodes[0] = String::format(":{}", type);

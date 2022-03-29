@@ -23,6 +23,11 @@ public:
         m_sexp = rb_class_new_instance(0, nullptr, Sexp);
     }
 
+    virtual void set_comments(const TM::String &comments) override {
+        auto string_obj = rb_utf8_str_new(comments.c_str(), comments.length());
+        rb_ivar_set(m_sexp, rb_intern("@comments"), string_obj);
+    }
+
     virtual void set_type(const char *type) override {
         rb_ary_store(m_sexp, 0, ID2SYM(rb_intern(type)));
     }

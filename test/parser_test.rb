@@ -924,6 +924,52 @@ END
         expect(parse(doc4)).must_equal s(:block, s(:str, "FOOBAR\n"))
       end
 
+      it 'parses =begin =end doc blocks' do
+        {
+          class: :class,
+          def: :defn,
+          module: :module 
+        }.each do |keyword, sexp_type|
+          doc = <<-END.gsub(/^\s+/, '')
+            =begin
+            embedded doc
+            =end
+            #{keyword} Foo
+            end
+          END
+          node = parse(doc)[1]
+          expect(node.sexp_type).must_equal sexp_type
+          expect(node.comments).must_equal("=begin\nembedded doc\n=end\n", "missing doc block on #{sexp_type}")
+        end
+      end
+
+      it 'parses regular comment doc blocks' do
+        {
+          class: :class,
+          def: :defn,
+          module: :module 
+        }.each do |keyword, sexp_type|
+          doc = <<-END.gsub(/^\s+/, '')
+            # embedded doc
+            # line 2
+            #{keyword} Foo
+            end
+          END
+          node = parse(doc)[1]
+          expect(node.sexp_type).must_equal sexp_type
+          expect(node.comments).must_equal("# embedded doc\n# line 2\n", "missing doc block on #{sexp_type}")
+        end
+
+        # ignores inline comments
+        nodes = parse("foo # ignored\nbar")[1..-1]
+        expect(nodes.map(&:comments)).must_equal [nil, nil]
+
+        # ignores comments prior to other token types
+        node = parse("# ignored\nbar")[1]
+        expect(node.sexp_type).must_equal :call
+        expect(node.comments).must_be_nil
+      end
+
       it 'tracks file and line/column number' do
         ast = parse("1 +\n\n    2", 'foo.rb')
         expect(ast.file).must_equal('foo.rb')
