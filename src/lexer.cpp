@@ -1309,7 +1309,7 @@ Token Lexer::consume_numeric_as_float(SharedPtr<String> chars) {
     if (c == 'e' || c == 'E') {
         chars->append_char('e');
         c = next();
-        if (c == '-') {
+        if (c == '-' || c == '+') {
             chars->append_char(c);
             c = next();
         }

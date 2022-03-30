@@ -264,6 +264,7 @@ describe 'NatalieParser' do
       expect(NatalieParser.tokens('123_456.00')).must_equal [{ type: :float, literal: 123456.0 }]
       expect(NatalieParser.tokens('0.95')).must_equal [{ type: :float, literal: 0.95 }]
       expect(NatalieParser.tokens('2e5')).must_equal [{ type: :float, literal: 200000.0 }]
+      expect(NatalieParser.tokens('2e+5')).must_equal [{ type: :float, literal: 200000.0 }]
       expect(NatalieParser.tokens('2.1E-5')).must_equal [{ type: :float, literal: 0.000021 }]
       expect(-> { NatalieParser.tokens('0.1a') }).must_raise(SyntaxError, "1: syntax error, unexpected 'a'")
       expect(-> { NatalieParser.tokens('0.1e') }).must_raise(SyntaxError, "1: syntax error, unexpected 'e'")
