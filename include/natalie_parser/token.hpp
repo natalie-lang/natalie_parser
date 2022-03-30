@@ -13,6 +13,7 @@ class Token {
 public:
     enum class Type {
         Invalid, // must be first
+        InvalidCharacterEscape,
         InvalidUnicodeEscape,
         AliasKeyword,
         And,
@@ -366,6 +367,7 @@ public:
         case Type::InterpolatedStringEnd:
             return "dstrend";
         case Type::Invalid:
+        case Type::InvalidCharacterEscape:
         case Type::InvalidUnicodeEscape:
             return nullptr;
         case Type::LCurlyBrace:
@@ -621,6 +623,7 @@ public:
     bool is_valid() const {
         switch (m_type) {
         case Type::Invalid:
+        case Type::InvalidCharacterEscape:
         case Type::InvalidUnicodeEscape:
         case Type::UnterminatedRegexp:
         case Type::UnterminatedString:

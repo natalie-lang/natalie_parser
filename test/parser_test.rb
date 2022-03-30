@@ -164,6 +164,72 @@ require_relative './test_helper'
         expect(parse('y = "#{1 + 1} 2"')).must_equal s(:block, s(:lasgn, :y, s(:dstr, '', s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), s(:str, ' 2'))))
         expect(parse('x.y = "#{1 + 1} 2"')).must_equal s(:block, s(:attrasgn, s(:call, nil, :x), :y=, s(:dstr, '', s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), s(:str, ' 2'))))
         expect(parse(%("\#{1}foo\#{''}bar"))).must_equal s(:block, s(:dstr, '', s(:evstr, s(:lit, 1)), s(:str, 'foo'), s(:str, ''), s(:str, 'bar')))
+
+        # escapes
+        {
+          '\a'      => 7,   # bell, ASCII 07h (BEL)
+          '\b'      => 8,   # backspace, ASCII 08h (BS)
+          '\t'      => 9,   # horizontal tab, ASCII 09h (TAB)
+          '\n'      => 10,  # newline (line feed), ASCII 0Ah (LF)
+          '\v'      => 11,  # vertical tab, ASCII 0Bh (VT)
+          '\f'      => 12,  # form feed, ASCII 0Ch (FF)
+          '\r'      => 13,  # carriage return, ASCII 0Dh (CR)
+          '\e'      => 27,  # escape, ASCII 1Bh (ESC)
+          '\s'      => 32,  # space, ASCII 20h (SPC)
+          '\\\\'    => 92,  # backslash, \
+        }.each do |escape, value|
+          ord = parse(%("#{escape}"))[1][1].ord
+          expect(ord).must_equal value
+        end
+
+        # control character, where x is an ASCII printable character
+        # 0-30 or 0-31 with three bands
+        {
+          '\c '     => 0,
+          '\c!'     => 1,
+          '\c.'     => 14,
+          '\c4'     => 20,
+          '\c>'     => 30,
+          '\c?'     => 127, # special case, delete, ASCII 7Fh (DEL)
+          '\C-?'    => 127, # special case, delete, ASCII 7Fh (DEL)
+          '\c@'     => 0,
+          '\cA'     => 1,
+          '\C-X'    => 24,
+          '\C-^'    => 30,
+          '\C-_'    => 31,
+          '\C-`'    => 0,
+          '\C-a'    => 1,
+          '\C-x'    => 24,
+          '\C-~'    => 30,
+        }.each do |escape, value|
+          ord = parse(%("#{escape}"))[1][1].ord
+          expect(ord).must_equal value
+        end
+
+        # meta character, where x is an ASCII printable character
+        # +128
+        {
+          '\M-a'    => 225,
+          '\M-A'    => 193,
+          '\M-z'    => 250,
+          '\M-Z'    => 218,
+        }.each do |escape, value|
+          ord = parse(%("#{escape}"))[1][1].bytes.first
+          expect(ord).must_equal value
+        end
+
+        # meta control character, where x is an ASCII printable character
+        # control char num + 128
+        {
+          '\M-\C-a' => 129,
+          '\M-\C-A' => 129,
+          '\M-\cX'  => 152,
+          '\c\M-y'  => 153,
+          '\C-\M-y'  => 153,
+        }.each do |escape, value|
+        ord = parse(%("#{escape}"))[1][1].bytes.first.ord
+          expect(ord).must_equal value
+        end
       end
 
       it 'parses symbols' do
