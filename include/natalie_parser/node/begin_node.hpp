@@ -21,7 +21,13 @@ public:
     }
 
     BeginNode(const BeginNode &other)
-        : BeginNode { other.token(), new BlockNode { other.body() } } { }
+        : Node { other.token() }
+        , m_body { new BlockNode { other.body() } }
+        , m_else_body { other.has_else_body() ? new BlockNode(other.else_body()) : nullptr }
+        , m_ensure_body { other.has_ensure_body() ? new BlockNode(other.ensure_body()) : nullptr } {
+        for (auto node : other.rescue_nodes())
+            add_rescue_node(new BeginRescueNode { *node });
+    }
 
     virtual Node *clone() const override {
         return new BeginNode(*this);
@@ -35,6 +41,8 @@ public:
     bool no_rescue_nodes() const { return m_rescue_nodes.size() == 0; }
 
     bool has_ensure_body() const { return m_ensure_body ? true : false; }
+    bool has_else_body() const { return m_else_body ? true : false; }
+
     void set_else_body(BlockNode *else_body) { m_else_body = else_body; }
     void set_ensure_body(BlockNode *ensure_body) { m_ensure_body = ensure_body; }
 
@@ -42,7 +50,7 @@ public:
     const BlockNode &else_body() const { return m_else_body.ref(); }
     const BlockNode &ensure_body() const { return m_ensure_body.ref(); }
 
-    const Vector<BeginRescueNode *> &rescue_nodes() { return m_rescue_nodes; }
+    const Vector<BeginRescueNode *> &rescue_nodes() const { return m_rescue_nodes; }
 
     virtual void transform(Creator *creator) const override;
 

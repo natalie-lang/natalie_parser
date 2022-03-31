@@ -345,6 +345,7 @@ Node *Parser::parse_begin(LocalsHashmap &locals) {
     auto begin_node = new BeginNode { token, body };
     parse_rest_of_begin(begin_node, locals);
 
+    // FIXME: can't parse_modifier_expression handle these while/until modifiers??
     token = current_token();
     switch (token.type()) {
     case Token::Type::UntilKeyword: {

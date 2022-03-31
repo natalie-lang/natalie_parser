@@ -17,6 +17,18 @@ public:
     BeginRescueNode(const Token &token)
         : Node { token } { }
 
+    BeginRescueNode(const BeginRescueNode &other)
+        : Node { other.token() }
+        , m_name { other.has_name() ? new IdentifierNode(other.name()) : nullptr }
+        , m_body { new BlockNode { other.body() } } {
+        for (auto node : other.exceptions())
+            add_exception_node(node->clone());
+    }
+
+    virtual Node *clone() const override {
+        return new BeginRescueNode(*this);
+    }
+
     ~BeginRescueNode();
 
     virtual Type type() const override { return Type::BeginRescue; }
@@ -33,12 +45,14 @@ public:
 
     Node *name_to_node() const;
 
+    bool has_name() const { return m_name; }
+
     const IdentifierNode &name() const {
         assert(m_name);
         return m_name.ref();
     }
 
-    Vector<Node *> &exceptions() { return m_exceptions; }
+    const Vector<Node *> &exceptions() const { return m_exceptions; }
 
     const BlockNode &body() const {
         assert(m_body);
