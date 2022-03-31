@@ -50,6 +50,7 @@ private:
     Token consume_heredoc();
     Token consume_numeric();
     Token consume_numeric_as_float(SharedPtr<String>);
+    Token consume_nth_ref();
     long long consume_hex_number(int max_length = 0, bool allow_underscore = false);
     long long consume_octal_number(int max_length = 0, bool allow_underscore = false);
     Token consume_double_quoted_string(char delimiter);

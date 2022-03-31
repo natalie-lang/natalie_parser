@@ -79,6 +79,7 @@ VALUE token_to_ruby(NatalieParser::Token token) {
         rb_hash_aset(hash, ID2SYM(rb_intern("literal")), rb_utf8_str_new(literal->c_str(), literal->length()));
         break;
     }
+    case NatalieParser::Token::Type::BackRef:
     case NatalieParser::Token::Type::BareName:
     case NatalieParser::Token::Type::ClassVariable:
     case NatalieParser::Token::Type::Constant:
@@ -89,6 +90,7 @@ VALUE token_to_ruby(NatalieParser::Token token) {
         rb_hash_aset(hash, ID2SYM(rb_intern("literal")), ID2SYM(rb_intern(lit)));
         break;
     case NatalieParser::Token::Type::Fixnum:
+    case NatalieParser::Token::Type::NthRef:
         rb_hash_aset(hash, ID2SYM(rb_intern("literal")), rb_int_new(token.get_fixnum()));
         break;
     case NatalieParser::Token::Type::Float:

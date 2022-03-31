@@ -477,6 +477,10 @@ require_relative './test_helper'
         expect(parse('$_')).must_equal s(:block, s(:gvar, :$_))
       end
 
+      it 'parses back refs' do
+        expect(parse('$&')).must_equal s(:block, s(:back_ref, :&))
+      end
+
       it 'parses regexp nth refs' do
         expect(parse('$1')).must_equal s(:block, s(:nth_ref, 1))
         expect(parse('$9')).must_equal s(:block, s(:nth_ref, 9))

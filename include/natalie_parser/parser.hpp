@@ -69,6 +69,7 @@ private:
     Node *parse_alias(LocalsHashmap &);
     SymbolNode *parse_alias_arg(LocalsHashmap &, const char *, bool);
     Node *parse_array(LocalsHashmap &);
+    Node *parse_back_ref(LocalsHashmap &);
     Node *parse_begin(LocalsHashmap &);
     void parse_rest_of_begin(BeginNode *, LocalsHashmap &);
     Node *parse_beginless_range(LocalsHashmap &);
@@ -105,6 +106,7 @@ private:
     Node *parse_next(LocalsHashmap &);
     Node *parse_nil(LocalsHashmap &);
     Node *parse_not(LocalsHashmap &);
+    Node *parse_nth_ref(LocalsHashmap &);
     Node *parse_regexp(LocalsHashmap &);
     Node *parse_return(LocalsHashmap &);
     Node *parse_sclass(LocalsHashmap &);

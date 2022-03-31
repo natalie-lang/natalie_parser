@@ -633,7 +633,14 @@ Token Lexer::build_next_token() {
             return consume_word(Token::Type::InstanceVariable);
         }
     case '$':
-        return consume_global_variable();
+        if (peek() == '&') {
+            advance(2);
+            return Token { Token::Type::BackRef, '&', m_file, m_token_line, m_token_column };
+        } else if (peek() >= '1' && peek() <= '9') {
+            return consume_nth_ref();
+        } else {
+            return consume_global_variable();
+        }
     case '.':
         advance();
         switch (current_char()) {
@@ -1203,7 +1210,7 @@ Token Lexer::consume_numeric() {
             if (overflow)
                 return Token { Token::Type::Bignum, chars, m_file, m_token_line, m_token_column };
             else
-                return Token { Token::Type::Fixnum, fixnum, chars, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Fixnum, fixnum, m_file, m_token_line, m_token_column };
         }
         case 'o':
         case 'O': {
@@ -1225,7 +1232,7 @@ Token Lexer::consume_numeric() {
             if (overflow)
                 return Token { Token::Type::Bignum, chars, m_file, m_token_line, m_token_column };
             else
-                return Token { Token::Type::Fixnum, fixnum, chars, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Fixnum, fixnum, m_file, m_token_line, m_token_column };
         }
         case 'x':
         case 'X': {
@@ -1252,7 +1259,7 @@ Token Lexer::consume_numeric() {
             if (overflow)
                 return Token { Token::Type::Bignum, chars, m_file, m_token_line, m_token_column };
             else
-                return Token { Token::Type::Fixnum, fixnum, chars, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Fixnum, fixnum, m_file, m_token_line, m_token_column };
         }
         case 'b':
         case 'B': {
@@ -1274,7 +1281,7 @@ Token Lexer::consume_numeric() {
             if (overflow)
                 return Token { Token::Type::Bignum, chars, m_file, m_token_line, m_token_column };
             else
-                return Token { Token::Type::Fixnum, fixnum, chars, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Fixnum, fixnum, m_file, m_token_line, m_token_column };
         }
         }
     }
@@ -1293,7 +1300,7 @@ Token Lexer::consume_numeric() {
     } else if (overflow) {
         return Token { Token::Type::Bignum, chars, m_file, m_token_line, m_token_column };
     } else {
-        return Token { Token::Type::Fixnum, fixnum, chars, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::Fixnum, fixnum, m_file, m_token_line, m_token_column };
     }
 }
 
@@ -1327,6 +1334,17 @@ Token Lexer::consume_numeric_as_float(SharedPtr<String> chars) {
     }
     double dbl = atof(chars->c_str());
     return Token { Token::Type::Float, dbl, m_file, m_token_line, m_token_column };
+}
+
+Token Lexer::consume_nth_ref() {
+    char c = next();
+    long long num = 0;
+    do {
+        num *= 10;
+        num += c - '0';
+        c = next();
+    } while (isdigit(c));
+    return Token { Token::Type::NthRef, num, m_file, m_token_line, m_token_column };
 }
 
 long long Lexer::consume_hex_number(int max_length, bool allow_underscore) {

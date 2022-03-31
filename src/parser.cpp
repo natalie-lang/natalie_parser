@@ -329,6 +329,12 @@ void Parser::parse_comma_separated_expressions(ArrayNode *array, LocalsHashmap &
     }
 }
 
+Node *Parser::parse_back_ref(LocalsHashmap &) {
+    auto token = current_token();
+    advance();
+    return new BackRefNode { token, token.literal_string()->at(0) };
+}
+
 Node *Parser::parse_begin(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
@@ -1298,6 +1304,12 @@ Node *Parser::parse_not(LocalsHashmap &locals) {
     return node;
 }
 
+Node *Parser::parse_nth_ref(LocalsHashmap &) {
+    auto token = current_token();
+    advance();
+    return new NthRefNode { token, token.get_fixnum() };
+}
+
 Node *Parser::parse_regexp(LocalsHashmap &locals) {
     TM_UNUSED(locals);
     auto token = current_token();
@@ -2071,6 +2083,8 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
     case Type::LBracket:
     case Type::LBracketRBracket:
         return &Parser::parse_array;
+    case Type::BackRef:
+        return &Parser::parse_back_ref;
     case Type::BeginKeyword:
         return &Parser::parse_begin;
     case Type::BitwiseAnd:
@@ -2128,6 +2142,8 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
     case Type::Not:
     case Type::NotKeyword:
         return &Parser::parse_not;
+    case Type::NthRef:
+        return &Parser::parse_nth_ref;
     case Type::Regexp:
         return &Parser::parse_regexp;
     case Type::ReturnKeyword:

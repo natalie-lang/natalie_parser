@@ -20,6 +20,7 @@ public:
         AndEqual,
         AndKeyword,
         Arrow,
+        BackRef,
         BareName,
         BeginKeyword,
         BEGINKeyword,
@@ -109,6 +110,7 @@ public:
         NotEqual,
         NotKeyword,
         NotMatch,
+        NthRef,
         Or,
         OrEqual,
         OrKeyword,
@@ -190,9 +192,8 @@ public:
         assert(file);
     }
 
-    Token(Type type, long long fixnum, SharedPtr<String> literal, SharedPtr<String> file, size_t line, size_t column)
+    Token(Type type, long long fixnum, SharedPtr<String> file, size_t line, size_t column)
         : m_type { type }
-        , m_literal { literal }
         , m_fixnum { fixnum }
         , m_file { file }
         , m_line { line }
@@ -245,6 +246,8 @@ public:
             return "and";
         case Type::Arrow:
             return "->";
+        case Type::BackRef:
+            return "back_ref";
         case Type::BareName:
             return "name";
         case Type::BeginKeyword:
@@ -426,6 +429,8 @@ public:
             return "!~";
         case Type::Not:
             return "!";
+        case Type::NthRef:
+            return "nth_ref";
         case Type::Or:
             return "||";
         case Type::OrEqual:

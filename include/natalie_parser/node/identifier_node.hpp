@@ -48,27 +48,6 @@ public:
     bool is_lvar() const { return m_is_lvar; }
     void set_is_lvar(bool is_lvar) { m_is_lvar = is_lvar; }
 
-    size_t nth_ref() const {
-        auto str = name();
-        size_t len = str->length();
-        if (*str == "$0")
-            return 0;
-        if (len <= 1)
-            return 0;
-        int ref = 0;
-        for (size_t i = 1; i < len; i++) {
-            char c = (*str)[i];
-            if (i == 1 && c == '0')
-                return 0;
-            int num = c - 48;
-            if (num < 0 || num > 9)
-                return 0;
-            ref *= 10;
-            ref += num;
-        }
-        return ref;
-    }
-
     void add_to_locals(TM::Hashmap<TM::String> &locals) const {
         if (token_type() == Token::Type::BareName)
             locals.set(name()->c_str());
@@ -97,14 +76,8 @@ public:
             creator->append_symbol(name());
             break;
         case Token::Type::GlobalVariable: {
-            auto ref = nth_ref();
-            if (ref > 0) {
-                creator->set_type("nth_ref");
-                creator->append_integer(ref);
-            } else {
-                creator->set_type("gvar");
-                creator->append_symbol(name());
-            }
+            creator->set_type("gvar");
+            creator->append_symbol(name());
             break;
         }
         case Token::Type::InstanceVariable:

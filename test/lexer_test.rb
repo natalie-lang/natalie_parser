@@ -484,12 +484,18 @@ describe 'NatalieParser' do
     it 'tokenizes global variables' do
       expect(tokenize('$foo')).must_equal [{ type: :gvar, literal: :$foo }]
       expect(tokenize('$0')).must_equal [{ type: :gvar, literal: :$0 }]
-      %i[$? $! $= $~ $@ $& $` $' $+ $/ $\\ $; $< $> $$ $* $. $: $" $_ $,].each do |sym|
+      %i[$? $! $= $~ $@ $` $' $+ $/ $\\ $; $< $> $$ $* $. $: $" $_ $,].each do |sym|
         expect(tokenize(sym.to_s)).must_equal [{ type: :gvar, literal: sym }]
       end
       %i[$-0 $-F $-l $-I $-K $-a $-d $-i $-p $-v $-w].each do |sym|
         expect(tokenize(sym.to_s)).must_equal [{ type: :gvar, literal: sym }]
       end
+    end
+
+    it 'tokenizes back refs and nth refs (they look like globals)' do
+      expect(tokenize('$&')).must_equal [{ type: :back_ref, literal: :& }]
+      expect(tokenize('$1')).must_equal [{ type: :nth_ref, literal: 1 }]
+      expect(tokenize('$12')).must_equal [{ type: :nth_ref, literal: 12 }]
     end
 
     it 'tokenizes dots' do
