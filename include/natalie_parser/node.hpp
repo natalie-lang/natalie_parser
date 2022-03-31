@@ -34,6 +34,7 @@
 #include "natalie_parser/node/interpolated_regexp_node.hpp"
 #include "natalie_parser/node/interpolated_shell_node.hpp"
 #include "natalie_parser/node/interpolated_string_node.hpp"
+#include "natalie_parser/node/interpolated_symbol_node.hpp"
 #include "natalie_parser/node/iter_node.hpp"
 #include "natalie_parser/node/keyword_arg_node.hpp"
 #include "natalie_parser/node/keyword_splat_node.hpp"

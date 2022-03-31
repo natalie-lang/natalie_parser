@@ -97,6 +97,7 @@ private:
     int parse_regexp_options(String &);
     Node *parse_interpolated_shell(LocalsHashmap &);
     Node *parse_interpolated_string(LocalsHashmap &);
+    Node *parse_interpolated_symbol(LocalsHashmap &);
     Node *parse_lit(LocalsHashmap &);
     Node *parse_keyword_splat(LocalsHashmap &);
     SharedPtr<String> parse_method_name(LocalsHashmap &);

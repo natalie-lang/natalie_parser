@@ -46,6 +46,9 @@ SharedPtr<Vector<Token>> Lexer::tokens() {
             } else if (token.type() == Token::Type::Regexp) {
                 begin_token_type = Token::Type::InterpolatedRegexpBegin;
                 end_token_type = Token::Type::InterpolatedRegexpEnd;
+            } else if (token.type() == Token::Type::DoubleQuotedSymbol) {
+                begin_token_type = Token::Type::InterpolatedSymbolBegin;
+                end_token_type = Token::Type::InterpolatedSymbolEnd;
             }
             auto string_lexer = InterpolatedStringLexer { token };
             tokens->push(Token { begin_token_type, token.file(), token.line(), token.column() });
@@ -606,7 +609,7 @@ Token Lexer::build_next_token() {
         } else if (c == '"') {
             advance();
             auto string = consume_double_quoted_string('"');
-            return Token { Token::Type::Symbol, string.literal(), m_file, m_token_line, m_token_column };
+            return Token { Token::Type::DoubleQuotedSymbol, string.literal(), m_file, m_token_line, m_token_column };
         } else if (c == '\'') {
             advance();
             auto string = consume_single_quoted_string('\'');

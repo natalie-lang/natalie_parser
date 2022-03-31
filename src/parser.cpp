@@ -1177,6 +1177,26 @@ Node *Parser::parse_interpolated_string(LocalsHashmap &locals) {
     }
 };
 
+Node *Parser::parse_interpolated_symbol(LocalsHashmap &locals) {
+    auto token = current_token();
+    advance();
+    if (current_token().type() == Token::Type::InterpolatedSymbolEnd) {
+        auto symbol = new SymbolNode { token, new String };
+        advance();
+        return symbol;
+    } else if (current_token().type() == Token::Type::String && peek_token().type() == Token::Type::InterpolatedSymbolEnd) {
+        auto symbol = new SymbolNode { token, current_token().literal_string() };
+        advance();
+        advance();
+        return symbol;
+    } else {
+        auto interpolated_symbol = new InterpolatedSymbolNode { token };
+        parse_interpolated_body(locals, interpolated_symbol, Token::Type::InterpolatedSymbolEnd);
+        advance();
+        return interpolated_symbol;
+    }
+};
+
 Node *Parser::parse_lit(LocalsHashmap &locals) {
     TM_UNUSED(locals);
     auto token = current_token();
@@ -2091,6 +2111,8 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
         return &Parser::parse_interpolated_shell;
     case Type::InterpolatedStringBegin:
         return &Parser::parse_interpolated_string;
+    case Type::InterpolatedSymbolBegin:
+        return &Parser::parse_interpolated_symbol;
     case Type::Exponent:
         return &Parser::parse_keyword_splat;
     case Type::Bignum:

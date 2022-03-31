@@ -49,6 +49,7 @@ public:
         DotDot,
         DotDotDot,
         DoubleQuotedString,
+        DoubleQuotedSymbol,
         ElseKeyword,
         ElsifKeyword,
         ENCODINGKeyword,
@@ -82,6 +83,8 @@ public:
         InterpolatedShellEnd,
         InterpolatedStringBegin,
         InterpolatedStringEnd,
+        InterpolatedSymbolBegin,
+        InterpolatedSymbolEnd,
         LCurlyBrace,
         LBracket,
         LBracketRBracket,
@@ -299,6 +302,7 @@ public:
         case Type::Dot:
             return ".";
         case Type::DoubleQuotedString:
+        case Type::DoubleQuotedSymbol:
             TM_UNREACHABLE(); // converted to InterpolatedStringBegin/InterpolatedStringEnd
         case Type::ElseKeyword:
             return "else";
@@ -366,6 +370,10 @@ public:
             return "dstr";
         case Type::InterpolatedStringEnd:
             return "dstrend";
+        case Type::InterpolatedSymbolBegin:
+            return "dsym";
+        case Type::InterpolatedSymbolEnd:
+            return "dsymend";
         case Type::Invalid:
         case Type::InvalidCharacterEscape:
         case Type::InvalidUnicodeEscape:
@@ -716,6 +724,7 @@ public:
     bool can_have_interpolation() {
         switch (m_type) {
         case Token::Type::DoubleQuotedString:
+        case Token::Type::DoubleQuotedSymbol:
         case Token::Type::Regexp:
         case Token::Type::Shell:
             return true;

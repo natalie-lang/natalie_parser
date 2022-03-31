@@ -44,6 +44,7 @@ public:
         InterpolatedRegexp,
         InterpolatedShell,
         InterpolatedString,
+        InterpolatedSymbol,
         KeywordArg,
         KeywordSplat,
         LogicalAnd,

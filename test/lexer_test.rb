@@ -383,7 +383,6 @@ describe 'NatalieParser' do
         ':FooBar123' => :FooBar123,
         ':foo_bar' => :foo_bar,
         ":'foo bar'" => :'foo bar',
-        ':"foo\nbar"' => :"foo\nbar",
         ':foo?' => :foo?,
         ":'?foo'" => :'?foo',
         ':foo!' => :foo!,
@@ -426,6 +425,22 @@ describe 'NatalieParser' do
         ':~' => :~,
         ':~@' => :~@,
       }.each { |token, symbol| expect(tokenize(token)).must_equal [{ type: :symbol, literal: symbol }] }
+      expect(tokenize(':"foo\nbar"')).must_equal [
+        { type: :dsym },
+        { type: :string, literal: "foo\nbar" },
+        { type: :dsymend },
+      ]
+      expect(tokenize(':"foo#{1+1}"')).must_equal [
+        { type: :dsym },
+        { type: :string, literal: "foo" },
+        { type: :evstr },
+        { type: :fixnum, literal: 1 },
+        { type: :+ },
+        { type: :fixnum, literal: 1 },
+        { type: :"\n" },
+        { type: :evstrend },
+        { type: :dsymend },
+      ]
     end
 
     it 'tokenizes arrays' do
