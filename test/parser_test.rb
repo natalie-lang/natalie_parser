@@ -374,6 +374,22 @@ require_relative './test_helper'
         expect(parse('def +@; end')).must_equal s(:block, s(:defn, :+@, s(:args), s(:nil)))
       end
 
+      it 'parses undef' do
+        expect(-> { parse('undef') }).must_raise SyntaxError
+        expect(parse('undef foo')).must_equal s(:block, s(:undef, s(:lit, :foo)))
+        expect(parse('undef :foo')).must_equal s(:block, s(:undef, s(:lit, :foo)))
+        expect(parse('undef Foo')).must_equal s(:block, s(:undef, s(:lit, :Foo)))
+        multiple_args_result = parse('undef foo, :bar')
+        if parser == 'NatalieParser'
+          # Due to a limitation with how our parser builds nodes, the parse_undef function
+          # has to return a BlockNode, which causes this result to have a BlockNode inside
+          # another BlockNode. This shouldn't have any real-world effect on any code that
+          # consumes the generated AST, but it's worth noting. :-)
+          multiple_args_result = multiple_args_result[1]
+        end
+        expect(multiple_args_result).must_equal s(:block, s(:undef, s(:lit, :foo)), s(:undef, s(:lit, :bar)))
+      end
+
       it 'parses operator method definitions' do
         operators = %i[+ - * ** / % == === != =~ !~ > >= < <= <=> & | ^ ~ << >> [] []=]
         operators.each do |operator|

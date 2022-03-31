@@ -1449,6 +1449,41 @@ Node *Parser::parse_unary_operator(LocalsHashmap &locals) {
     return new CallNode { token, receiver, message };
 }
 
+Node *Parser::parse_undef(LocalsHashmap &) {
+    auto undef_token = current_token();
+    advance();
+    auto name_from_token = [&](Token &token) {
+        switch (token.type()) {
+        case Token::Type::BareName:
+        case Token::Type::Constant:
+        case Token::Type::Symbol:
+            return token.literal_string();
+        default:
+            throw_unexpected("method name for undef");
+        }
+    };
+    auto undef_node = new UndefNode { undef_token };
+    auto token = current_token();
+    auto name = name_from_token(token);
+    advance();
+    undef_node->add_arg(new SymbolNode { token, name });
+    if (current_token().is_comma()) {
+        auto block = new BlockNode { undef_token };
+        block->add_node(undef_node);
+        while (current_token().is_comma()) {
+            advance();
+            token = current_token();
+            name = name_from_token(token);
+            advance();
+            undef_node = new UndefNode { undef_token };
+            undef_node->add_arg(new SymbolNode { token, name });
+            block->add_node(undef_node);
+        }
+        return block;
+    }
+    return undef_node;
+};
+
 Node *Parser::parse_word_array(LocalsHashmap &locals) {
     TM_UNUSED(locals);
     auto token = current_token();
@@ -2056,14 +2091,12 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
         return &Parser::parse_interpolated_shell;
     case Type::InterpolatedStringBegin:
         return &Parser::parse_interpolated_string;
+    case Type::Exponent:
+        return &Parser::parse_keyword_splat;
     case Type::Bignum:
     case Type::Fixnum:
     case Type::Float:
         return &Parser::parse_lit;
-    case Type::Minus:
-    case Type::Plus:
-    case Type::Tilde:
-        return &Parser::parse_unary_operator;
     case Type::ModuleKeyword:
         return &Parser::parse_module;
     case Type::NextKeyword:
@@ -2081,8 +2114,6 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
         return &Parser::parse_self;
     case Type::Multiply:
         return &Parser::parse_splat;
-    case Type::Exponent:
-        return &Parser::parse_keyword_splat;
     case Type::Arrow:
         return &Parser::parse_stabby_proc;
     case Type::String:
@@ -2093,6 +2124,12 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
         return &Parser::parse_symbol;
     case Type::ConstantResolution:
         return &Parser::parse_top_level_constant;
+    case Type::Minus:
+    case Type::Plus:
+    case Type::Tilde:
+        return &Parser::parse_unary_operator;
+    case Type::UndefKeyword:
+        return &Parser::parse_undef;
     case Type::UnlessKeyword:
         return &Parser::parse_unless;
     case Type::UntilKeyword:

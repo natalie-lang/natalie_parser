@@ -20,6 +20,8 @@ NodeWithArgs *Node::to_node_with_args() {
         return static_cast<SafeCallNode *>(this);
     case Node::Type::Super:
         return static_cast<SuperNode *>(this);
+    case Node::Type::Undef:
+        return static_cast<UndefNode *>(this);
     case Node::Type::Yield:
         return static_cast<YieldNode *>(this);
     default:

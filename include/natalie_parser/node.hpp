@@ -68,6 +68,7 @@
 #include "natalie_parser/node/symbol_node.hpp"
 #include "natalie_parser/node/to_array_node.hpp"
 #include "natalie_parser/node/true_node.hpp"
+#include "natalie_parser/node/undef_node.hpp"
 #include "natalie_parser/node/until_node.hpp"
 #include "natalie_parser/node/while_node.hpp"
 #include "natalie_parser/node/yield_node.hpp"

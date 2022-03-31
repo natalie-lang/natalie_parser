@@ -76,6 +76,7 @@ public:
         Symbol,
         ToArray,
         True,
+        Undef,
         Until,
         While,
         Yield,
