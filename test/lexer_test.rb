@@ -223,6 +223,10 @@ describe 'NatalieParser' do
         { type: :bignum, literal: '0o7777777777777777777777' },
         { type: :bignum, literal: '0b1111111111111111111111111111111111111111111111111111111111111111' },
       ]
+      # too big for MRI fixnum, even though it fits in a long long
+      expect(tokenize('18446744073709551627')).must_equal [
+        { type: :bignum, literal: '18446744073709551627' }
+      ]
     end
 
     it 'tokenizes fixnums' do

@@ -1,4 +1,6 @@
+#include <errno.h>
 #include <limits>
+#include <stdlib.h>
 
 #include "natalie_parser/lexer.hpp"
 #include "natalie_parser/token.hpp"
@@ -1187,8 +1189,6 @@ Token Lexer::consume_heredoc() {
 }
 
 Token Lexer::consume_numeric() {
-    long long fixnum = 0;
-    bool overflow = false;
     SharedPtr<String> chars = new String;
     if (current_char() == '0') {
         switch (peek()) {
@@ -1199,18 +1199,12 @@ Token Lexer::consume_numeric() {
             if (!isdigit(c))
                 return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column };
             do {
-                fixnum *= 10;
-                fixnum += c - '0';
-                if (fixnum < 0) overflow = true;
                 chars->append_char(c);
                 c = next();
                 if (c == '_')
                     c = next();
             } while (isdigit(c));
-            if (overflow)
-                return Token { Token::Type::Bignum, chars, m_file, m_token_line, m_token_column };
-            else
-                return Token { Token::Type::Fixnum, fixnum, m_file, m_token_line, m_token_column };
+            return chars_to_fixnum_or_bignum_token(chars, 10, 0);
         }
         case 'o':
         case 'O': {
@@ -1221,18 +1215,12 @@ Token Lexer::consume_numeric() {
             if (!(c >= '0' && c <= '7'))
                 return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column };
             do {
-                fixnum *= 8;
-                fixnum += c - '0';
-                if (fixnum < 0) overflow = true;
                 chars->append_char(c);
                 c = next();
                 if (c == '_')
                     c = next();
             } while (c >= '0' && c <= '7');
-            if (overflow)
-                return Token { Token::Type::Bignum, chars, m_file, m_token_line, m_token_column };
-            else
-                return Token { Token::Type::Fixnum, fixnum, m_file, m_token_line, m_token_column };
+            return chars_to_fixnum_or_bignum_token(chars, 8, 2);
         }
         case 'x':
         case 'X': {
@@ -1243,23 +1231,12 @@ Token Lexer::consume_numeric() {
             if (!isxdigit(c))
                 return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column };
             do {
-                fixnum *= 16;
-                if (c >= 'a' && c <= 'f')
-                    fixnum += c - 'a' + 10;
-                else if (c >= 'A' && c <= 'F')
-                    fixnum += c - 'A' + 10;
-                else
-                    fixnum += c - '0';
-                if (fixnum < 0) overflow = true;
                 chars->append_char(c);
                 c = next();
                 if (c == '_')
                     c = next();
             } while (isxdigit(c));
-            if (overflow)
-                return Token { Token::Type::Bignum, chars, m_file, m_token_line, m_token_column };
-            else
-                return Token { Token::Type::Fixnum, fixnum, m_file, m_token_line, m_token_column };
+            return chars_to_fixnum_or_bignum_token(chars, 16, 2);
         }
         case 'b':
         case 'B': {
@@ -1270,38 +1247,37 @@ Token Lexer::consume_numeric() {
             if (c != '0' && c != '1')
                 return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column };
             do {
-                fixnum *= 2;
-                fixnum += c - '0';
-                if (fixnum < 0) overflow = true;
                 chars->append_char(c);
                 c = next();
                 if (c == '_')
                     c = next();
             } while (c == '0' || c == '1');
-            if (overflow)
-                return Token { Token::Type::Bignum, chars, m_file, m_token_line, m_token_column };
-            else
-                return Token { Token::Type::Fixnum, fixnum, m_file, m_token_line, m_token_column };
+            return chars_to_fixnum_or_bignum_token(chars, 2, 2);
         }
         }
     }
     char c = current_char();
     do {
-        fixnum *= 10;
-        fixnum += c - '0';
-        if (fixnum < 0) overflow = true;
         chars->append_char(c);
         c = next();
         if (c == '_')
             c = next();
     } while (isdigit(c));
-    if ((c == '.' && isdigit(peek())) || (c == 'e' || c == 'E')) {
+    if ((c == '.' && isdigit(peek())) || (c == 'e' || c == 'E'))
         return consume_numeric_as_float(chars);
-    } else if (overflow) {
+    else
+        return chars_to_fixnum_or_bignum_token(chars, 10, 0);
+}
+
+const long long max_fixnum = std::numeric_limits<long long>::max() / 2; // 63 bits for MRI
+
+Token Lexer::chars_to_fixnum_or_bignum_token(SharedPtr<String> chars, int base, int offset) {
+    errno = 0;
+    auto fixnum = strtoll(chars->c_str() + offset, nullptr, base);
+    if (errno != 0 || fixnum > max_fixnum)
         return Token { Token::Type::Bignum, chars, m_file, m_token_line, m_token_column };
-    } else {
+    else
         return Token { Token::Type::Fixnum, fixnum, m_file, m_token_line, m_token_column };
-    }
 }
 
 Token Lexer::consume_numeric_as_float(SharedPtr<String> chars) {

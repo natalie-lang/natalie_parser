@@ -60,6 +60,7 @@ private:
     Token consume_regexp(char delimiter);
     SharedPtr<String> consume_non_whitespace();
     void utf32_codepoint_to_utf8(String &buf, long long codepoint);
+    Token chars_to_fixnum_or_bignum_token(SharedPtr<String> chars, int base, int offset);
 
     bool token_is_first_on_line() const;
 
