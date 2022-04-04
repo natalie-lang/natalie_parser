@@ -47,6 +47,7 @@ public:
     virtual bool is_callable() const override { return true; }
 
     const Node &receiver() const { return m_receiver.ref(); }
+    void set_receiver(Node *receiver) { m_receiver = receiver; }
 
     SharedPtr<String> message() const { return m_message; }
 
@@ -59,6 +60,12 @@ public:
         assert(message);
         m_message = new String(message);
     }
+
+    bool is_infix() const { return m_is_infix; }
+    void set_is_infix(bool is_infix) { m_is_infix = is_infix; }
+
+    bool is_unary() const { return m_is_unary; }
+    void set_is_unary(bool is_unary) { m_is_unary = is_unary; }
 
     virtual void transform(Creator *creator) const override {
         if (creator->assignment()) {
@@ -83,5 +90,7 @@ public:
 protected:
     OwnedPtr<Node> m_receiver {};
     SharedPtr<String> m_message {};
+    bool m_is_infix { false };
+    bool m_is_unary { false };
 };
 }

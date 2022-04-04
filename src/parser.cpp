@@ -1,4 +1,5 @@
 #include "natalie_parser/parser.hpp"
+#include "natalie_parser/creator/debug_creator.hpp"
 
 namespace NatalieParser {
 
@@ -20,9 +21,9 @@ enum class Parser::Precedence {
     LOGICALOR, // ||
     LOGICALAND, // &&
     RANGE, // ..
-    ITER_CURLY, // { |n| ... }
     LOGICALNOT, // not
     EQUALITY, // <=> == === != =~ !~
+    ITER_CURLY, // { |n| ... }
     LESSGREATER, // <= < > >=
     BITWISEOR, // ^ |
     BITWISEAND, // &
@@ -150,7 +151,7 @@ Parser::Precedence Parser::get_precedence(Token &token, Node *left) {
     }
     auto current = current_token();
     if (left && is_first_arg_of_call_without_parens(left, current))
-        return Precedence::CALL;
+        return Precedence::BARECALLARGS;
     return Precedence::LOWEST;
 }
 
@@ -1297,10 +1298,9 @@ Node *Parser::parse_not(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     auto precedence = get_precedence(token);
-    auto node = new CallNode {
+    auto node = new NotNode {
         token,
         parse_expression(precedence, locals),
-        new String("!")
     };
     return node;
 }
@@ -1479,7 +1479,9 @@ Node *Parser::parse_unary_operator(LocalsHashmap &locals) {
     default:
         TM_UNREACHABLE();
     }
-    return new CallNode { token, receiver, message };
+    auto call_node = new CallNode { token, receiver, message };
+    call_node->set_is_unary(true);
+    return call_node;
 }
 
 Node *Parser::parse_undef(LocalsHashmap &) {
@@ -1647,20 +1649,75 @@ Node *Parser::parse_iter_expression(Node *left, LocalsHashmap &locals) {
     auto token = current_token();
     LocalsHashmap our_locals { locals }; // copy!
     bool curly_brace = current_token().type() == Token::Type::LCurlyBrace;
-    advance();
+    // FIXME: pass args into parse_iter_args
     SharedPtr<Vector<Node *>> args = new Vector<Node *> {};
-    switch (left->type()) {
-    case Node::Type::Identifier:
-    case Node::Type::Call:
-    case Node::Type::Super:
+    auto parse_iter_args_if_present = [&]() {
         if (current_token().is_block_arg_delimiter()) {
             advance();
             args = parse_iter_args(our_locals);
             expect(Token::Type::BitwiseOr, "end of block args");
             advance();
         }
+    };
+    switch (left->type()) {
+    case Node::Type::Call: {
+        auto call_node = static_cast<CallNode *>(left);
+        if (call_node->is_infix()) {
+            // Infix operations cannot take a block, so we need to
+            // attach the block to the right side (the argument).
+            //
+            //     foo + bar do ... end
+            //           ^ block attaches here
+            //
+            // We cannot handle this with simple precedence rules because
+            // a call can have infix operations as arguments, and the outer
+            // call gets the block, e.g.:
+            //
+            //     foo bar + baz do ... end
+            //     ^ block attaches here
+            auto right = call_node->args().at(0);
+            right = parse_iter_expression(right, locals);
+            call_node->args()[0] = right;
+            return call_node;
+        } else if (call_node->is_unary()) {
+            // Similar to above...
+            auto receiver = call_node->receiver().clone();
+            receiver = parse_iter_expression(receiver, locals);
+            call_node->set_receiver(receiver);
+            return call_node;
+        }
+        advance();
+        parse_iter_args_if_present();
         break;
+    }
+    case Node::Type::Identifier:
+    case Node::Type::Super:
+        advance();
+        parse_iter_args_if_present();
+        break;
+    case Node::Type::LogicalAnd: {
+        auto and_node = static_cast<LogicalAndNode *>(left);
+        auto right = and_node->right().clone();
+        right = parse_iter_expression(right, locals);
+        and_node->set_right(right);
+        return and_node;
+    }
+    case Node::Type::Not: {
+        auto not_node = static_cast<NotNode *>(left);
+        auto right = not_node->expression().clone();
+        right = parse_iter_expression(right, locals);
+        not_node->set_expression(right);
+        return not_node;
+    }
+    case Node::Type::LogicalOr: {
+        auto or_node = static_cast<LogicalOrNode *>(left);
+        auto right = or_node->right().clone();
+        right = parse_iter_expression(right, locals);
+        or_node->set_right(right);
+        return or_node;
+    }
     case Node::Type::StabbyProc:
+        advance();
         for (auto arg : static_cast<StabbyProcNode *>(left)->args()) {
             args->push(arg->clone());
         }
@@ -1792,6 +1849,7 @@ Node *Parser::parse_infix_expression(Node *left, LocalsHashmap &locals) {
         left,
         new String(op.type_value()),
     };
+    node->set_is_infix(true);
     node->add_arg(right);
     return node;
 };
@@ -1862,7 +1920,7 @@ Node *Parser::parse_match_expression(Node *left, LocalsHashmap &locals) {
 Node *Parser::parse_not_match_expression(Node *left, LocalsHashmap &locals) {
     auto token = current_token();
     auto match = parse_match_expression(left, locals);
-    return new NotNode { token, match };
+    return new NotMatchNode { token, match };
 }
 
 Node *Parser::parse_op_assign_expression(Node *left, LocalsHashmap &locals) {

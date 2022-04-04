@@ -58,6 +58,7 @@ public:
         Nil,
         NilSexp,
         Not,
+        NotMatch,
         NthRef,
         OpAssign,
         OpAssignAccessor,

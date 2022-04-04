@@ -62,6 +62,8 @@ require_relative './test_helper'
         expect(parse('-1**2')).must_equal s(:block, s(:call, s(:call, s(:lit, 1), :**, s(:lit, 2)), :-@))
         expect(parse('~1')).must_equal s(:block, s(:call, s(:lit, 1), :~))
         expect(parse('~foo')).must_equal s(:block, s(:call, s(:call, nil, :foo), :~))
+        # FIXME
+        #expect(parse('foo ~2')).must_equal s(:block, s(:call, nil, :foo, s(:call, s(:lit, 2), :~)))
       end
 
       it 'parses operator expressions' do
@@ -91,6 +93,7 @@ require_relative './test_helper'
         expect(parse('5 -3')).must_equal s(:block, s(:call, s(:lit, 5), :-, s(:lit, 3)))
         expect(parse('1 +1')).must_equal s(:block, s(:call, s(:lit, 1), :+, s(:lit, 1)))
         expect(parse('(1+2)-3 == 0')).must_equal s(:block, s(:call, s(:call, s(:call, s(:lit, 1), :+, s(:lit, 2)), :-, s(:lit, 3)), :==, s(:lit, 0)))
+        expect(parse('1 + 2 == 3 * 4')).must_equal s(:block, s(:call, s(:call, s(:lit, 1), :+, s(:lit, 2)), :==, s(:call, s(:lit, 3), :*, s(:lit, 4))))
         expect(parse('2 ** 10')).must_equal s(:block, s(:call, s(:lit, 2), :**, s(:lit, 10)))
         expect(parse('1 * 2 ** 10 + 3')).must_equal s(:block, s(:call, s(:call, s(:lit, 1), :*, s(:call, s(:lit, 2), :**, s(:lit, 10))), :+, s(:lit, 3)))
         expect(parse('1 & 2 | 3 ^ 4')).must_equal s(:block, s(:call, s(:call, s(:call, s(:lit, 1), :&, s(:lit, 2)), :|, s(:lit, 3)), :^, s(:lit, 4)))
@@ -551,6 +554,9 @@ require_relative './test_helper'
         expect(parse('foo a ? b : c')).must_equal s(:block, s(:call, nil, :foo, s(:if, s(:call, nil, :a), s(:call, nil, :b), s(:call, nil, :c))))
         expect(parse('foo a += 1')).must_equal s(:block, s(:call, nil, :foo, s(:lasgn, :a, s(:call, s(:lvar, :a), :+, s(:lit, 1)))))
         expect(parse('foo a and b')).must_equal s(:block, s(:and, s(:call, nil, :foo, s(:call, nil, :a)), s(:call, nil, :b)))
+        expect(parse("foo a and b { 1 }")).must_equal s(:block, s(:and, s(:call, nil, :foo, s(:call, nil, :a)), s(:iter, s(:call, nil, :b), 0, s(:lit, 1))))
+        expect(parse("foo a and b do\n1\nend")).must_equal s(:block, s(:and, s(:call, nil, :foo, s(:call, nil, :a)), s(:iter, s(:call, nil, :b), 0, s(:lit, 1))))
+        expect(parse("foo a == b, c")).must_equal s(:block, s(:call, nil, :foo, s(:call, s(:call, nil, :a), :==, s(:call, nil, :b)), s(:call, nil, :c)))
       end
 
       it 'parses operator method calls' do
@@ -832,6 +838,30 @@ require_relative './test_helper'
         expect(parse("get 'foo', bar do 'baz' end")).must_equal s(:block, s(:iter, s(:call, nil, :get, s(:str, 'foo'), s(:call, nil, :bar)), 0, s(:str, 'baz')))
         expect(parse("foo += bar { |x| x }")).must_equal s(:block, s(:lasgn, :foo, s(:call, s(:lvar, :foo), :+, s(:iter, s(:call, nil, :bar), s(:args, :x), s(:lvar, :x)))))
         expect(parse('bar { |a, | a }')).must_equal s(:block, s(:iter, s(:call, nil, :bar), s(:args, :a, nil), s(:lvar, :a)))
+        expect(parse('foo bar { 1 }')).must_equal s(:block, s(:call, nil, :foo, s(:iter, s(:call, nil, :bar), 0, s(:lit, 1))))
+        expect(parse('foo == bar { 1 }')).must_equal s(:block, s(:call, s(:call, nil, :foo), :==, s(:iter, s(:call, nil, :bar), 0, s(:lit, 1))))
+        expect(parse('foo { 1 } == bar { 2 }')).must_equal s(:block, s(:call, s(:iter, s(:call, nil, :foo), 0, s(:lit, 1)), :==, s(:iter, s(:call, nil, :bar), 0, s(:lit, 2))))
+        expect(parse("foo bar do\n 1\n end")).must_equal s(:block, s(:iter, s(:call, nil, :foo, s(:call, nil, :bar)), 0, s(:lit, 1)))
+        expect(parse("foo bar, baz do\n 1\n end")).must_equal s(:block, s(:iter, s(:call, nil, :foo, s(:call, nil, :bar), s(:call, nil, :baz)), 0, s(:lit, 1)))
+        expect(parse("foo == bar do\n 1\n end")).must_equal s(:block, s(:call, s(:call, nil, :foo), :==, s(:iter, s(:call, nil, :bar), 0, s(:lit, 1))))
+        expect(parse("foo { 1 } == bar do\n 2 \n end")).must_equal s(:block, s(:call, s(:iter, s(:call, nil, :foo), 0, s(:lit, 1)), :==, s(:iter, s(:call, nil, :bar), 0, s(:lit, 2))))
+        expect(parse("foo * bar do\n 1\n end")).must_equal s(:block, s(:call, s(:call, nil, :foo), :*, s(:iter, s(:call, nil, :bar), 0, s(:lit, 1))))
+        expect(parse("foo + bar do\n 1\n end")).must_equal s(:block, s(:call, s(:call, nil, :foo), :+, s(:iter, s(:call, nil, :bar), 0, s(:lit, 1))))
+        expect(parse("foo += bar do\n 1\n end")).must_equal s(:block, s(:lasgn, :foo, s(:call, s(:lvar, :foo), :+, s(:iter, s(:call, nil, :bar), 0, s(:lit, 1)))))
+        expect(parse("foo || bar do\n 1\n end")).must_equal s(:block, s(:or, s(:call, nil, :foo), s(:iter, s(:call, nil, :bar), 0, s(:lit, 1))))
+        expect(parse("foo && bar do\n 1\n end")).must_equal s(:block, s(:and, s(:call, nil, :foo), s(:iter, s(:call, nil, :bar), 0, s(:lit, 1))))
+        expect(parse("foo 1 && bar do\n 1\n end")).must_equal s(:block, s(:iter, s(:call, nil, :foo, s(:and, s(:lit, 1), s(:call, nil, :bar))), 0, s(:lit, 1)))
+        expect(parse("foo 1, 2 || bar do\n 1\n end")).must_equal s(:block, s(:iter, s(:call, nil, :foo, s(:lit, 1), s(:or, s(:lit, 2), s(:call, nil, :bar))), 0, s(:lit, 1)))
+        expect(parse("not foo do\n 1\n end")).must_equal s(:block, s(:call, s(:iter, s(:call, nil, :foo), 0, s(:lit, 1)), :!))
+        expect(-> { parse("foo 1 < 2 { 3 }") }).must_raise SyntaxError
+        expect(-> { parse("foo 1 | 2 { 3 }") }).must_raise SyntaxError
+        expect(-> { parse("foo 1 & 2 { 3 }") }).must_raise SyntaxError
+        expect(-> { parse("foo 1 << 2 { 3 }") }).must_raise SyntaxError
+        expect(-> { parse("foo 1 + 2 { 3 }") }).must_raise SyntaxError
+        expect(-> { parse("foo 1 * 2 { 3 }") }).must_raise SyntaxError
+        expect(-> { parse("foo 1 ** 2 { 3 }") }).must_raise SyntaxError
+        # FIXME
+        #expect(-> { parse("foo ~1 { 3 }") }).must_raise SyntaxError
       end
 
       it 'parses block pass (ampersand operator)' do

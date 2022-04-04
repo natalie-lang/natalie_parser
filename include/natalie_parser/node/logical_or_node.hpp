@@ -25,6 +25,8 @@ public:
     const Node &left() const { return m_left.ref(); }
     const Node &right() const { return m_right.ref(); }
 
+    void set_right(Node *right) { m_right = right; }
+
     virtual void transform(Creator *creator) const override {
         creator->set_type("or");
         creator->append(m_left.ref());

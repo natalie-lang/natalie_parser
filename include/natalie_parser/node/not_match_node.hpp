@@ -10,25 +10,23 @@ namespace NatalieParser {
 
 using namespace TM;
 
-class NotNode : public Node {
+class NotMatchNode : public Node {
 public:
-    NotNode(const Token &token, Node *expression)
+    NotMatchNode(const Token &token, Node *expression)
         : Node { token }
         , m_expression { expression } {
         assert(m_expression);
     }
 
-    virtual Type type() const override { return Type::Not; }
+    virtual Type type() const override { return Type::NotMatch; }
 
     const Node &expression() const { return m_expression.ref(); }
 
     void set_expression(Node *expression) { m_expression = expression; }
 
     virtual void transform(Creator *creator) const override {
-        creator->set_type("call");
+        creator->set_type("not");
         creator->append(m_expression.ref());
-        auto message = String("!");
-        creator->append_symbol(message);
     }
 
 protected:

@@ -49,6 +49,7 @@
 #include "natalie_parser/node/nil_node.hpp"
 #include "natalie_parser/node/nil_sexp_node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
+#include "natalie_parser/node/not_match_node.hpp"
 #include "natalie_parser/node/not_node.hpp"
 #include "natalie_parser/node/nth_ref_node.hpp"
 #include "natalie_parser/node/op_assign_accessor_node.hpp"

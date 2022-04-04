@@ -748,6 +748,7 @@ public:
         case Token::Type::ConstantResolution:
         case Token::Type::DefKeyword:
         case Token::Type::DefinedKeyword:
+        case Token::Type::DoKeyword:
         case Token::Type::DoubleQuotedString:
         case Token::Type::ENCODINGKeyword:
         case Token::Type::FalseKeyword:
