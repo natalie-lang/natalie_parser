@@ -780,6 +780,7 @@ public:
         case Token::Type::SuperKeyword:
         case Token::Type::Symbol:
         case Token::Type::SymbolKey:
+        case Token::Type::Tilde:
         case Token::Type::TrueKeyword:
             return true;
         default:

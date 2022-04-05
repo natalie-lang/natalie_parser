@@ -62,8 +62,8 @@ require_relative './test_helper'
         expect(parse('-1**2')).must_equal s(:block, s(:call, s(:call, s(:lit, 1), :**, s(:lit, 2)), :-@))
         expect(parse('~1')).must_equal s(:block, s(:call, s(:lit, 1), :~))
         expect(parse('~foo')).must_equal s(:block, s(:call, s(:call, nil, :foo), :~))
-        # FIXME
-        #expect(parse('foo ~2')).must_equal s(:block, s(:call, nil, :foo, s(:call, s(:lit, 2), :~)))
+        expect(parse('foo ~2')).must_equal s(:block, s(:call, nil, :foo, s(:call, s(:lit, 2), :~)))
+        expect(parse('2 + ~2')).must_equal s(:block, s(:call, s(:lit, 2), :+, s(:call, s(:lit, 2), :~)))
       end
 
       it 'parses operator expressions' do
@@ -861,8 +861,7 @@ require_relative './test_helper'
         expect(-> { parse("foo 1 + 2 { 3 }") }).must_raise SyntaxError
         expect(-> { parse("foo 1 * 2 { 3 }") }).must_raise SyntaxError
         expect(-> { parse("foo 1 ** 2 { 3 }") }).must_raise SyntaxError
-        # FIXME
-        #expect(-> { parse("foo ~1 { 3 }") }).must_raise SyntaxError
+        expect(-> { parse("foo ~1 { 3 }") }).must_raise SyntaxError
       end
 
       it 'parses block pass (ampersand operator)' do
