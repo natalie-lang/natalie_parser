@@ -853,6 +853,7 @@ require_relative './test_helper'
         expect(parse("foo 1 && bar do\n 1\n end")).must_equal s(:block, s(:iter, s(:call, nil, :foo, s(:and, s(:lit, 1), s(:call, nil, :bar))), 0, s(:lit, 1)))
         expect(parse("foo 1, 2 || bar do\n 1\n end")).must_equal s(:block, s(:iter, s(:call, nil, :foo, s(:lit, 1), s(:or, s(:lit, 2), s(:call, nil, :bar))), 0, s(:lit, 1)))
         expect(parse("not foo do\n 1\n end")).must_equal s(:block, s(:call, s(:iter, s(:call, nil, :foo), 0, s(:lit, 1)), :!))
+        expect(parse("foo 1 < 2 do\n3\nend")).must_equal s(:block, s(:iter, s(:call, nil, :foo, s(:call, s(:lit, 1), :<, s(:lit, 2))), 0, s(:lit, 3)))
         expect(-> { parse("foo 1 < 2 { 3 }") }).must_raise SyntaxError
         expect(-> { parse("foo 1 | 2 { 3 }") }).must_raise SyntaxError
         expect(-> { parse("foo 1 & 2 { 3 }") }).must_raise SyntaxError

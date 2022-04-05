@@ -44,9 +44,57 @@ enum class Parser::Precedence {
 
 bool Parser::higher_precedence(Token &token, Node *left, Precedence current_precedence) {
     auto next_precedence = get_precedence(token, left);
-    // trick to make chained assignment right-to-left
-    if (current_precedence == Precedence::ASSIGNMENT && next_precedence == Precedence::ASSIGNMENT)
+
+    if (current_precedence == Precedence::ASSIGNMENT && next_precedence == Precedence::ASSIGNMENT) {
+        // Simple precedence comparison would not properly order
+        // assignment, as in the following code:
+        //
+        //     x = y = 2
+        //
+        // ...which is equivalent to:
+        //
+        //     x = (y = 2)
+        //
+        // So if we see two ASSIGNMENT precedences in a row, bind
+        // the right-most one together first (which is to say,
+        // return true.)
+        //
         return true;
+    }
+
+    if (next_precedence == Precedence::ITER_BLOCK && next_precedence <= current_precedence) {
+        // Simple precedence comparison to the nearest neighbor is not
+        // sufficient when BARECALLARGS (a method call without parentheses)
+        // is in use. For example, the following code, if looking at
+        // precedence rules alone, would attach the block to the '+' op,
+        // which would be incorrect:
+        //
+        //     bar + baz do ... end
+        //         ^ block should NOT attach here
+        //
+        // Rather, we want:
+        //
+        //     bar + baz do ... end
+        //           ^ block attaches here
+        //
+        // But changing the precedence order cannot fix this, because in
+        // many cases, we need the block to attach farther left, e.g.:
+        //
+        //     foo bar + baz do ... end
+        //     ^ block attaches here
+        //
+        // Thus the answer is to keep a stack of precedences and look
+        // further left to see if BARECALLARGS are in use. If not, then
+        // we should attach the block now, to the nearest call
+        // (which is to say, we should return true).
+        //
+        for (auto precedence : m_precedence_stack) {
+            if (precedence == Precedence::BARECALLARGS)
+                return false;
+        }
+        return true;
+    }
+
     return next_precedence > current_precedence;
 }
 
@@ -159,11 +207,12 @@ Node *Parser::parse_expression(Parser::Precedence precedence, LocalsHashmap &loc
     skip_newlines();
 
     auto null_fn = null_denotation(current_token().type());
-    if (!null_fn) {
+    if (!null_fn)
         throw_unexpected("expression");
-    }
 
     Node *left = (this->*null_fn)(locals);
+
+    m_precedence_stack.push(precedence);
 
     while (current_token().is_valid()) {
         auto token = current_token();
@@ -172,7 +221,11 @@ Node *Parser::parse_expression(Parser::Precedence precedence, LocalsHashmap &loc
         auto left_fn = left_denotation(token, left);
         assert(left_fn);
         left = (this->*left_fn)(left, locals);
+        m_precedence_stack.pop();
+        m_precedence_stack.push(precedence);
     }
+
+    m_precedence_stack.pop();
 
     return left;
 }
@@ -1662,67 +1715,7 @@ Node *Parser::parse_iter_expression(Node *left, LocalsHashmap &locals) {
             advance();
         }
     } else {
-        // These operations cannot take a block, so we need to
-        // attach the block to the right side. For example, an infix '+':
-        //
-        //     foo + bar do ... end
-        //           ^ block attaches here
-        //
-        // We cannot handle this with simple precedence rules because
-        // a call can have infix operations as arguments, and the outer
-        // call gets the block, e.g.:
-        //
-        //     foo bar + baz do ... end
-        //     ^ block attaches here
-        //
-        // To fix this, we sort of correct the precedence mistake here
-        // by calling this same function recursively with the right side
-        // of whatever operation we're seeing here.
-        //
-        // An alternative to this approach might be to make our
-        // higher_precedence() function a bit smarter by giving it more
-        // information... a stack of node types perhaps. Then it could
-        // more correctly decide if the precedence decision makes sense
-        // in the context of what is available.
-        switch (left->type()) {
-        case Node::Type::InfixOp: {
-            auto infix_op_node = static_cast<InfixOpNode *>(left);
-            auto right = infix_op_node->right().clone();
-            right = parse_iter_expression(right, locals);
-            infix_op_node->set_right(right);
-            return infix_op_node;
-        }
-        case Node::Type::LogicalAnd: {
-            auto and_node = static_cast<LogicalAndNode *>(left);
-            auto right = and_node->right().clone();
-            right = parse_iter_expression(right, locals);
-            and_node->set_right(right);
-            return and_node;
-        }
-        case Node::Type::LogicalOr: {
-            auto or_node = static_cast<LogicalOrNode *>(left);
-            auto right = or_node->right().clone();
-            right = parse_iter_expression(right, locals);
-            or_node->set_right(right);
-            return or_node;
-        }
-        case Node::Type::Not: {
-            auto not_node = static_cast<NotNode *>(left);
-            auto right = not_node->expression().clone();
-            right = parse_iter_expression(right, locals);
-            not_node->set_expression(right);
-            return not_node;
-        }
-        case Node::Type::UnaryOp: {
-            auto unary_op_node = static_cast<UnaryOpNode *>(left);
-            auto right = unary_op_node->right().clone();
-            right = parse_iter_expression(right, locals);
-            unary_op_node->set_right(right);
-            return unary_op_node;
-        }
-        default:
-            throw_unexpected(left->token(), "call to accept block");
-        }
+        throw_unexpected(left->token(), "call to accept block");
     }
     auto end_token_type = curly_brace ? Token::Type::RCurlyBrace : Token::Type::EndKeyword;
     auto body = parse_body(our_locals, Precedence::LOWEST, end_token_type);
@@ -2382,21 +2375,21 @@ void Parser::throw_unexpected(const Token &token, const char *expected) {
     } else if (!type) {
         message = String::format("{}#{}: syntax error, expected '{}' (token type: {})", file, line, expected, (long long)token.type());
     } else if (token.type() == Token::Type::Eof) {
-        auto indent = String { current_token().column(), ' ' };
+        auto indent = String { token.column(), ' ' };
         message = String::format(
             "{}#{}: syntax error, unexpected end-of-input (expected: '{}')\n"
             "{}\n"
             "{}^ stopped here, expected '{}'",
             file, line, expected, current_line(), indent, expected);
     } else if (literal) {
-        auto indent = String { current_token().column(), ' ' };
+        auto indent = String { token.column(), ' ' };
         message = String::format(
             "{}#{}: syntax error, unexpected {} '{}' (expected: '{}')\n"
             "{}\n"
             "{}^ stopped here, expected '{}'",
             file, line, type, literal, expected, current_line(), indent, expected);
     } else {
-        auto indent = String { current_token().column(), ' ' };
+        auto indent = String { token.column(), ' ' };
         message = String::format(
             "{}#{}: syntax error, unexpected '{}' (expected: '{}')\n"
             "{}\n"

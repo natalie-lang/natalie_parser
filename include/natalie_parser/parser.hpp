@@ -190,5 +190,7 @@ private:
     SharedPtr<String> m_file;
     size_t m_index { 0 };
     SharedPtr<Vector<Token>> m_tokens {};
+
+    Vector<Precedence> m_precedence_stack {};
 };
 }
