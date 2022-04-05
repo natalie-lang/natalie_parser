@@ -1479,9 +1479,7 @@ Node *Parser::parse_unary_operator(LocalsHashmap &locals) {
     default:
         TM_UNREACHABLE();
     }
-    auto call_node = new CallNode { token, receiver, message };
-    call_node->set_is_unary(true);
-    return call_node;
+    return new UnaryOpNode { token, message, receiver };
 }
 
 Node *Parser::parse_undef(LocalsHashmap &) {
@@ -1651,79 +1649,80 @@ Node *Parser::parse_iter_expression(Node *left, LocalsHashmap &locals) {
     bool curly_brace = current_token().type() == Token::Type::LCurlyBrace;
     // FIXME: pass args into parse_iter_args
     SharedPtr<Vector<Node *>> args = new Vector<Node *> {};
-    auto parse_iter_args_if_present = [&]() {
+    if (left->type() == Node::Type::StabbyProc) {
+        advance();
+        for (auto arg : static_cast<StabbyProcNode *>(left)->args())
+            args->push(arg->clone());
+    } else if (left->can_accept_a_block()) {
+        advance();
         if (current_token().is_block_arg_delimiter()) {
             advance();
             args = parse_iter_args(our_locals);
             expect(Token::Type::BitwiseOr, "end of block args");
             advance();
         }
-    };
-    switch (left->type()) {
-    case Node::Type::Call: {
-        auto call_node = static_cast<CallNode *>(left);
-        if (call_node->is_infix()) {
-            // Infix operations cannot take a block, so we need to
-            // attach the block to the right side (the argument).
-            //
-            //     foo + bar do ... end
-            //           ^ block attaches here
-            //
-            // We cannot handle this with simple precedence rules because
-            // a call can have infix operations as arguments, and the outer
-            // call gets the block, e.g.:
-            //
-            //     foo bar + baz do ... end
-            //     ^ block attaches here
-            auto right = call_node->args().at(0);
+    } else {
+        // These operations cannot take a block, so we need to
+        // attach the block to the right side. For example, an infix '+':
+        //
+        //     foo + bar do ... end
+        //           ^ block attaches here
+        //
+        // We cannot handle this with simple precedence rules because
+        // a call can have infix operations as arguments, and the outer
+        // call gets the block, e.g.:
+        //
+        //     foo bar + baz do ... end
+        //     ^ block attaches here
+        //
+        // To fix this, we sort of correct the precedence mistake here
+        // by calling this same function recursively with the right side
+        // of whatever operation we're seeing here.
+        //
+        // An alternative to this approach might be to make our
+        // higher_precedence() function a bit smarter by giving it more
+        // information... a stack of node types perhaps. Then it could
+        // more correctly decide if the precedence decision makes sense
+        // in the context of what is available.
+        switch (left->type()) {
+        case Node::Type::InfixOp: {
+            auto infix_op_node = static_cast<InfixOpNode *>(left);
+            auto right = infix_op_node->right().clone();
             right = parse_iter_expression(right, locals);
-            call_node->args()[0] = right;
-            return call_node;
-        } else if (call_node->is_unary()) {
-            // Similar to above...
-            auto receiver = call_node->receiver().clone();
-            receiver = parse_iter_expression(receiver, locals);
-            call_node->set_receiver(receiver);
-            return call_node;
+            infix_op_node->set_right(right);
+            return infix_op_node;
         }
-        advance();
-        parse_iter_args_if_present();
-        break;
-    }
-    case Node::Type::Identifier:
-    case Node::Type::Super:
-        advance();
-        parse_iter_args_if_present();
-        break;
-    case Node::Type::LogicalAnd: {
-        auto and_node = static_cast<LogicalAndNode *>(left);
-        auto right = and_node->right().clone();
-        right = parse_iter_expression(right, locals);
-        and_node->set_right(right);
-        return and_node;
-    }
-    case Node::Type::Not: {
-        auto not_node = static_cast<NotNode *>(left);
-        auto right = not_node->expression().clone();
-        right = parse_iter_expression(right, locals);
-        not_node->set_expression(right);
-        return not_node;
-    }
-    case Node::Type::LogicalOr: {
-        auto or_node = static_cast<LogicalOrNode *>(left);
-        auto right = or_node->right().clone();
-        right = parse_iter_expression(right, locals);
-        or_node->set_right(right);
-        return or_node;
-    }
-    case Node::Type::StabbyProc:
-        advance();
-        for (auto arg : static_cast<StabbyProcNode *>(left)->args()) {
-            args->push(arg->clone());
+        case Node::Type::LogicalAnd: {
+            auto and_node = static_cast<LogicalAndNode *>(left);
+            auto right = and_node->right().clone();
+            right = parse_iter_expression(right, locals);
+            and_node->set_right(right);
+            return and_node;
         }
-        break;
-    default:
-        throw_unexpected(left->token(), "call for left side of iter");
+        case Node::Type::LogicalOr: {
+            auto or_node = static_cast<LogicalOrNode *>(left);
+            auto right = or_node->right().clone();
+            right = parse_iter_expression(right, locals);
+            or_node->set_right(right);
+            return or_node;
+        }
+        case Node::Type::Not: {
+            auto not_node = static_cast<NotNode *>(left);
+            auto right = not_node->expression().clone();
+            right = parse_iter_expression(right, locals);
+            not_node->set_expression(right);
+            return not_node;
+        }
+        case Node::Type::UnaryOp: {
+            auto unary_op_node = static_cast<UnaryOpNode *>(left);
+            auto right = unary_op_node->right().clone();
+            right = parse_iter_expression(right, locals);
+            unary_op_node->set_right(right);
+            return unary_op_node;
+        }
+        default:
+            throw_unexpected(left->token(), "call to accept block");
+        }
     }
     auto end_token_type = curly_brace ? Token::Type::RCurlyBrace : Token::Type::EndKeyword;
     auto body = parse_body(our_locals, Precedence::LOWEST, end_token_type);
@@ -1844,13 +1843,12 @@ Node *Parser::parse_infix_expression(Node *left, LocalsHashmap &locals) {
     auto precedence = get_precedence(token, left);
     advance();
     auto right = parse_expression(precedence, locals);
-    auto *node = new CallNode {
+    auto *node = new InfixOpNode {
         token,
         left,
         new String(op.type_value()),
+        right,
     };
-    node->set_is_infix(true);
-    node->add_arg(right);
     return node;
 };
 

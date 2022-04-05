@@ -25,6 +25,7 @@ public:
     virtual Type type() const override { return Type::Super; }
 
     virtual bool is_callable() const override { return true; }
+    virtual bool can_accept_a_block() const override { return true; }
 
     bool parens() const { return m_parens; }
     void set_parens(bool parens) { m_parens = parens; }

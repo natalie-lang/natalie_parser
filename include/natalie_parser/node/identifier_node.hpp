@@ -25,6 +25,8 @@ public:
 
     virtual Type type() const override { return Type::Identifier; }
 
+    virtual bool can_accept_a_block() const override { return true; }
+
     Token::Type token_type() const { return m_token.type(); }
 
     SharedPtr<String> name() const { return m_token.literal_string(); }
