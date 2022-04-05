@@ -975,6 +975,7 @@ require_relative './test_helper'
         expect(parse('begin;0;rescue foo(1), bar(2);1;end')).must_equal s(:block, s(:rescue, s(:lit, 0), s(:resbody, s(:array, s(:call, nil, :foo, s(:lit, 1)), s(:call, nil, :bar, s(:lit, 2))), s(:lit, 1))))
         expect(parse('begin;0;ensure;1;end')).must_equal s(:block, s(:ensure, s(:lit, 0), s(:lit, 1)))
         expect(parse('x ||= begin;0;rescue;1;end')).must_equal s(:block, s(:op_asgn_or, s(:lvar, :x), s(:lasgn, :x, s(:rescue, s(:lit, 0), s(:resbody, s(:array), s(:lit, 1))))))
+        expect(parse('x = begin;1;2;end')).must_equal s(:block, s(:lasgn, :x, s(:block, s(:lit, 1), s(:lit, 2))))
       end
 
       it 'parses inline rescue' do

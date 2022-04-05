@@ -399,32 +399,14 @@ Node *Parser::parse_begin(LocalsHashmap &locals) {
     auto begin_node = new BeginNode { token, body };
     parse_rest_of_begin(begin_node, locals);
 
-    // FIXME: can't parse_modifier_expression handle these while/until modifiers??
-    token = current_token();
-    switch (token.type()) {
-    case Token::Type::UntilKeyword: {
-        advance();
-        auto condition = parse_expression(Precedence::LOWEST, locals);
-        BlockNode *body;
-        if (begin_node->no_rescue_nodes() && !begin_node->has_ensure_body())
-            body = new BlockNode { begin_node->body() };
-        else
-            body = new BlockNode { token, begin_node };
-        return new UntilNode { token, condition, body, false };
+    // a begin/end with nothing else just becomes a BlockNode
+    if (!(begin_node->has_rescue_nodes() || begin_node->has_else_body() || begin_node->has_ensure_body())) {
+        auto block_node = new BlockNode { begin_node->body() };
+        delete begin_node;
+        return block_node;
     }
-    case Token::Type::WhileKeyword: {
-        advance();
-        auto condition = parse_expression(Precedence::LOWEST, locals);
-        BlockNode *body;
-        if (begin_node->no_rescue_nodes() && !begin_node->has_ensure_body())
-            body = new BlockNode { begin_node->body() };
-        else
-            body = new BlockNode { token, begin_node };
-        return new WhileNode { token, condition, body, false };
-    }
-    default:
-        return begin_node;
-    }
+
+    return begin_node;
 }
 
 void Parser::parse_rest_of_begin(BeginNode *begin_node, LocalsHashmap &locals) {
@@ -976,14 +958,30 @@ Node *Parser::parse_modifier_expression(Node *left, LocalsHashmap &locals) {
     case Token::Type::UntilKeyword: {
         advance();
         auto condition = parse_expression(Precedence::LOWEST, locals);
-        auto body = new BlockNode { token, left };
-        return new UntilNode { token, condition, body, true };
+        BlockNode *body;
+        bool pre = true;
+        if (left->type() == Node::Type::Block) {
+            body = static_cast<BlockNode *>(left);
+            pre = false;
+        } else {
+            if (left->type() == Node::Type::Begin) pre = false;
+            body = new BlockNode { token, left };
+        }
+        return new UntilNode { token, condition, body, pre };
     }
     case Token::Type::WhileKeyword: {
         advance();
         auto condition = parse_expression(Precedence::LOWEST, locals);
-        auto body = new BlockNode { token, left };
-        return new WhileNode { token, condition, body, true };
+        BlockNode *body;
+        bool pre = true;
+        if (left->type() == Node::Type::Block) {
+            body = static_cast<BlockNode *>(left);
+            pre = false;
+        } else {
+            if (left->type() == Node::Type::Begin) pre = false;
+            body = new BlockNode { token, left };
+        }
+        return new WhileNode { token, condition, body, pre };
     }
     default:
         TM_NOT_YET_IMPLEMENTED();

@@ -38,10 +38,10 @@ public:
     virtual Type type() const override { return Type::Begin; }
 
     void add_rescue_node(BeginRescueNode *node) { m_rescue_nodes.push(node); }
-    bool no_rescue_nodes() const { return m_rescue_nodes.size() == 0; }
+    bool has_rescue_nodes() const { return !m_rescue_nodes.is_empty(); }
 
-    bool has_ensure_body() const { return m_ensure_body ? true : false; }
     bool has_else_body() const { return m_else_body ? true : false; }
+    bool has_ensure_body() const { return m_ensure_body ? true : false; }
 
     void set_else_body(BlockNode *else_body) { m_else_body = else_body; }
     void set_ensure_body(BlockNode *ensure_body) { m_ensure_body = ensure_body; }
