@@ -32,6 +32,10 @@ require_relative './test_helper'
         expect(parse('')).must_equal s(:block)
       end
 
+      it 'parses an empty expression' do
+        expect(parse('()')).must_equal s(:block, s(:nil))
+      end
+
       it 'parses bignums' do
         expect(parse('100000000000000000000')).must_equal s(:block, s(:lit, 100000000000000000000))
         expect(parse('-100000000000000000000')).must_equal s(:block, s(:lit, -100000000000000000000))
@@ -714,7 +718,7 @@ require_relative './test_helper'
         expect(parse('[1,]')).must_equal s(:block, s(:array, s(:lit, 1)))
         expect(parse("['foo']")).must_equal s(:block, s(:array, s(:str, 'foo')))
         expect(parse('[1, 2, 3]')).must_equal s(:block, s(:array, s(:lit, 1), s(:lit, 2), s(:lit, 3)))
-        expect(parse('[1, 2, 3, ]')).must_equal s(:block, s(:array, s(:lit, 1), s(:lit, 2), s(:lit, 3)))
+        expect(parse('[1, (), 2, 3, ]')).must_equal s(:block, s(:array, s(:lit, 1), s(:nil), s(:lit, 2), s(:lit, 3)))
         expect(parse('[x, y, z]')).must_equal s(:block, s(:array, s(:call, nil, :x), s(:call, nil, :y), s(:call, nil, :z)))
         expect(parse("[\n1 , \n2,\n 3]")).must_equal s(:block, s(:array, s(:lit, 1), s(:lit, 2), s(:lit, 3)))
         expect(parse("[\n1 , \n2,\n 3\n]")).must_equal s(:block, s(:array, s(:lit, 1), s(:lit, 2), s(:lit, 3)))

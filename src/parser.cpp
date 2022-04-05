@@ -996,7 +996,12 @@ Node *Parser::parse_file_constant(LocalsHashmap &locals) {
 }
 
 Node *Parser::parse_group(LocalsHashmap &locals) {
+    auto token = current_token();
     advance();
+    if (current_token().is_rparen()) {
+        advance();
+        return new NilSexpNode { token };
+    }
     auto exp = parse_expression(Precedence::LOWEST, locals);
     expect(Token::Type::RParen, "group closing paren");
     advance();
