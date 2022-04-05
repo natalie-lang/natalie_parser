@@ -18,6 +18,15 @@ public:
         assert(m_right);
     }
 
+    UnaryOpNode(const UnaryOpNode &other)
+        : Node { other.token() }
+        , m_op { other.op() }
+        , m_right { other.right().clone() } { }
+
+    virtual Node *clone() const override {
+        return new UnaryOpNode(*this);
+    }
+
     virtual Type type() const override { return Type::UnaryOp; }
 
     const SharedPtr<String> op() const { return m_op; }

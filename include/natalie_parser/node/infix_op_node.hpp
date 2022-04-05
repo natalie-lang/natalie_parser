@@ -20,6 +20,16 @@ public:
         assert(m_right);
     }
 
+    InfixOpNode(const InfixOpNode &other)
+        : Node { other.token() }
+        , m_left { other.left().clone() }
+        , m_op { other.op() }
+        , m_right { other.right().clone() } { }
+
+    virtual Node *clone() const override {
+        return new InfixOpNode(*this);
+    }
+
     virtual Type type() const override { return Type::InfixOp; }
 
     const Node &left() const { return m_left.ref(); }
