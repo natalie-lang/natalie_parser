@@ -199,7 +199,7 @@ Parser::Precedence Parser::get_precedence(Token &token, Node *left) {
     }
     auto current = current_token();
     if (left && is_first_arg_of_call_without_parens(left, current))
-        return Precedence::BARECALLARGS;
+        return Precedence::CALL;
     return Precedence::LOWEST;
 }
 

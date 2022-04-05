@@ -142,6 +142,7 @@ require_relative './test_helper'
       it 'parses ! and not' do
         expect(parse('!false')).must_equal s(:block, s(:call, s(:false), :!))
         expect(parse('not false')).must_equal s(:block, s(:call, s(:false), :!))
+        expect(parse('not foo bar')).must_equal s(:block, s(:call, s(:call, nil, :foo, s(:call, nil, :bar)), :!))
         expect(parse('!foo.bar(baz)')).must_equal s(:block, s(:call, s(:call, s(:call, nil, :foo), :bar, s(:call, nil, :baz)), :!))
       end
 
