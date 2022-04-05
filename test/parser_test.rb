@@ -757,6 +757,7 @@ require_relative './test_helper'
         expect(parse('[1 => 2]')).must_equal s(:block, s(:array, s(:hash, s(:lit, 1), s(:lit, 2))))
         expect(parse('[0, 1 => 2]')).must_equal s(:block, s(:array, s(:lit, 0), s(:hash, s(:lit, 1), s(:lit, 2))))
         expect(parse('[0, foo: "bar"]')).must_equal s(:block, s(:array, s(:lit, 0), s(:hash, s(:lit, :foo), s(:str, 'bar'))))
+        expect(parse('["foo" => :bar, baz: 42]')).must_equal s(:block, s(:array, s(:hash, s(:str, "foo"), s(:lit, :bar), s(:lit, :baz), s(:lit, 42))))
         expect(parse('bar[1 => 2]')).must_equal s(:block, s(:call, s(:call, nil, :bar), :[], s(:hash, s(:lit, 1), s(:lit, 2))))
         expect(parse('Foo::Bar[1 => 2]')).must_equal s(:block, s(:call, s(:colon2, s(:const, :Foo), :Bar), :[], s(:hash, s(:lit, 1), s(:lit, 2))))
         if parser == 'NatalieParser'

@@ -90,7 +90,7 @@ private:
     Node *parse_file_constant(LocalsHashmap &);
     Node *parse_group(LocalsHashmap &);
     Node *parse_hash(LocalsHashmap &);
-    Node *parse_hash_inner(LocalsHashmap &, Precedence, Token::Type);
+    Node *parse_hash_inner(LocalsHashmap &, Precedence, Token::Type, Node * = nullptr);
     Node *parse_identifier(LocalsHashmap &);
     Node *parse_if(LocalsHashmap &);
     void parse_interpolated_body(LocalsHashmap &, InterpolatedNode *, Token::Type);

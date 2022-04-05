@@ -354,21 +354,35 @@ Node *Parser::parse_array(LocalsHashmap &locals) {
         return array;
     }
     advance();
-    if (current_token().type() != Token::Type::RBracket) {
-        if (peek_token().type() == Token::Type::HashRocket || current_token().type() == Token::Type::SymbolKey) {
-            array->add_node(parse_hash_inner(locals, Precedence::HASH, Token::Type::RBracket));
-        } else {
-            array->add_node(parse_expression(Precedence::ARRAY, locals));
-            while (current_token().is_comma()) {
-                advance();
-                if (current_token().type() == Token::Type::RBracket)
-                    break;
-                else if (peek_token().type() == Token::Type::HashRocket || current_token().type() == Token::Type::SymbolKey)
-                    array->add_node(parse_hash_inner(locals, Precedence::HASH, Token::Type::RBracket));
-                else
-                    array->add_node(parse_expression(Precedence::ARRAY, locals));
-            }
+    auto add_node = [&]() -> Node * {
+        auto token = current_token();
+        if (token.type() == Token::Type::RBracket) {
+            advance();
+            return array;
         }
+        if (token.type() == Token::Type::SymbolKey) {
+            array->add_node(parse_hash_inner(locals, Precedence::HASH, Token::Type::RBracket));
+            expect(Token::Type::RBracket, "array closing bracket");
+            advance();
+            return array;
+        }
+        auto value = parse_expression(Precedence::ARRAY, locals);
+        token = current_token();
+        if (token.is_hash_rocket()) {
+            array->add_node(parse_hash_inner(locals, Precedence::HASH, Token::Type::RBracket, value));
+            expect(Token::Type::RBracket, "array closing bracket");
+            advance();
+            return array;
+        }
+        array->add_node(value);
+        return nullptr;
+    };
+    auto ret = add_node();
+    if (ret) return ret;
+    while (current_token().is_comma()) {
+        advance();
+        ret = add_node();
+        if (ret) return ret;
     }
     expect(Token::Type::RBracket, "array closing bracket");
     advance();
@@ -1022,13 +1036,16 @@ Node *Parser::parse_hash(LocalsHashmap &locals) {
     return hash;
 }
 
-Node *Parser::parse_hash_inner(LocalsHashmap &locals, Precedence precedence, Token::Type closing_token) {
+Node *Parser::parse_hash_inner(LocalsHashmap &locals, Precedence precedence, Token::Type closing_token, Node *first_key) {
     auto token = current_token();
     auto hash = new HashNode { token };
     if (current_token().type() == Token::Type::SymbolKey) {
         hash->add_node(parse_symbol(locals));
     } else {
-        hash->add_node(parse_expression(precedence, locals));
+        if (first_key)
+            hash->add_node(first_key);
+        else
+            hash->add_node(parse_expression(precedence, locals));
         expect(Token::Type::HashRocket, "hash rocket");
         advance();
     }
