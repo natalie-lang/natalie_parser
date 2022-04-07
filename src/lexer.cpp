@@ -3,6 +3,8 @@
 #include <stdlib.h>
 
 #include "natalie_parser/lexer.hpp"
+#include "natalie_parser/lexer/interpolated_string_lexer.hpp"
+#include "natalie_parser/lexer/regexp_lexer.hpp"
 #include "natalie_parser/token.hpp"
 
 namespace NatalieParser {
@@ -38,34 +40,6 @@ SharedPtr<Vector<Token>> Lexer::tokens() {
         if (token.is_semicolon())
             token = Token { Token::Type::Eol, token.file(), token.line(), token.column() };
 
-        // break apart interpolations in double-quoted string
-        if (token.can_have_interpolation()) {
-            Token::Type begin_token_type = Token::Type::InterpolatedStringBegin;
-            Token::Type end_token_type = Token::Type::InterpolatedStringEnd;
-            if (token.type() == Token::Type::Shell) {
-                begin_token_type = Token::Type::InterpolatedShellBegin;
-                end_token_type = Token::Type::InterpolatedShellEnd;
-            } else if (token.type() == Token::Type::Regexp) {
-                begin_token_type = Token::Type::InterpolatedRegexpBegin;
-                end_token_type = Token::Type::InterpolatedRegexpEnd;
-            } else if (token.type() == Token::Type::DoubleQuotedSymbol) {
-                begin_token_type = Token::Type::InterpolatedSymbolBegin;
-                end_token_type = Token::Type::InterpolatedSymbolEnd;
-            }
-            auto string_lexer = InterpolatedStringLexer { token };
-            tokens->push(Token { begin_token_type, token.file(), token.line(), token.column() });
-            Vector<Token> string_tokens;
-            string_lexer.tokens(string_tokens);
-            for (auto token : string_tokens) {
-                tokens->push(token);
-            }
-            auto end_token = Token { end_token_type, token.file(), token.line(), token.column() };
-            if (token.options())
-                end_token.set_options(token.options().value());
-            tokens->push(end_token);
-            continue;
-        }
-
         if (last_doc_token && token.can_have_doc()) {
             token.set_doc(last_doc_token.literal_string());
             last_doc_token = {};
@@ -84,6 +58,22 @@ SharedPtr<Vector<Token>> Lexer::tokens() {
 }
 
 Token Lexer::next_token() {
+    if (m_nested_lexer) {
+        auto token = m_nested_lexer->next_token();
+        if (token.is_eof()) {
+            if (!m_heredoc_stack.is_empty()) {
+                // heredocs work differently
+            } else {
+                m_index = m_nested_lexer->m_index;
+                m_cursor_line = m_nested_lexer->m_cursor_line;
+                m_cursor_column = m_nested_lexer->m_cursor_column;
+            }
+            delete m_nested_lexer;
+            m_nested_lexer = nullptr;
+        } else {
+            return token;
+        }
+    }
     m_whitespace_precedes = skip_whitespace();
     m_token_line = m_cursor_line;
     m_token_column = m_cursor_column;
@@ -153,7 +143,9 @@ bool Lexer::skip_whitespace() {
 
 Token Lexer::build_next_token() {
     if (m_index >= m_size)
-        return Token { Token::Type::Eof, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::Eof, m_file, m_cursor_line, m_cursor_column };
+    if (m_stop_char && current_char() == m_stop_char)
+        return Token { Token::Type::Eof, m_file, m_cursor_line, m_cursor_column };
     Token token;
     switch (current_char()) {
     case '=': {
@@ -339,27 +331,19 @@ Token Lexer::build_next_token() {
             switch (peek()) {
             case '/': {
                 advance(2);
-                auto token = consume_double_quoted_string('/');
-                token.set_type(Token::Type::Shell);
-                return token;
+                return consume_double_quoted_string('/', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
             }
             case '[': {
                 advance(2);
-                auto token = consume_double_quoted_string(']');
-                token.set_type(Token::Type::Shell);
-                return token;
+                return consume_double_quoted_string(']', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
             }
             case '{': {
                 advance(2);
-                auto token = consume_double_quoted_string('}');
-                token.set_type(Token::Type::Shell);
-                return token;
+                return consume_double_quoted_string('}', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
             }
             case '(': {
                 advance(2);
-                auto token = consume_double_quoted_string(')');
-                token.set_type(Token::Type::Shell);
-                return token;
+                return consume_double_quoted_string(')', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
             }
             default:
                 return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
@@ -610,8 +594,7 @@ Token Lexer::build_next_token() {
             return Token { Token::Type::ConstantResolution, m_file, m_token_line, m_token_column };
         } else if (c == '"') {
             advance();
-            auto string = consume_double_quoted_string('"');
-            return Token { Token::Type::DoubleQuotedSymbol, string.literal(), m_file, m_token_line, m_token_column };
+            return consume_double_quoted_string('"', Token::Type::InterpolatedSymbolBegin, Token::Type::InterpolatedSymbolEnd);
         } else if (c == '\'') {
             advance();
             auto string = consume_single_quoted_string('\'');
@@ -696,8 +679,12 @@ Token Lexer::build_next_token() {
     case '\n': {
         advance();
         auto token = Token { Token::Type::Eol, m_file, m_token_line, m_token_column };
-        while (m_index < m_index_after_heredoc)
-            advance();
+        if (!m_heredoc_stack.is_empty()) {
+            auto new_index = m_heredoc_stack.last();
+            while (m_index < new_index)
+                advance();
+            m_heredoc_stack.clear();
+        }
         return token;
     }
     case ';':
@@ -714,9 +701,7 @@ Token Lexer::build_next_token() {
         return consume_single_quoted_string('\'');
     case '`': {
         advance();
-        auto token = consume_double_quoted_string('`');
-        token.set_type(Token::Type::Shell);
-        return token;
+        return consume_double_quoted_string('`', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
     }
     case '#':
         if (token_is_first_on_line()) {
@@ -1110,24 +1095,25 @@ Token Lexer::consume_heredoc() {
         break;
     }
 
-    Token::Type type;
+    auto begin_type = Token::Type::InterpolatedStringBegin;
+    auto end_type = Token::Type::InterpolatedStringEnd;
+    bool should_interpolate = true;
     char delimiter = 0;
     String heredoc_name = "";
     switch (current_char()) {
     case '"':
-        type = Token::Type::DoubleQuotedString;
         delimiter = '"';
         break;
     case '`':
-        type = Token::Type::Shell;
+        begin_type = Token::Type::InterpolatedShellBegin;
+        end_type = Token::Type::InterpolatedShellEnd;
         delimiter = '`';
         break;
     case '\'':
-        type = Token::Type::String;
+        should_interpolate = false;
         delimiter = '\'';
         break;
     default:
-        type = Token::Type::DoubleQuotedString;
         heredoc_name = String(consume_word(Token::Type::BareName).literal());
     }
 
@@ -1151,13 +1137,18 @@ Token Lexer::consume_heredoc() {
     size_t heredoc_index = m_index;
     auto get_char = [&heredoc_index, this]() { return (heredoc_index >= m_size) ? 0 : m_input->at(heredoc_index); };
 
-    // start consuming the heredoc on the next line
-    while (get_char() != '\n') {
-        if (heredoc_index >= m_size)
-            return Token { Token::Type::UnterminatedString, "heredoc", m_file, m_token_line, m_token_column };
+    if (m_heredoc_stack.is_empty()) {
+        // start consuming the heredoc on the next line
+        while (get_char() != '\n') {
+            if (heredoc_index >= m_size)
+                return Token { Token::Type::UnterminatedString, "heredoc", m_file, m_token_line, m_token_column };
+            heredoc_index++;
+        }
         heredoc_index++;
+    } else {
+        // start consuming the heredoc right after the last one
+        heredoc_index = m_heredoc_stack.last();
     }
-    heredoc_index++;
 
     // consume the heredoc until we find the delimiter, either '\n' (if << was used) or any whitespace (if <<- was used) followed by "DELIM\n"
     for (;;) {
@@ -1182,9 +1173,15 @@ Token Lexer::consume_heredoc() {
 
     // we have to keep tokenizing on the line where the heredoc was started, and then jump to the line after the heredoc
     // this index is used to do that
-    m_index_after_heredoc = heredoc_index;
+    m_heredoc_stack.push(heredoc_index);
 
-    auto token = Token { type, doc, m_file, m_token_line, m_token_column };
+    auto token = Token { Token::Type::String, doc, m_file, m_token_line, m_token_column };
+
+    if (should_interpolate) {
+        m_nested_lexer = new InterpolatedStringLexer { *this, token, end_type };
+        return Token { begin_type, m_file, m_token_line, m_token_column };
+    }
+
     return token;
 }
 
@@ -1382,134 +1379,9 @@ bool Lexer::token_is_first_on_line() const {
     return !m_last_token || m_last_token.is_eol();
 }
 
-Token Lexer::consume_double_quoted_string(char delimiter) {
-    SharedPtr<String> buf = new String("");
-    auto control_character = [&](bool meta) {
-        char c = next();
-        if (c == '-')
-            c = next();
-        int num = 0;
-        if (!meta && c == '\\' && peek() == 'M') {
-            advance(); // M
-            c = next();
-            if (c != '-')
-                return -1;
-            meta = true;
-            c = next();
-        }
-        if (c == '?')
-            num = 127;
-        else if (c >= ' ' && c <= '>')
-            num = c - ' ';
-        else if (c >= '@' && c <= '_')
-            num = c - '@';
-        else if (c >= '`' && c <= '~')
-            num = c - '`';
-        if (meta)
-            return num + 128;
-        else
-            return num;
-    };
-    while (auto c = current_char()) {
-        if (c == '\\') {
-            c = next();
-            if (c >= '0' && c <= '7') {
-                auto number = consume_octal_number(3);
-                buf->append_char(number);
-            } else if (c == 'x') {
-                // hex: 1-2 digits
-                advance();
-                auto number = consume_hex_number(2);
-                buf->append_char(number);
-            } else if (c == 'u') {
-                c = next();
-                if (c == '{') {
-                    c = next();
-                    // unicode characters, space separated, 1-6 hex digits
-                    while (c != '}') {
-                        if (!isxdigit(c))
-                            return Token { Token::Type::InvalidUnicodeEscape, c, m_file, m_cursor_line, m_cursor_column };
-                        auto codepoint = consume_hex_number(6);
-                        utf32_codepoint_to_utf8(buf.ref(), codepoint);
-                        c = current_char();
-                        while (c == ' ')
-                            c = next();
-                    }
-                    if (c == '}')
-                        advance();
-                } else {
-                    // unicode: 4 hex digits
-                    auto codepoint = consume_hex_number(4);
-                    utf32_codepoint_to_utf8(buf.ref(), codepoint);
-                }
-            } else {
-                switch (c) {
-                case 'a':
-                    buf->append_char('\a');
-                    break;
-                case 'b':
-                    buf->append_char('\b');
-                    break;
-                case 'c':
-                case 'C': {
-                    int num = control_character(false);
-                    if (num == -1)
-                        return Token { Token::Type::InvalidCharacterEscape, current_char(), m_file, m_cursor_line, m_cursor_column };
-                    buf->append_char((unsigned char)num);
-                    break;
-                }
-                case 'e':
-                    buf->append_char('\e');
-                    break;
-                case 'f':
-                    buf->append_char('\f');
-                    break;
-                case 'M': {
-                    c = next();
-                    if (c != '-')
-                        return Token { Token::Type::InvalidCharacterEscape, c, m_file, m_cursor_line, m_cursor_column };
-                    c = next();
-                    int num = 0;
-                    if (c == '\\' && (peek() == 'c' || peek() == 'C')) {
-                        advance();
-                        num = control_character(true);
-                    } else {
-                        num = (int)c + 128;
-                    }
-                    buf->append_char((unsigned char)num);
-                    break;
-                }
-                case 'n':
-                    buf->append_char('\n');
-                    break;
-                case 'r':
-                    buf->append_char('\r');
-                    break;
-                case 's':
-                    buf->append_char((unsigned char)32);
-                    break;
-                case 't':
-                    buf->append_char('\t');
-                    break;
-                case 'v':
-                    buf->append_char('\v');
-                    break;
-                default:
-                    buf->append_char(c);
-                    break;
-                }
-                advance();
-            }
-        } else if (c == delimiter) {
-            advance();
-            auto token = Token { Token::Type::DoubleQuotedString, buf, m_file, m_token_line, m_token_column };
-            return token;
-        } else {
-            buf->append_char(c);
-            advance();
-        }
-    }
-    return Token { Token::Type::UnterminatedString, buf, m_file, m_token_line, m_token_column };
+Token Lexer::consume_double_quoted_string(char delimiter, Token::Type begin_type, Token::Type end_type) {
+    m_nested_lexer = new InterpolatedStringLexer { *this, delimiter, end_type };
+    return Token { begin_type, m_file, m_token_line, m_token_column };
 }
 
 Token Lexer::consume_single_quoted_string(char delimiter) {
@@ -1598,37 +1470,8 @@ Token Lexer::consume_quoted_array_with_interpolation(char delimiter, Token::Type
 }
 
 Token Lexer::consume_regexp(char delimiter) {
-    SharedPtr<String> buf = new String("");
-    char c = current_char();
-    while (c) {
-        if (c == '\\') {
-            c = next();
-            switch (c) {
-            case '/':
-                buf->append_char(c);
-                break;
-            default:
-                buf->append_char('\\');
-                buf->append_char(c);
-                break;
-            }
-        } else if (c == delimiter) {
-            c = next();
-            SharedPtr<String> options = new String("");
-            while (c == 'i' || c == 'm' || c == 'x' || c == 'o' || c == 'u' || c == 'e' || c == 's' || c == 'n') {
-                options->append_char(c);
-                c = next();
-            }
-            auto token = Token { Token::Type::Regexp, buf, m_file, m_token_line, m_token_column };
-            if (!options->is_empty())
-                token.set_options(options);
-            return token;
-        } else {
-            buf->append_char(c);
-        }
-        c = next();
-    }
-    return Token { Token::Type::UnterminatedRegexp, buf, m_file, m_token_line, m_token_column };
+    m_nested_lexer = new RegexpLexer { *this, delimiter };
+    return Token { Token::Type::InterpolatedRegexpBegin, m_file, m_token_line, m_token_column };
 }
 
 SharedPtr<String> Lexer::consume_non_whitespace() {

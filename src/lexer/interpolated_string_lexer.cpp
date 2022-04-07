@@ -1,70 +1,185 @@
-#include <limits>
-
-#include "natalie_parser/lexer.hpp"
+#include "natalie_parser/lexer/interpolated_string_lexer.hpp"
 #include "natalie_parser/token.hpp"
 
 namespace NatalieParser {
 
-void InterpolatedStringLexer::tokens(Vector<Token> &tokens) {
-    SharedPtr<String> raw = new String("");
-    while (m_index < m_size) {
-        char c = current_char();
-        if (c == '#' && peek() == '{') {
-            if (!raw->is_empty() || tokens.is_empty()) {
-                tokens.push(Token { Token::Type::String, new String(raw.ref()), m_file, m_line, m_column });
-                *raw = "";
+Token InterpolatedStringLexer::build_next_token() {
+    switch (m_state) {
+    case State::InProgress:
+        return consume_string();
+    case State::EvaluateBegin:
+        return start_evaluation();
+    case State::EvaluateEnd:
+        advance(); // }
+        if (current_char() == m_stop_char) {
+            advance();
+            m_state = State::EndToken;
+        } else {
+            m_state = State::InProgress;
+        }
+        return Token { Token::Type::EvaluateToStringEnd, m_file, m_token_line, m_token_column };
+    case State::EndToken:
+        m_state = State::Done;
+        return Token { m_end_type, m_file, m_cursor_line, m_cursor_column };
+    case State::Done:
+        return Token { Token::Type::Eof, m_file, m_cursor_line, m_cursor_column };
+    }
+    TM_UNREACHABLE();
+}
+
+Token InterpolatedStringLexer::consume_string() {
+    SharedPtr<String> buf = new String;
+    auto control_character = [&](bool meta) {
+        char c = next();
+        if (c == '-')
+            c = next();
+        int num = 0;
+        if (!meta && c == '\\' && peek() == 'M') {
+            advance(); // M
+            c = next();
+            if (c != '-')
+                return -1;
+            meta = true;
+            c = next();
+        }
+        if (c == '?')
+            num = 127;
+        else if (c >= ' ' && c <= '>')
+            num = c - ' ';
+        else if (c >= '@' && c <= '_')
+            num = c - '@';
+        else if (c >= '`' && c <= '~')
+            num = c - '`';
+        if (meta)
+            return num + 128;
+        else
+            return num;
+    };
+    while (auto c = current_char()) {
+        if (c == '\\') {
+            c = next();
+            if (c >= '0' && c <= '7') {
+                auto number = consume_octal_number(3);
+                buf->append_char(number);
+            } else if (c == 'x') {
+                // hex: 1-2 digits
+                advance();
+                auto number = consume_hex_number(2);
+                buf->append_char(number);
+            } else if (c == 'u') {
+                c = next();
+                if (c == '{') {
+                    c = next();
+                    // unicode characters, space separated, 1-6 hex digits
+                    while (c != '}') {
+                        if (!isxdigit(c))
+                            return Token { Token::Type::InvalidUnicodeEscape, c, m_file, m_cursor_line, m_cursor_column };
+                        auto codepoint = consume_hex_number(6);
+                        utf32_codepoint_to_utf8(buf.ref(), codepoint);
+                        c = current_char();
+                        while (c == ' ')
+                            c = next();
+                    }
+                    if (c == '}')
+                        advance();
+                } else {
+                    // unicode: 4 hex digits
+                    auto codepoint = consume_hex_number(4);
+                    utf32_codepoint_to_utf8(buf.ref(), codepoint);
+                }
+            } else {
+                switch (c) {
+                case 'a':
+                    buf->append_char('\a');
+                    break;
+                case 'b':
+                    buf->append_char('\b');
+                    break;
+                case 'c':
+                case 'C': {
+                    int num = control_character(false);
+                    if (num == -1)
+                        return Token { Token::Type::InvalidCharacterEscape, current_char(), m_file, m_cursor_line, m_cursor_column };
+                    buf->append_char((unsigned char)num);
+                    break;
+                }
+                case 'e':
+                    buf->append_char('\e');
+                    break;
+                case 'f':
+                    buf->append_char('\f');
+                    break;
+                case 'M': {
+                    c = next();
+                    if (c != '-')
+                        return Token { Token::Type::InvalidCharacterEscape, c, m_file, m_cursor_line, m_cursor_column };
+                    c = next();
+                    int num = 0;
+                    if (c == '\\' && (peek() == 'c' || peek() == 'C')) {
+                        advance();
+                        num = control_character(true);
+                    } else {
+                        num = (int)c + 128;
+                    }
+                    buf->append_char((unsigned char)num);
+                    break;
+                }
+                case 'n':
+                    buf->append_char('\n');
+                    break;
+                case 'r':
+                    buf->append_char('\r');
+                    break;
+                case 's':
+                    buf->append_char((unsigned char)32);
+                    break;
+                case 't':
+                    buf->append_char('\t');
+                    break;
+                case 'v':
+                    buf->append_char('\v');
+                    break;
+                default:
+                    buf->append_char(c);
+                    break;
+                }
+                advance();
             }
-            m_index += 2;
-            tokenize_interpolation(tokens);
+        } else if (c == '#' && peek() == '{') {
+            if (buf->is_empty()) {
+                advance(2);
+                return start_evaluation();
+            }
+            auto token = Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
+            advance(2);
+            m_state = State::EvaluateBegin;
+            return token;
+        } else if (c == m_stop_char) {
+            advance();
+            m_state = State::EndToken;
+            return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
         } else {
-            raw->append_char(c);
-            m_index++;
+            buf->append_char(c);
+            advance();
         }
     }
-    if (!raw->is_empty())
-        tokens.push(Token { Token::Type::String, raw, m_file, m_line, m_column });
+
+    // Heredocs don't use a stop char --
+    // they just give us the whole input and we consume everything.
+    if (m_stop_char == 0) {
+        advance();
+        m_state = State::EndToken;
+        return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
+    }
+
+    return Token { Token::Type::UnterminatedString, buf, m_file, m_token_line, m_token_column };
 }
 
-void InterpolatedStringLexer::tokenize_interpolation(Vector<Token> &tokens) {
-    size_t start_index = m_index;
-    size_t curly_brace_count = 1;
-    while (m_index < m_size && curly_brace_count > 0) {
-        char c = current_char();
-        switch (c) {
-        case '{':
-            curly_brace_count++;
-            break;
-        case '}':
-            curly_brace_count--;
-            break;
-        case '\\':
-            m_index++;
-            break;
-        }
-        m_index++;
-    }
-    if (curly_brace_count > 0) {
-        fprintf(stderr, "missing } in string interpolation in %s#%zu\n", m_file->c_str(), m_line + 1);
-        abort();
-    }
-    // m_input = "#{:foo} bar"
-    //                   ^ m_index = 7
-    //              ^ start_index = 2
-    // part = ":foo" (len = 4)
-    size_t len = m_index - start_index - 1;
-    auto part = m_input->substring(start_index, len);
-    auto lexer = Lexer { new String(part), m_file };
-    tokens.push(Token { Token::Type::EvaluateToStringBegin, m_file, m_line, m_column });
-    auto part_tokens = lexer.tokens();
-    for (auto token : *part_tokens) {
-        if (token.is_eof()) {
-            tokens.push(Token { Token::Type::Eol, m_file, m_line, m_column });
-            break;
-        } else {
-            tokens.push(token);
-        }
-    }
-    tokens.push(Token { Token::Type::EvaluateToStringEnd, m_file, m_line, m_column });
+Token InterpolatedStringLexer::start_evaluation() {
+    m_nested_lexer = new Lexer { *this };
+    m_nested_lexer->set_stop_char('}');
+    m_state = State::EvaluateEnd;
+    return Token { Token::Type::EvaluateToStringBegin, m_file, m_token_line, m_token_column };
 }
 
-}
+};

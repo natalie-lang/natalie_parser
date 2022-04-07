@@ -49,8 +49,6 @@ public:
         Dot,
         DotDot,
         DotDotDot,
-        DoubleQuotedString,
-        DoubleQuotedSymbol,
         ElseKeyword,
         ElsifKeyword,
         ENCODINGKeyword,
@@ -78,6 +76,8 @@ public:
         IfKeyword,
         InKeyword,
         InstanceVariable,
+        InterpolatedHeredocBegin,
+        InterpolatedHeredocEnd,
         InterpolatedRegexpBegin,
         InterpolatedRegexpEnd,
         InterpolatedShellBegin,
@@ -123,7 +123,6 @@ public:
         RCurlyBrace,
         RBracket,
         RedoKeyword,
-        Regexp,
         RescueKeyword,
         RetryKeyword,
         ReturnKeyword,
@@ -133,7 +132,6 @@ public:
         SafeNavigation,
         SelfKeyword,
         Semicolon,
-        Shell,
         String,
         SuperKeyword,
         Symbol,
@@ -234,6 +232,10 @@ public:
         return m_literal.value();
     }
 
+    bool has_literal() {
+        return !!m_literal;
+    }
+
     const char *type_value() const {
         switch (m_type) {
         case Type::AliasKeyword:
@@ -304,9 +306,6 @@ public:
             return "..";
         case Type::Dot:
             return ".";
-        case Type::DoubleQuotedString:
-        case Type::DoubleQuotedSymbol:
-            TM_UNREACHABLE(); // converted to InterpolatedStringBegin/InterpolatedStringEnd
         case Type::ElseKeyword:
             return "else";
         case Type::ElsifKeyword:
@@ -369,8 +368,10 @@ public:
             return "dxstr";
         case Type::InterpolatedShellEnd:
             return "dxstrend";
+        case Type::InterpolatedHeredocBegin:
         case Type::InterpolatedStringBegin:
             return "dstr";
+        case Type::InterpolatedHeredocEnd:
         case Type::InterpolatedStringEnd:
             return "dstrend";
         case Type::InterpolatedSymbolBegin:
@@ -455,8 +456,6 @@ public:
             return "]";
         case Type::RedoKeyword:
             return "redo";
-        case Type::Regexp:
-            TM_UNREACHABLE(); // converted to InterpolatedRegexpBegin/InterpolatedRegexpEnd
         case Type::RescueKeyword:
             return "rescue";
         case Type::RetryKeyword:
@@ -473,8 +472,6 @@ public:
             return "&.";
         case Type::SelfKeyword:
             return "self";
-        case Type::Shell:
-            TM_UNREACHABLE(); // converted to InterpolatedShellBegin/InterpolatedShellEnd
         case Type::Semicolon:
             return ";";
         case Type::String:
@@ -726,18 +723,6 @@ public:
         }
     }
 
-    bool can_have_interpolation() {
-        switch (m_type) {
-        case Token::Type::DoubleQuotedString:
-        case Token::Type::DoubleQuotedSymbol:
-        case Token::Type::Regexp:
-        case Token::Type::Shell:
-            return true;
-        default:
-            return false;
-        }
-    }
-
     bool can_be_first_arg_of_implicit_call() {
         switch (m_type) {
         case Token::Type::Arrow:
@@ -749,7 +734,6 @@ public:
         case Token::Type::DefKeyword:
         case Token::Type::DefinedKeyword:
         case Token::Type::DoKeyword:
-        case Token::Type::DoubleQuotedString:
         case Token::Type::ENCODINGKeyword:
         case Token::Type::FalseKeyword:
         case Token::Type::FILEKeyword:
@@ -773,9 +757,7 @@ public:
         case Token::Type::PercentLowerW:
         case Token::Type::PercentUpperI:
         case Token::Type::PercentUpperW:
-        case Token::Type::Regexp:
         case Token::Type::SelfKeyword:
-        case Token::Type::Shell:
         case Token::Type::String:
         case Token::Type::SuperKeyword:
         case Token::Type::Symbol:
@@ -791,9 +773,6 @@ public:
     void set_literal(const char *literal) { m_literal = new String(literal); }
     void set_literal(SharedPtr<String> literal) { m_literal = literal; }
     void set_literal(String literal) { m_literal = new String(literal); }
-
-    Optional<SharedPtr<String>> options() { return m_options; }
-    void set_options(SharedPtr<String> options) { m_options = options; }
 
     Optional<SharedPtr<String>> doc() const { return m_doc; }
     void set_doc(SharedPtr<String> doc) { m_doc = doc; }
@@ -813,7 +792,6 @@ public:
 private:
     Type m_type { Type::Invalid };
     Optional<SharedPtr<String>> m_literal {};
-    Optional<SharedPtr<String>> m_options {};
     Optional<SharedPtr<String>> m_doc {};
     long long m_fixnum { 0 };
     double m_double { 0 };

@@ -1,43 +1,44 @@
 #pragma once
 
+#include "natalie_parser/lexer.hpp"
 #include "natalie_parser/token.hpp"
 #include "tm/shared_ptr.hpp"
 #include "tm/vector.hpp"
 
 namespace NatalieParser {
 
-class InterpolatedStringLexer {
+class InterpolatedStringLexer : public Lexer {
 public:
-    InterpolatedStringLexer(Token &token)
-        : m_input { token.literal_string() }
-        , m_file { token.file() }
-        , m_line { token.line() }
-        , m_column { token.column() }
-        , m_size { m_input->size() } { }
+    InterpolatedStringLexer(Lexer &parent_lexer, char stop_char, Token::Type end_type)
+        : Lexer { parent_lexer }
+        , m_end_type { end_type } {
+        set_nested_lexer(nullptr);
+        set_stop_char(stop_char);
+    }
 
-    void tokens(Vector<Token> &tokens);
+    InterpolatedStringLexer(Lexer &parent_lexer, Token string_token, Token::Type end_type)
+        : Lexer { string_token.literal_string(), parent_lexer.file() }
+        , m_end_type { end_type } {
+        set_nested_lexer(nullptr);
+        set_stop_char(0);
+    }
 
 private:
-    void tokenize_interpolation(Vector<Token> &tokens);
+    virtual Token build_next_token() override;
+    Token consume_string();
+    Token start_evaluation();
 
-    char current_char() {
-        if (m_index >= m_size)
-            return 0;
-        return m_input->at(m_index);
-    }
+    virtual bool skip_whitespace() override { return false; }
 
-    char peek() {
-        if (m_index + 1 >= m_size)
-            return 0;
-        return m_input->at(m_index + 1);
-    }
+    enum class State {
+        InProgress,
+        EvaluateBegin,
+        EvaluateEnd,
+        EndToken,
+        Done,
+    };
 
-    SharedPtr<String> m_input;
-    SharedPtr<String> m_file;
-    size_t m_line { 0 };
-    size_t m_column { 0 };
-    size_t m_size { 0 };
-    size_t m_index { 0 };
+    State m_state { State::InProgress };
+    Token::Type m_end_type;
 };
-
 }

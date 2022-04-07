@@ -100,7 +100,7 @@ describe 'NatalieParser' do
     end
 
     it 'tokenizes regexps' do
-      expect(tokenize('//mix')).must_equal [{ type: :dregx }, { type: :dregxend, options: 'mix' }]
+      expect(tokenize('//mix')).must_equal [{ type: :dregx }, { type: :string, literal: '' }, { type: :dregxend, options: 'mix' }]
       %w[i m x o u e s n].each do |flag|
         expect(tokenize("/foo/#{flag}")).must_equal [
           { type: :dregx },
@@ -121,7 +121,6 @@ describe 'NatalieParser' do
         { type: :fixnum, literal: 1 },
         { type: :'+' },
         { type: :fixnum, literal: 1 },
-        { type: :"\n" },
         { type: :evstrend },
         { type: :string, literal: ' bar' },
         { type: :dregxend },
@@ -300,17 +299,14 @@ describe 'NatalieParser' do
       expect(tokenize('%Q(foo)')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
       expect(tokenize('"#{:foo} bar #{1 + 1}"')).must_equal [
         { type: :dstr },
-        { type: :string, literal: '' },
         { type: :evstr },
         { type: :symbol, literal: :foo },
-        { type: :"\n" },
         { type: :evstrend },
         { type: :string, literal: ' bar ' },
         { type: :evstr },
         { type: :fixnum, literal: 1 },
         { type: :'+' },
         { type: :fixnum, literal: 1 },
-        { type: :"\n" },
         { type: :evstrend },
         { type: :dstrend },
       ]
@@ -319,22 +315,29 @@ describe 'NatalieParser' do
         { type: :string, literal: 'foo' },
         { type: :evstr },
         { type: :string, literal: '' },
-        { type: :"\n" },
         { type: :evstrend },
         { type: :string, literal: 'bar' },
         { type: :dstrend },
       ]
       expect(tokenize('"#{1}#{2}"')).must_equal [
         { type: :dstr },
-        { type: :string, literal: '' },
         { type: :evstr },
         { type: :fixnum, literal: 1 },
-        { type: :"\n" },
         { type: :evstrend },
         { type: :evstr },
         { type: :fixnum, literal: 2 },
-        { type: :"\n" },
         { type: :evstrend },
+        { type: :dstrend },
+      ]
+      expect(tokenize('"foo #{1 + 2} bar"')).must_equal [
+        { type: :dstr },
+        { type: :string, literal: 'foo ' },
+        { type: :evstr },
+        { type: :fixnum, literal: 1 },
+        { type: :'+' },
+        { type: :fixnum, literal: 2 },
+        { type: :evstrend },
+        { type: :string, literal: ' bar' },
         { type: :dstrend },
       ]
     end
@@ -352,21 +355,6 @@ describe 'NatalieParser' do
       expect(error.message).must_equal "1: invalid Unicode escape"
     end
 
-    # FIXME
-    # it 'string interpolation weirdness' do
-    #   expect(tokenize('"#{"foo"}"')).must_equal [
-    #     { type: :dstr },
-    #     { type: :string, literal: '' },
-    #     { type: :evstr },
-    #     { type: :string, literal: 'foo' },
-    #     { type: :"\n" },
-    #     { type: :evstrend },
-    #     { type: :dstrend },
-    #   ]
-    #   tokenize('"#{"}"}"')
-    #   tokenize('"#{ "#{ "#{ 1 + 1 }" }" }"')
-    # end
-
     it 'tokenizes backticks and %x()' do
       expect(tokenize('`ls`')).must_equal [{ type: :dxstr }, { type: :string, literal: 'ls' }, { type: :dxstrend }]
       expect(tokenize('%x(ls)')).must_equal [{ type: :dxstr }, { type: :string, literal: 'ls' }, { type: :dxstrend }]
@@ -375,7 +363,6 @@ describe 'NatalieParser' do
         { type: :string, literal: 'ls ' },
         { type: :evstr },
         { type: :name, literal: :path },
-        { type: :"\n" },
         { type: :evstrend },
         { type: :dxstrend },
       ]
@@ -441,7 +428,6 @@ describe 'NatalieParser' do
         { type: :fixnum, literal: 1 },
         { type: :+ },
         { type: :fixnum, literal: 1 },
-        { type: :"\n" },
         { type: :evstrend },
         { type: :dsymend },
       ]
@@ -681,31 +667,36 @@ describe 'NatalieParser' do
     end
 
     it 'tokenizes heredocs' do
-      doc1 = <<END
-foo = <<FOO
- 1
-2
-FOO
-bar
-END
-      doc2 = <<END
-foo(1, <<-FOO, 2)
- 1
-2
-  FOO
-bar
-END
-      expect(tokenize(doc1)).must_equal [
+      doc_with_interpolation = <<~END
+        foo = <<FOO
+        \#{0+1}
+        2
+        FOO
+        bar
+      END
+      expect(tokenize(doc_with_interpolation)).must_equal [
         { type: :name, literal: :foo },
         { type: :'=' },
         { type: :dstr },
-        { type: :string, literal: " 1\n2\n" },
+        { type: :evstr },
+        { type: :fixnum, literal: 0 },
+        { type: :+ },
+        { type: :fixnum, literal: 1 },
+        { type: :evstrend },
+        { type: :string, literal: "\n2\n" },
         { type: :dstrend },
         { type: :"\n" },
         { type: :name, literal: :bar },
         { type: :"\n" },
       ]
-      expect(tokenize(doc2)).must_equal [
+      doc_starts_on_same_line_with_other_tokens = <<~END
+        foo(1, <<-FOO, 2)
+         1
+        2
+          FOO
+        bar
+      END
+      expect(tokenize(doc_starts_on_same_line_with_other_tokens)).must_equal [
         { type: :name, literal: :foo },
         { type: :'(' },
         { type: :fixnum, literal: 1 },
@@ -720,16 +711,44 @@ END
         { type: :name, literal: :bar },
         { type: :"\n" },
       ]
+      two_docs_start_on_same_line = <<~END
+        foo(<<-FOO, <<-BAR)
+         1
+        2
+          FOO
+         3
+         4
+        BAR
+        baz <<-BAZ
+        5
+        BAZ
+      END
+      expect(tokenize(two_docs_start_on_same_line)).must_equal [
+        { type: :name, literal: :foo },
+        { type: :'(' },
+        { type: :dstr },
+        { type: :string, literal: " 1\n2\n" },
+        { type: :dstrend },
+        { type: :',' },
+        { type: :dstr },
+        { type: :string, literal: " 3\n 4\n" },
+        { type: :dstrend },
+        { type: :')' },
+        { type: :"\n" },
+        { type: :name, literal: :baz },
+        { type: :dstr },
+        { type: :string, literal: "5\n" },
+        { type: :dstrend },
+        { type: :"\n" },
+      ]
       expect(tokenize("<<'FOO BAR'\n\#{foo}\nFOO BAR")).must_equal [
         { type: :string, literal: "\#{foo}\n" },
         { type: :"\n" },
       ]
       expect(tokenize(%(<<"FOO BAR"\n\#{foo}\nFOO BAR))).must_equal [
         { type: :dstr},
-        { type: :string, literal: "" },
         { type: :evstr },
         { type: :name, literal: :foo },
-        { type: :"\n" },
         { type: :evstrend },
         { type: :string, literal: "\n" },
         { type: :dstrend },
@@ -737,10 +756,8 @@ END
       ]
       expect(tokenize("<<`FOO BAR`\n\#{foo}\nFOO BAR")).must_equal [
         { type: :dxstr },
-        { type: :string, literal: "" },
         { type: :evstr },
         { type: :name, literal: :foo },
-        { type: :"\n" },
         { type: :evstrend },
         { type: :string, literal: "\n" },
         { type: :dxstrend },

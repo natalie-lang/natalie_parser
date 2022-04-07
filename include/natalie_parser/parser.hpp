@@ -107,7 +107,6 @@ private:
     Node *parse_nil(LocalsHashmap &);
     Node *parse_not(LocalsHashmap &);
     Node *parse_nth_ref(LocalsHashmap &);
-    Node *parse_regexp(LocalsHashmap &);
     Node *parse_return(LocalsHashmap &);
     Node *parse_sclass(LocalsHashmap &);
     Node *parse_self(LocalsHashmap &);

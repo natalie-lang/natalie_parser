@@ -1121,9 +1121,14 @@ Node *Parser::parse_if_body(LocalsHashmap &locals) {
 }
 
 void Parser::parse_interpolated_body(LocalsHashmap &locals, InterpolatedNode *node, Token::Type end_token) {
+    bool has_string = false;
     while (current_token().is_valid() && current_token().type() != end_token) {
         switch (current_token().type()) {
         case Token::Type::EvaluateToStringBegin: {
+            if (!has_string) {
+                node->add_node(new StringNode { current_token(), new String() });
+                has_string = true;
+            }
             advance();
             auto block = new BlockNode { current_token() };
             while (current_token().type() != Token::Type::EvaluateToStringEnd) {
@@ -1144,6 +1149,7 @@ void Parser::parse_interpolated_body(LocalsHashmap &locals, InterpolatedNode *no
             break;
         }
         case Token::Type::String:
+            has_string = true;
             node->add_node(new StringNode { current_token(), current_token().literal_string() });
             advance();
             break;
@@ -1160,9 +1166,9 @@ Node *Parser::parse_interpolated_regexp(LocalsHashmap &locals) {
     advance();
     if (current_token().type() == Token::Type::InterpolatedRegexpEnd) {
         auto regexp_node = new RegexpNode { token, new String };
-        auto options = current_token().options();
-        if (options) {
-            int options_int = parse_regexp_options(options.value().ref());
+        if (current_token().has_literal()) {
+            auto str = current_token().literal_string().ref();
+            int options_int = parse_regexp_options(str);
             regexp_node->set_options(options_int);
         }
         advance();
@@ -1170,9 +1176,9 @@ Node *Parser::parse_interpolated_regexp(LocalsHashmap &locals) {
     } else if (current_token().type() == Token::Type::String && peek_token().type() == Token::Type::InterpolatedRegexpEnd) {
         auto regexp_node = new RegexpNode { token, current_token().literal_string() };
         advance();
-        auto options = current_token().options();
-        if (options) {
-            int options_int = parse_regexp_options(options.value().ref());
+        if (current_token().has_literal()) {
+            auto str = current_token().literal_string().ref();
+            int options_int = parse_regexp_options(str);
             regexp_node->set_options(options_int);
         }
         advance();
@@ -1180,9 +1186,9 @@ Node *Parser::parse_interpolated_regexp(LocalsHashmap &locals) {
     } else {
         auto interpolated_regexp = new InterpolatedRegexpNode { token };
         parse_interpolated_body(locals, interpolated_regexp, Token::Type::InterpolatedRegexpEnd);
-        auto options = current_token().options();
-        if (options) {
-            int options_int = parse_regexp_options(options.value().ref());
+        if (current_token().has_literal()) {
+            auto str = current_token().literal_string().ref();
+            int options_int = parse_regexp_options(str);
             interpolated_regexp->set_options(options_int);
         }
         advance();
@@ -1383,19 +1389,6 @@ Node *Parser::parse_nth_ref(LocalsHashmap &) {
     advance();
     return new NthRefNode { token, token.get_fixnum() };
 }
-
-Node *Parser::parse_regexp(LocalsHashmap &locals) {
-    TM_UNUSED(locals);
-    auto token = current_token();
-    auto regexp = new RegexpNode { token, token.literal_string() };
-    auto options = token.options();
-    if (options) {
-        int options_int = parse_regexp_options(options.value().ref());
-        regexp->set_options(options_int);
-    }
-    advance();
-    return regexp;
-};
 
 Node *Parser::parse_return(LocalsHashmap &locals) {
     auto token = current_token();
@@ -2214,8 +2207,6 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
         return &Parser::parse_not;
     case Type::NthRef:
         return &Parser::parse_nth_ref;
-    case Type::Regexp:
-        return &Parser::parse_regexp;
     case Type::ReturnKeyword:
         return &Parser::parse_return;
     case Type::SelfKeyword:

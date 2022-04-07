@@ -1,6 +1,5 @@
 #pragma once
 
-#include "natalie_parser/lexer/interpolated_string_lexer.hpp"
 #include "natalie_parser/token.hpp"
 #include "tm/shared_ptr.hpp"
 #include "tm/vector.hpp"
@@ -17,11 +16,19 @@ public:
     SharedPtr<Vector<Token>> tokens();
     Token next_token();
 
-private:
+    virtual ~Lexer() = default;
+
+    SharedPtr<String> file() const { return m_file; }
+
+    void set_nested_lexer(Lexer *lexer) { m_nested_lexer = lexer; }
+    void set_stop_char(char c) { m_stop_char = c; }
+
+protected:
     char current_char() {
         if (m_index >= m_size)
             return 0;
-        return m_input->at(m_index);
+        char c = m_input->at(m_index);
+        return c;
     }
 
     bool match(size_t bytes, const char *compare);
@@ -40,8 +47,8 @@ private:
         return m_input->at(m_index + 1);
     }
 
-    bool skip_whitespace();
-    Token build_next_token();
+    virtual bool skip_whitespace();
+    virtual Token build_next_token();
     Token consume_symbol();
     Token consume_word(Token::Type type);
     Token consume_bare_name();
@@ -53,7 +60,7 @@ private:
     Token consume_nth_ref();
     long long consume_hex_number(int max_length = 0, bool allow_underscore = false);
     long long consume_octal_number(int max_length = 0, bool allow_underscore = false);
-    Token consume_double_quoted_string(char delimiter);
+    Token consume_double_quoted_string(char delimiter, Token::Type begin_type = Token::Type::InterpolatedStringBegin, Token::Type end_type = Token::Type::InterpolatedStringEnd);
     Token consume_single_quoted_string(char delimiter);
     Token consume_quoted_array_without_interpolation(char delimiter, Token::Type type);
     Token consume_quoted_array_with_interpolation(char delimiter, Token::Type type);
@@ -69,8 +76,8 @@ private:
     size_t m_size { 0 };
     size_t m_index { 0 };
 
-    // if non-zero, the index we should continue on after a linebreak
-    size_t m_index_after_heredoc { 0 };
+    // where we should jump after each heredoc
+    Vector<size_t> m_heredoc_stack {};
 
     // current character position
     size_t m_cursor_line { 0 };
@@ -85,5 +92,9 @@ private:
 
     // the previously-matched token
     Token m_last_token {};
+
+    Lexer *m_nested_lexer { nullptr };
+
+    char m_stop_char { 0 };
 };
 }
