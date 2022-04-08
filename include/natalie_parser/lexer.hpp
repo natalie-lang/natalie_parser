@@ -62,8 +62,8 @@ protected:
     long long consume_octal_number(int max_length = 0, bool allow_underscore = false);
     Token consume_double_quoted_string(char delimiter, Token::Type begin_type = Token::Type::InterpolatedStringBegin, Token::Type end_type = Token::Type::InterpolatedStringEnd);
     Token consume_single_quoted_string(char delimiter);
-    Token consume_quoted_array_without_interpolation(char delimiter, Token::Type type);
-    Token consume_quoted_array_with_interpolation(char delimiter, Token::Type type);
+    Token consume_quoted_array_without_interpolation(char start_char, char stop_char, Token::Type type);
+    Token consume_quoted_array_with_interpolation(char start_char, char stop_char, Token::Type type);
     Token consume_regexp(char delimiter);
     SharedPtr<String> consume_non_whitespace();
     void utf32_codepoint_to_utf8(String &buf, long long codepoint);

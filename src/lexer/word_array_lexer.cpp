@@ -78,9 +78,16 @@ Token WordArrayLexer::consume_array() {
             advance(2);
             m_state = State::EvaluateBegin;
             return token;
+        } else if (c == m_start_char) {
+            m_pair_depth++;
+            advance();
+            buf->append_char(c);
         } else if (c == m_stop_char) {
             advance();
-            if (buf->is_empty()) {
+            if (m_pair_depth > 0) {
+                m_pair_depth--;
+                buf->append_char(c);
+            } else if (buf->is_empty()) {
                 m_state = State::Done;
                 return Token { Token::Type::RBracket, m_file, m_cursor_line, m_cursor_column };
             } else {

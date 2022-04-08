@@ -509,6 +509,23 @@ describe 'NatalieParser' do
         { type: :string, literal: '3' },
         { type: :']' },
       ]
+      expect(tokenize("%i[ [] []= ]")).must_equal [
+        { type: :'%i[' },
+        { type: :string, literal: '[]' },
+        { type: :string, literal: '[]=' },
+        { type: :']' },
+      ]
+      expect(tokenize("%i( () )").size).must_equal(3)
+      expect(tokenize("%i{ {} }").size).must_equal(3)
+      expect(tokenize("%i< <> >").size).must_equal(3)
+      expect(tokenize("%w[ [] ]").size).must_equal(3)
+      expect(tokenize("%w( () )").size).must_equal(3)
+      expect(tokenize("%w{ {} }").size).must_equal(3)
+      expect(tokenize("%w< <> >").size).must_equal(3)
+      expect(tokenize("%W[ [] ]").size).must_equal(3)
+      expect(tokenize("%W( () )").size).must_equal(3)
+      expect(tokenize("%W{ {} }").size).must_equal(3)
+      expect(tokenize("%W< <> >").size).must_equal(3)
     end
 
     it 'tokenizes hashes' do

@@ -367,20 +367,20 @@ Token Lexer::build_next_token() {
             case '|': {
                 char c = next();
                 advance();
-                return consume_quoted_array_without_interpolation(c, Token::Type::PercentLowerW);
+                return consume_quoted_array_without_interpolation(0, c, Token::Type::PercentLowerW);
             }
             case '[':
                 advance(2);
-                return consume_quoted_array_without_interpolation(']', Token::Type::PercentLowerW);
+                return consume_quoted_array_without_interpolation('[', ']', Token::Type::PercentLowerW);
             case '{':
                 advance(2);
-                return consume_quoted_array_without_interpolation('}', Token::Type::PercentLowerW);
+                return consume_quoted_array_without_interpolation('{', '}', Token::Type::PercentLowerW);
             case '<':
                 advance(2);
-                return consume_quoted_array_without_interpolation('>', Token::Type::PercentLowerW);
+                return consume_quoted_array_without_interpolation('<', '>', Token::Type::PercentLowerW);
             case '(':
                 advance(2);
-                return consume_quoted_array_without_interpolation(')', Token::Type::PercentLowerW);
+                return consume_quoted_array_without_interpolation('(', ')', Token::Type::PercentLowerW);
             default:
                 return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
             }
@@ -390,20 +390,20 @@ Token Lexer::build_next_token() {
             case '|': {
                 char c = next();
                 advance();
-                return consume_quoted_array_with_interpolation(c, Token::Type::PercentUpperW);
+                return consume_quoted_array_with_interpolation(0, c, Token::Type::PercentUpperW);
             }
             case '[':
                 advance(2);
-                return consume_quoted_array_with_interpolation(']', Token::Type::PercentUpperW);
+                return consume_quoted_array_with_interpolation('[', ']', Token::Type::PercentUpperW);
             case '{':
                 advance(2);
-                return consume_quoted_array_with_interpolation('}', Token::Type::PercentUpperW);
+                return consume_quoted_array_with_interpolation('{', '}', Token::Type::PercentUpperW);
             case '<':
                 advance(2);
-                return consume_quoted_array_with_interpolation('>', Token::Type::PercentUpperW);
+                return consume_quoted_array_with_interpolation('<', '>', Token::Type::PercentUpperW);
             case '(':
                 advance(2);
-                return consume_quoted_array_with_interpolation(')', Token::Type::PercentUpperW);
+                return consume_quoted_array_with_interpolation('(', ')', Token::Type::PercentUpperW);
             default:
                 return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
             }
@@ -413,20 +413,20 @@ Token Lexer::build_next_token() {
             case '/': {
                 char c = next();
                 advance();
-                return consume_quoted_array_without_interpolation(c, Token::Type::PercentLowerI);
+                return consume_quoted_array_without_interpolation(0, c, Token::Type::PercentLowerI);
             }
             case '[':
                 advance(2);
-                return consume_quoted_array_without_interpolation(']', Token::Type::PercentLowerI);
+                return consume_quoted_array_without_interpolation('[', ']', Token::Type::PercentLowerI);
             case '{':
                 advance(2);
-                return consume_quoted_array_without_interpolation('}', Token::Type::PercentLowerI);
+                return consume_quoted_array_without_interpolation('{', '}', Token::Type::PercentLowerI);
             case '<':
                 advance(2);
-                return consume_quoted_array_without_interpolation('>', Token::Type::PercentLowerI);
+                return consume_quoted_array_without_interpolation('<', '>', Token::Type::PercentLowerI);
             case '(':
                 advance(2);
-                return consume_quoted_array_without_interpolation(')', Token::Type::PercentLowerI);
+                return consume_quoted_array_without_interpolation('(', ')', Token::Type::PercentLowerI);
             default:
                 return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
             }
@@ -436,20 +436,20 @@ Token Lexer::build_next_token() {
             case '/': {
                 char c = next();
                 advance();
-                return consume_quoted_array_with_interpolation(c, Token::Type::PercentUpperI);
+                return consume_quoted_array_with_interpolation(0, c, Token::Type::PercentUpperI);
             }
             case '[':
                 advance(2);
-                return consume_quoted_array_with_interpolation(']', Token::Type::PercentUpperI);
+                return consume_quoted_array_with_interpolation('[', ']', Token::Type::PercentUpperI);
             case '{':
                 advance(2);
-                return consume_quoted_array_with_interpolation('}', Token::Type::PercentUpperI);
+                return consume_quoted_array_with_interpolation('{', '}', Token::Type::PercentUpperI);
             case '<':
                 advance(2);
-                return consume_quoted_array_with_interpolation('>', Token::Type::PercentUpperI);
+                return consume_quoted_array_with_interpolation('<', '>', Token::Type::PercentUpperI);
             case '(':
                 advance(2);
-                return consume_quoted_array_with_interpolation(')', Token::Type::PercentUpperI);
+                return consume_quoted_array_with_interpolation('(', ')', Token::Type::PercentUpperI);
             default:
                 return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
             }
@@ -1445,13 +1445,13 @@ Token Lexer::consume_single_quoted_string(char delimiter) {
     return Token { Token::Type::UnterminatedString, buf, m_file, m_token_line, m_token_column };
 }
 
-Token Lexer::consume_quoted_array_without_interpolation(char delimiter, Token::Type type) {
-    m_nested_lexer = new WordArrayLexer { *this, delimiter, false };
+Token Lexer::consume_quoted_array_without_interpolation(char start_char, char stop_char, Token::Type type) {
+    m_nested_lexer = new WordArrayLexer { *this, start_char, stop_char, false };
     return Token { type, m_file, m_token_line, m_token_column };
 }
 
-Token Lexer::consume_quoted_array_with_interpolation(char delimiter, Token::Type type) {
-    m_nested_lexer = new WordArrayLexer { *this, delimiter, true };
+Token Lexer::consume_quoted_array_with_interpolation(char start_char, char stop_char, Token::Type type) {
+    m_nested_lexer = new WordArrayLexer { *this, start_char, stop_char, true };
     return Token { type, m_file, m_token_line, m_token_column };
 }
 
