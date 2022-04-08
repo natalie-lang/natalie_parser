@@ -520,7 +520,7 @@ Node *Parser::parse_break(LocalsHashmap &locals) {
             advance();
             return new BreakNode { token, arg };
         }
-    } else if (!current_token().is_end_of_expression()) {
+    } else if (current_token().can_be_first_arg_of_implicit_call()) {
         auto value = parse_expression(Precedence::BARECALLARGS, locals);
         if (current_token().is_comma()) {
             auto array = new ArrayNode { token };
@@ -1348,7 +1348,7 @@ Node *Parser::parse_next(LocalsHashmap &locals) {
             advance();
             return new NextNode { token, arg };
         }
-    } else if (!current_token().is_end_of_expression()) {
+    } else if (current_token().can_be_first_arg_of_implicit_call()) {
         auto value = parse_expression(Precedence::BARECALLARGS, locals);
         if (current_token().is_comma()) {
             auto array = new ArrayNode { token };
