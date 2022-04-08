@@ -820,6 +820,7 @@ require_relative './test_helper'
         expect(parse("foo do\nend")).must_equal s(:block, s(:iter, s(:call, nil, :foo), 0))
         expect(parse("foo do\n1\n2\nend")).must_equal s(:block, s(:iter, s(:call, nil, :foo), 0, s(:block, s(:lit, 1), s(:lit, 2))))
         expect(parse("foo do |x, y|\nx\ny\nend")).must_equal s(:block, s(:iter, s(:call, nil, :foo), s(:args, :x, :y), s(:block, s(:lvar, :x), s(:lvar, :y))))
+        expect(parse("foo do ||\nend")).must_equal s(:block, s(:iter, s(:call, nil, :foo), s(:args)))
         expect(parse("foo(a, b) do |x, y|\nx\ny\nend")).must_equal s(:block, s(:iter, s(:call, nil, :foo, s(:call, nil, :a), s(:call, nil, :b)), s(:args, :x, :y), s(:block, s(:lvar, :x), s(:lvar, :y))))
         expect(parse("super do |x| x end")).must_equal s(:block, s(:iter, s(:zsuper), s(:args, :x), s(:lvar, :x)))
         expect(parse("super() do |x| x end")).must_equal s(:block, s(:iter, s(:super), s(:args, :x), s(:lvar, :x)))
@@ -828,6 +829,7 @@ require_relative './test_helper'
         expect(parse('foo { 1; 2 }')).must_equal s(:block, s(:iter, s(:call, nil, :foo), 0, s(:block, s(:lit, 1), s(:lit, 2))))
         expect(parse('foo { |x, y| x; y }')).must_equal s(:block, s(:iter, s(:call, nil, :foo), s(:args, :x, :y), s(:block, s(:lvar, :x), s(:lvar, :y))))
         expect(parse('foo { |x| x }; x')).must_equal s(:block, s(:iter, s(:call, nil, :foo), s(:args, :x), s(:lvar, :x)), s(:call, nil, :x))
+        expect(parse('foo { || }')).must_equal s(:block, s(:iter, s(:call, nil, :foo), s(:args)))
         expect(parse('x = 1; foo { x }; x')).must_equal s(:block, s(:lasgn, :x, s(:lit, 1)), s(:iter, s(:call, nil, :foo), 0, s(:lvar, :x)), s(:lvar, :x))
         expect(parse('super { |x| x }; x')).must_equal s(:block, s(:iter, s(:zsuper), s(:args, :x), s(:lvar, :x)), s(:call, nil, :x))
         expect(parse('super() { |x| x }; x')).must_equal s(:block, s(:iter, s(:super), s(:args, :x), s(:lvar, :x)), s(:call, nil, :x))
@@ -935,6 +937,7 @@ require_relative './test_helper'
 
       it 'parses stabby proc' do
         expect(parse('-> { puts 1 }')).must_equal s(:block, s(:iter, s(:lambda), 0, s(:call, nil, :puts, s(:lit, 1))))
+        expect(parse('-> () { puts 1 }')).must_equal s(:block, s(:iter, s(:lambda), s(:args), s(:call, nil, :puts, s(:lit, 1))))
         expect(parse('-> x { puts x }')).must_equal s(:block, s(:iter, s(:lambda), s(:args, :x), s(:call, nil, :puts, s(:lvar, :x))))
         expect(parse('-> x, y { puts x, y }')).must_equal s(:block, s(:iter, s(:lambda), s(:args, :x, :y), s(:call, nil, :puts, s(:lvar, :x), s(:lvar, :y))))
         expect(parse('-> (x, y) { x; y }')).must_equal s(:block, s(:iter, s(:lambda), s(:args, :x, :y), s(:block, s(:lvar, :x), s(:lvar, :y))))

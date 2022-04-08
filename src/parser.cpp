@@ -1434,18 +1434,25 @@ Node *Parser::parse_splat(LocalsHashmap &locals) {
 Node *Parser::parse_stabby_proc(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
+    bool has_args = false;
     SharedPtr<Vector<Node *>> args = new Vector<Node *> {};
     if (current_token().is_lparen()) {
+        has_args = true;
         advance();
-        args = parse_def_args(locals);
-        expect(Token::Type::RParen, "proc args closing paren");
-        advance();
+        if (current_token().is_rparen()) {
+            advance();
+        } else {
+            args = parse_def_args(locals);
+            expect(Token::Type::RParen, "proc args closing paren");
+            advance();
+        }
     } else if (current_token().is_bare_name()) {
+        has_args = true;
         args = parse_def_args(locals);
     }
     if (current_token().type() != Token::Type::DoKeyword && current_token().type() != Token::Type::LCurlyBrace)
         throw_unexpected("block");
-    auto left = new StabbyProcNode { token, *args };
+    auto left = new StabbyProcNode { token, has_args, *args };
     return parse_iter_expression(left, locals);
 };
 
@@ -1684,15 +1691,23 @@ Node *Parser::parse_iter_expression(Node *left, LocalsHashmap &locals) {
     auto token = current_token();
     LocalsHashmap our_locals { locals }; // copy!
     bool curly_brace = current_token().type() == Token::Type::LCurlyBrace;
+    bool has_args = false;
     // FIXME: pass args into parse_iter_args
     SharedPtr<Vector<Node *>> args = new Vector<Node *> {};
     if (left->type() == Node::Type::StabbyProc) {
         advance();
-        for (auto arg : static_cast<StabbyProcNode *>(left)->args())
+        auto stabby_proc_node = static_cast<StabbyProcNode *>(left);
+        has_args = stabby_proc_node->has_args();
+        for (auto arg : stabby_proc_node->args())
             args->push(arg->clone());
     } else if (left->can_accept_a_block()) {
         advance();
-        if (current_token().is_block_arg_delimiter()) {
+        if (current_token().type() == Token::Type::Or) {
+            has_args = true;
+            advance();
+            // TODO: args don't render as 0
+        } else if (current_token().is_block_arg_delimiter()) {
+            has_args = true;
             advance();
             args = parse_iter_args(our_locals);
             expect(Token::Type::BitwiseOr, "end of block args");
@@ -1705,7 +1720,7 @@ Node *Parser::parse_iter_expression(Node *left, LocalsHashmap &locals) {
     auto body = parse_body(our_locals, Precedence::LOWEST, end_token_type);
     expect(end_token_type, curly_brace ? "}" : "end");
     advance();
-    return new IterNode { token, left, *args, body };
+    return new IterNode { token, left, has_args, *args, body };
 }
 
 SharedPtr<Vector<Node *>> Parser::parse_iter_args(LocalsHashmap &locals) {
