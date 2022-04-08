@@ -470,6 +470,15 @@ describe 'NatalieParser' do
         { type: :string, literal: '3' },
         { type: :']' },
       ]
+      expect(tokenize("%w[1 \#{1 + 1} 3]")).must_equal [
+        { type: :'%w[' },
+        { type: :string, literal: '1' },
+        { type: :string, literal: '#{1' },
+        { type: :string, literal: '+' },
+        { type: :string, literal: '1}' },
+        { type: :string, literal: '3' },
+        { type: :']' },
+      ]
     end
 
     it 'tokenizes hashes' do

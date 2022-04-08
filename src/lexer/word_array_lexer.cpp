@@ -42,7 +42,7 @@ Token WordArrayLexer::consume_array() {
                 return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
             }
             advance();
-        } else if (c == '#' && peek() == '{') {
+        } else if (m_interpolated && c == '#' && peek() == '{') {
             if (buf->is_empty()) {
                 advance(2);
                 m_state = State::EvaluateBegin;
