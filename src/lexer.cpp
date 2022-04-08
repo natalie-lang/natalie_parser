@@ -277,14 +277,20 @@ Token Lexer::build_next_token() {
         case 'q':
             switch (peek()) {
             case '/':
-                advance(2);
-                return consume_single_quoted_string('/');
+            case '|': {
+                char c = next();
+                advance();
+                return consume_single_quoted_string(c);
+            }
             case '[':
                 advance(2);
                 return consume_single_quoted_string(']');
             case '{':
                 advance(2);
                 return consume_single_quoted_string('}');
+            case '<':
+                advance(2);
+                return consume_single_quoted_string('>');
             case '(':
                 advance(2);
                 return consume_single_quoted_string(')');
@@ -294,14 +300,20 @@ Token Lexer::build_next_token() {
         case 'Q':
             switch (peek()) {
             case '/':
-                advance(2);
-                return consume_double_quoted_string('/');
+            case '|': {
+                char c = next();
+                advance();
+                return consume_double_quoted_string(c);
+            }
             case '[':
                 advance(2);
                 return consume_double_quoted_string(']');
             case '{':
                 advance(2);
                 return consume_double_quoted_string('}');
+            case '<':
+                advance(2);
+                return consume_double_quoted_string('>');
             case '(':
                 advance(2);
                 return consume_double_quoted_string(')');
@@ -363,6 +375,9 @@ Token Lexer::build_next_token() {
             case '{':
                 advance(2);
                 return consume_quoted_array_without_interpolation('}', Token::Type::PercentLowerW);
+            case '<':
+                advance(2);
+                return consume_quoted_array_without_interpolation('>', Token::Type::PercentLowerW);
             case '(':
                 advance(2);
                 return consume_quoted_array_without_interpolation(')', Token::Type::PercentLowerW);
@@ -383,6 +398,9 @@ Token Lexer::build_next_token() {
             case '{':
                 advance(2);
                 return consume_quoted_array_with_interpolation('}', Token::Type::PercentUpperW);
+            case '<':
+                advance(2);
+                return consume_quoted_array_with_interpolation('>', Token::Type::PercentUpperW);
             case '(':
                 advance(2);
                 return consume_quoted_array_with_interpolation(')', Token::Type::PercentUpperW);
@@ -391,15 +409,21 @@ Token Lexer::build_next_token() {
             }
         case 'i':
             switch (peek()) {
-            case '/':
-                advance(2);
-                return consume_quoted_array_without_interpolation('/', Token::Type::PercentLowerI);
+            case '|':
+            case '/': {
+                char c = next();
+                advance();
+                return consume_quoted_array_without_interpolation(c, Token::Type::PercentLowerI);
+            }
             case '[':
                 advance(2);
                 return consume_quoted_array_without_interpolation(']', Token::Type::PercentLowerI);
             case '{':
                 advance(2);
                 return consume_quoted_array_without_interpolation('}', Token::Type::PercentLowerI);
+            case '<':
+                advance(2);
+                return consume_quoted_array_without_interpolation('>', Token::Type::PercentLowerI);
             case '(':
                 advance(2);
                 return consume_quoted_array_without_interpolation(')', Token::Type::PercentLowerI);
@@ -408,15 +432,21 @@ Token Lexer::build_next_token() {
             }
         case 'I':
             switch (peek()) {
-            case '/':
-                advance(2);
-                return consume_quoted_array_with_interpolation('/', Token::Type::PercentUpperI);
+            case '|':
+            case '/': {
+                char c = next();
+                advance();
+                return consume_quoted_array_with_interpolation(c, Token::Type::PercentUpperI);
+            }
             case '[':
                 advance(2);
                 return consume_quoted_array_with_interpolation(']', Token::Type::PercentUpperI);
             case '{':
                 advance(2);
                 return consume_quoted_array_with_interpolation('}', Token::Type::PercentUpperI);
+            case '<':
+                advance(2);
+                return consume_quoted_array_with_interpolation('>', Token::Type::PercentUpperI);
             case '(':
                 advance(2);
                 return consume_quoted_array_with_interpolation(')', Token::Type::PercentUpperI);
@@ -435,6 +465,9 @@ Token Lexer::build_next_token() {
         case '{':
             advance();
             return consume_single_quoted_string('}');
+        case '<':
+            advance();
+            return consume_single_quoted_string('>');
         case '(':
             if (m_last_token.type() == Token::Type::DefKeyword || m_last_token.type() == Token::Type::Dot) {
                 // It's a trap! This looks like a %(string) but it's a method def/call!

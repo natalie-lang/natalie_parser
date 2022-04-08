@@ -293,10 +293,22 @@ describe 'NatalieParser' do
       ]
       expect(tokenize('%(foo)')).must_equal [{ type: :string, literal: 'foo' }]
       expect(tokenize('%[foo]')).must_equal [{ type: :string, literal: 'foo' }]
+      expect(tokenize('%{foo}')).must_equal [{ type: :string, literal: 'foo' }]
+      expect(tokenize('%<foo>')).must_equal [{ type: :string, literal: 'foo' }]
       expect(tokenize('%/foo/')).must_equal [{ type: :string, literal: 'foo' }]
       expect(tokenize('%|foo|')).must_equal [{ type: :string, literal: 'foo' }]
       expect(tokenize('%q(foo)')).must_equal [{ type: :string, literal: 'foo' }]
+      expect(tokenize('%q[foo]')).must_equal [{ type: :string, literal: 'foo' }]
+      expect(tokenize('%q{foo}')).must_equal [{ type: :string, literal: 'foo' }]
+      expect(tokenize('%q<foo>')).must_equal [{ type: :string, literal: 'foo' }]
+      expect(tokenize('%q/foo/')).must_equal [{ type: :string, literal: 'foo' }]
+      expect(tokenize('%q|foo|')).must_equal [{ type: :string, literal: 'foo' }]
       expect(tokenize('%Q(foo)')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
+      expect(tokenize('%Q[foo]')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
+      expect(tokenize('%Q{foo}')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
+      expect(tokenize('%Q<foo>')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
+      expect(tokenize('%Q/foo/')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
+      expect(tokenize('%Q|foo|')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
       expect(tokenize('"#{:foo} bar #{1 + 1}"')).must_equal [
         { type: :dstr },
         { type: :evstr },
@@ -451,12 +463,30 @@ describe 'NatalieParser' do
           { type: :']' }
         ]
       end
-      expect(tokenize("%w[    foo\n 1\t 2  ]")).must_equal expected('%w[')
-      expect(tokenize("%w|    foo\n 1\t 2  |")).must_equal expected('%w[')
+      expect(tokenize("%W(    foo\n 1\t 2  )")).must_equal expected('%W[')
       expect(tokenize("%W[    foo\n 1\t 2  ]")).must_equal expected('%W[')
+      expect(tokenize("%W{    foo\n 1\t 2  }")).must_equal expected('%W[')
+      expect(tokenize("%W<    foo\n 1\t 2  >")).must_equal expected('%W[')
+      expect(tokenize("%W/    foo\n 1\t 2  /")).must_equal expected('%W[')
       expect(tokenize("%W|    foo\n 1\t 2  |")).must_equal expected('%W[')
+      expect(tokenize("%w(    foo\n 1\t 2  )")).must_equal expected('%w[')
+      expect(tokenize("%w[    foo\n 1\t 2  ]")).must_equal expected('%w[')
+      expect(tokenize("%w{    foo\n 1\t 2  }")).must_equal expected('%w[')
+      expect(tokenize("%w<    foo\n 1\t 2  >")).must_equal expected('%w[')
+      expect(tokenize("%w/    foo\n 1\t 2  /")).must_equal expected('%w[')
+      expect(tokenize("%w|    foo\n 1\t 2  |")).must_equal expected('%w[')
+      expect(tokenize("%i(    foo\n 1\t 2  )")).must_equal expected('%i[')
       expect(tokenize("%i[    foo\n 1\t 2  ]")).must_equal expected('%i[')
+      expect(tokenize("%i{    foo\n 1\t 2  }")).must_equal expected('%i[')
+      expect(tokenize("%i<    foo\n 1\t 2  >")).must_equal expected('%i[')
+      expect(tokenize("%i/    foo\n 1\t 2  /")).must_equal expected('%i[')
+      expect(tokenize("%i|    foo\n 1\t 2  |")).must_equal expected('%i[')
+      expect(tokenize("%I(    foo\n 1\t 2  )")).must_equal expected('%I[')
       expect(tokenize("%I[    foo\n 1\t 2  ]")).must_equal expected('%I[')
+      expect(tokenize("%I{    foo\n 1\t 2  }")).must_equal expected('%I[')
+      expect(tokenize("%I<    foo\n 1\t 2  >")).must_equal expected('%I[')
+      expect(tokenize("%I/    foo\n 1\t 2  /")).must_equal expected('%I[')
+      expect(tokenize("%I|    foo\n 1\t 2  |")).must_equal expected('%I[')
       expect(tokenize("%W[1 \#{1 + 1} 3]")).must_equal [
         { type: :'%W[' },
         { type: :string, literal: '1' },
