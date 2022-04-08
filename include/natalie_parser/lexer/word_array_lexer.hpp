@@ -21,6 +21,8 @@ private:
     Token consume_array();
     Token start_evaluation();
 
+    bool interpolated() const { return m_interpolated; }
+
     enum class State {
         InProgress,
         DynamicStringBegin,
