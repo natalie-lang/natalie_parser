@@ -1,5 +1,8 @@
 # Natalie Parser
 
+[![github build status](https://github.com/natalie-lang/natalie_parser/actions/workflows/build.yml/badge.svg)](https://github.com/natalie-lang/natalie_parser/actions?query=workflow%3ABuild+branch%3Amaster)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/natalie-lang/natalie_parser/blob/master/LICENSE)
+
 This is a **very** work-in-progress parser for the Ruby programming language. It was extracted from the [Natalie](https://github.com/natalie-lang/natalie) project.
 
 Probably best not to use this apart from Natalie for awhile. There's still a lot of work to be done... (Feel free to help!)
