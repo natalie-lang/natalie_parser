@@ -36,7 +36,26 @@ Token WordArrayLexer::build_next_token() {
 Token WordArrayLexer::consume_array() {
     SharedPtr<String> buf = new String;
     while (auto c = current_char()) {
-        if (isspace(c)) {
+        if (c == '\\') {
+            c = next();
+            advance();
+            if (c == ' ') {
+                buf->append_char(c);
+            } else if (m_interpolated) {
+                // FIXME: need to use logic from InterpolatedStringLexer
+                switch (c) {
+                case 'n':
+                    buf->append_char('\n');
+                    break;
+                default:
+                    buf->append_char(c);
+                    break;
+                }
+            } else {
+                buf->append_char('\\');
+                buf->append_char(c);
+            }
+        } else if (isspace(c)) {
             if (!buf->is_empty()) {
                 advance();
                 return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
