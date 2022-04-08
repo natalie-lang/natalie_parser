@@ -739,6 +739,11 @@ require_relative './test_helper'
         expect(parse("%w(\#{1+1})")).must_equal s(:block, s(:array, s(:str, "\#{1+1}")))
         expect(parse('%i[ foo bar ]')).must_equal s(:block, s(:array, s(:lit, :foo), s(:lit, :bar)))
         expect(parse('%I[ foo bar ]')).must_equal s(:block, s(:array, s(:lit, :foo), s(:lit, :bar)))
+        expect(parse("%w[1\\ 2]")).must_equal s(:block, s(:array, s(:str, "1 2")))
+        expect(parse("%W[1\\n2]")).must_equal s(:block, s(:array, s(:str, "1\n2")))
+        expect(parse("%w[1\\n2]")).must_equal s(:block, s(:array, s(:str, "1\\n2")))
+        expect(parse("%w[1\\\n2]")).must_equal s(:block, s(:array, s(:str, "1\n2")))
+        expect(parse("%W(1\\t2)")).must_equal s(:block, s(:array, s(:str, "1\t2")))
       end
 
       it 'parses hash' do

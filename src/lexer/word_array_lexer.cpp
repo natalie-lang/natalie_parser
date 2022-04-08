@@ -47,13 +47,20 @@ Token WordArrayLexer::consume_array() {
                 case 'n':
                     buf->append_char('\n');
                     break;
+                case 't':
+                    buf->append_char('\t');
+                    break;
                 default:
                     buf->append_char(c);
                     break;
                 }
             } else {
-                buf->append_char('\\');
-                buf->append_char(c);
+                if (isspace(c)) {
+                    buf->append_char(c);
+                } else {
+                    buf->append_char('\\');
+                    buf->append_char(c);
+                }
             }
         } else if (isspace(c)) {
             if (!buf->is_empty()) {
