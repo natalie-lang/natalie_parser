@@ -439,13 +439,13 @@ public:
         case Type::OrKeyword:
             return "or";
         case Type::PercentLowerI:
-            return "%i";
+            return "%i[";
         case Type::PercentLowerW:
-            return "%w";
+            return "%w[";
         case Type::PercentUpperI:
-            return "%I";
+            return "%I[";
         case Type::PercentUpperW:
-            return "%W";
+            return "%W[";
         case Type::PlusEqual:
             return "+=";
         case Type::Plus:

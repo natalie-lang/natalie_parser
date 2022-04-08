@@ -789,8 +789,7 @@ Node *Parser::parse_multiple_assignment_expression(Node *left, LocalsHashmap &lo
     return list;
 }
 
-Node *Parser::parse_constant(LocalsHashmap &locals) {
-    TM_UNUSED(locals);
+Node *Parser::parse_constant(LocalsHashmap &) {
     auto node = new ConstantNode { current_token() };
     advance();
     return node;
@@ -1002,8 +1001,7 @@ Node *Parser::parse_modifier_expression(Node *left, LocalsHashmap &locals) {
     }
 }
 
-Node *Parser::parse_file_constant(LocalsHashmap &locals) {
-    TM_UNUSED(locals);
+Node *Parser::parse_file_constant(LocalsHashmap &) {
     auto token = current_token();
     advance();
     return new StringNode { token, token.file() };
@@ -1284,8 +1282,7 @@ Node *Parser::parse_interpolated_symbol(LocalsHashmap &locals) {
     }
 };
 
-Node *Parser::parse_lit(LocalsHashmap &locals) {
-    TM_UNUSED(locals);
+Node *Parser::parse_lit(LocalsHashmap &) {
     auto token = current_token();
     switch (token.type()) {
     case Token::Type::Bignum:
@@ -1422,8 +1419,7 @@ Node *Parser::parse_sclass(LocalsHashmap &locals) {
     return new SclassNode { token, klass, body };
 }
 
-Node *Parser::parse_self(LocalsHashmap &locals) {
-    TM_UNUSED(locals);
+Node *Parser::parse_self(LocalsHashmap &) {
     auto token = current_token();
     advance();
     return new SelfNode { token };
@@ -1453,16 +1449,14 @@ Node *Parser::parse_stabby_proc(LocalsHashmap &locals) {
     return parse_iter_expression(left, locals);
 };
 
-Node *Parser::parse_string(LocalsHashmap &locals) {
-    TM_UNUSED(locals);
+Node *Parser::parse_string(LocalsHashmap &) {
     auto token = current_token();
     auto string = new StringNode { token, token.literal_string() };
     advance();
     return string;
 };
 
-Node *Parser::parse_super(LocalsHashmap &locals) {
-    TM_UNUSED(locals);
+Node *Parser::parse_super(LocalsHashmap &) {
     auto token = current_token();
     advance();
     auto node = new SuperNode { token };
@@ -1471,8 +1465,7 @@ Node *Parser::parse_super(LocalsHashmap &locals) {
     return node;
 };
 
-Node *Parser::parse_symbol(LocalsHashmap &locals) {
-    TM_UNUSED(locals);
+Node *Parser::parse_symbol(LocalsHashmap &) {
     auto token = current_token();
     auto symbol = new SymbolNode { token, current_token().literal_string() };
     advance();
@@ -1584,51 +1577,29 @@ Node *Parser::parse_undef(LocalsHashmap &) {
 };
 
 Node *Parser::parse_word_array(LocalsHashmap &locals) {
-    TM_UNUSED(locals);
     auto token = current_token();
     auto array = new ArrayNode { token };
-    auto literal = token.literal();
-    size_t len = strlen(literal);
-    if (len > 0) {
-        String string;
-        for (size_t i = 0; i < len; i++) {
-            auto c = literal[i];
-            switch (c) {
-            case ' ':
-                array->add_node(new StringNode { token, new String(string) });
-                string = "";
-                break;
-            default:
-                string.append_char(c);
-            }
-        }
-        array->add_node(new StringNode { token, new String(string) });
+    advance();
+    while (!current_token().is_eof() && current_token().type() != Token::Type::RBracket) {
+        array->add_node(parse_expression(Precedence::ARRAY, locals));
     }
+    expect(Token::Type::RBracket, "closing array bracket");
     advance();
     return array;
 }
 
 Node *Parser::parse_word_symbol_array(LocalsHashmap &locals) {
-    TM_UNUSED(locals);
     auto token = current_token();
     auto array = new ArrayNode { token };
-    auto literal = token.literal();
-    size_t len = strlen(literal);
-    if (len > 0) {
-        String string;
-        for (size_t i = 0; i < len; i++) {
-            auto c = literal[i];
-            switch (c) {
-            case ' ':
-                array->add_node(new SymbolNode { token, new String(string) });
-                string = "";
-                break;
-            default:
-                string.append_char(c);
-            }
-        }
-        array->add_node(new SymbolNode { token, new String(string) });
+    advance();
+    while (!current_token().is_eof() && current_token().type() != Token::Type::RBracket) {
+        auto string = parse_expression(Precedence::ARRAY, locals);
+        assert(string->type() == Node::Type::String);
+        auto symbol = new SymbolNode { string->token(), static_cast<StringNode *>(string)->string() };
+        delete string;
+        array->add_node(symbol);
     }
+    expect(Token::Type::RBracket, "closing array bracket");
     advance();
     return array;
 }

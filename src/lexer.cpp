@@ -5,6 +5,7 @@
 #include "natalie_parser/lexer.hpp"
 #include "natalie_parser/lexer/interpolated_string_lexer.hpp"
 #include "natalie_parser/lexer/regexp_lexer.hpp"
+#include "natalie_parser/lexer/word_array_lexer.hpp"
 #include "natalie_parser/token.hpp"
 
 namespace NatalieParser {
@@ -374,7 +375,7 @@ Token Lexer::build_next_token() {
             case '|': {
                 char c = next();
                 advance();
-                return consume_quoted_array_without_interpolation(c, Token::Type::PercentUpperW);
+                return consume_quoted_array_with_interpolation(c, Token::Type::PercentUpperW);
             }
             case '[':
                 advance(2);
@@ -1412,61 +1413,13 @@ Token Lexer::consume_single_quoted_string(char delimiter) {
 }
 
 Token Lexer::consume_quoted_array_without_interpolation(char delimiter, Token::Type type) {
-    SharedPtr<String> buf = new String("");
-    char c = current_char();
-    bool seen_space = false;
-    bool seen_start = false;
-    for (;;) {
-        if (!c) return Token { Token::Type::UnterminatedString, buf, m_file, m_token_line, m_token_column };
-        if (c == delimiter) {
-            advance();
-            break;
-        }
-        switch (c) {
-        case ' ':
-        case '\t':
-        case '\n':
-            if (!seen_space && seen_start) buf->append_char(' ');
-            seen_space = true;
-            break;
-        default:
-            buf->append_char(c);
-            seen_space = false;
-            seen_start = true;
-        }
-        c = next();
-    }
-    if (!buf->is_empty() && buf->last_char() == ' ') buf->chomp();
-    return Token { type, buf, m_file, m_token_line, m_token_column };
+    m_nested_lexer = new WordArrayLexer { *this, delimiter, false };
+    return Token { type, m_file, m_token_line, m_token_column };
 }
 
 Token Lexer::consume_quoted_array_with_interpolation(char delimiter, Token::Type type) {
-    SharedPtr<String> buf = new String("");
-    char c = current_char();
-    bool seen_space = false;
-    bool seen_start = false;
-    for (;;) {
-        if (!c) return Token { Token::Type::UnterminatedString, buf, m_file, m_token_line, m_token_column };
-        if (c == delimiter) {
-            advance();
-            break;
-        }
-        switch (c) {
-        case ' ':
-        case '\t':
-        case '\n':
-            if (!seen_space && seen_start) buf->append_char(' ');
-            seen_space = true;
-            break;
-        default:
-            buf->append_char(c);
-            seen_space = false;
-            seen_start = true;
-        }
-        c = next();
-    }
-    if (!buf->is_empty() && buf->last_char() == ' ') buf->chomp();
-    return Token { type, buf, m_file, m_token_line, m_token_column };
+    m_nested_lexer = new WordArrayLexer { *this, delimiter, true };
+    return Token { type, m_file, m_token_line, m_token_column };
 }
 
 Token Lexer::consume_regexp(char delimiter) {

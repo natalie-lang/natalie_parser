@@ -735,6 +735,7 @@ require_relative './test_helper'
         expect(parse('%w|1 2 3|')).must_equal s(:block, s(:array, s(:str, '1'), s(:str, '2'), s(:str, '3')))
         expect(parse("%w[  1 2\t  3\n \n4 ]")).must_equal s(:block, s(:array, s(:str, '1'), s(:str, '2'), s(:str, '3'), s(:str, '4')))
         expect(parse("%W[  1 2\t  3\n \n4 ]")).must_equal s(:block, s(:array, s(:str, '1'), s(:str, '2'), s(:str, '3'), s(:str, '4')))
+        expect(parse("%W[\#{1+1}]")).must_equal s(:block, s(:array, s(:dstr, "", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))))))
         expect(parse('%i[ foo bar ]')).must_equal s(:block, s(:array, s(:lit, :foo), s(:lit, :bar)))
         expect(parse('%I[ foo bar ]')).must_equal s(:block, s(:array, s(:lit, :foo), s(:lit, :bar)))
       end

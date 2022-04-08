@@ -44,6 +44,12 @@ task test: [:build, 'build/asan_test'] do
   sh 'build/asan_test'
 end
 
+desc 'Run test test suite when changes are made (requires entr binary)'
+task :watch do
+  files = Rake::FileList['**/*.cpp', '**/*.hpp', '**/*.rb']
+  sh "ls #{files} | entr -c -s 'rake test'"
+end
+
 desc 'Show line counts for the project'
 task :cloc do
   sh 'cloc include lib src test'

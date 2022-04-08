@@ -442,12 +442,34 @@ describe 'NatalieParser' do
         { type: :fixnum, literal: 1 },
         { type: :']' },
       ]
-      expect(tokenize("%w[    foo\n 1\t 2  ]")).must_equal [{ type: :'%w', literal: 'foo 1 2' }]
-      expect(tokenize("%w|    foo\n 1\t 2  |")).must_equal [{ type: :'%w', literal: 'foo 1 2' }]
-      expect(tokenize("%W[    foo\n 1\t 2  ]")).must_equal [{ type: :'%W', literal: 'foo 1 2' }]
-      expect(tokenize("%W|    foo\n 1\t 2  |")).must_equal [{ type: :'%W', literal: 'foo 1 2' }]
-      expect(tokenize("%i[    foo\n 1\t 2  ]")).must_equal [{ type: :'%i', literal: 'foo 1 2' }]
-      expect(tokenize("%I[    foo\n 1\t 2  ]")).must_equal [{ type: :'%I', literal: 'foo 1 2' }]
+      def expected(type)
+        [
+          { type: type.to_sym },
+          { type: :string, literal: 'foo' },
+          { type: :string, literal: '1' },
+          { type: :string, literal: '2' },
+          { type: :']' }
+        ]
+      end
+      expect(tokenize("%w[    foo\n 1\t 2  ]")).must_equal expected('%w[')
+      expect(tokenize("%w|    foo\n 1\t 2  |")).must_equal expected('%w[')
+      expect(tokenize("%W[    foo\n 1\t 2  ]")).must_equal expected('%W[')
+      expect(tokenize("%W|    foo\n 1\t 2  |")).must_equal expected('%W[')
+      expect(tokenize("%i[    foo\n 1\t 2  ]")).must_equal expected('%i[')
+      expect(tokenize("%I[    foo\n 1\t 2  ]")).must_equal expected('%I[')
+      expect(tokenize("%W[1 \#{1 + 1} 3]")).must_equal [
+        { type: :'%W[' },
+        { type: :string, literal: '1' },
+        { type: :dstr },
+        { type: :evstr },
+        { type: :fixnum, literal: 1 },
+        { type: :'+' },
+        { type: :fixnum, literal: 1 },
+        { type: :evstrend },
+        { type: :dstrend },
+        { type: :string, literal: '3' },
+        { type: :']' },
+      ]
     end
 
     it 'tokenizes hashes' do
