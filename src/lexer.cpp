@@ -618,9 +618,15 @@ Token Lexer::build_next_token() {
     case '~':
         advance();
         return Token { Token::Type::Tilde, m_file, m_token_line, m_token_column };
-    case '?':
-        advance();
-        return Token { Token::Type::TernaryQuestion, m_file, m_token_line, m_token_column };
+    case '?': {
+        auto c = next();
+        if (isspace(c)) {
+            return Token { Token::Type::TernaryQuestion, m_file, m_token_line, m_token_column };
+        } else {
+            advance();
+            return Token { Token::Type::String, c, m_file, m_token_line, m_token_column };
+        }
+    }
     case ':': {
         auto c = next();
         if (c == ':') {

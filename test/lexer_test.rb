@@ -278,6 +278,13 @@ describe 'NatalieParser' do
       expect(-> { tokenize('0.1e--') }).must_raise(SyntaxError, "1: syntax error, unexpected '-'")
     end
 
+    it 'tokenizes characters' do
+      expect(tokenize('?a')).must_equal [{ type: :string, literal: 'a' }]
+      expect(tokenize("?a\n")).must_equal [{ type: :string, literal: 'a' }, { type: :"\n" }]
+      expect(tokenize("?? ")).must_equal [{ type: :string, literal: '?' }]
+      expect(tokenize("?:")).must_equal [{ type: :string, literal: ':' }]
+    end
+
     it 'tokenizes strings' do
       expect(tokenize('"foo"')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
       expect(tokenize('"this is \"quoted\""')).must_equal [
