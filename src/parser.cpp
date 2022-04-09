@@ -218,7 +218,7 @@ Node *Parser::parse_expression(Parser::Precedence precedence, LocalsHashmap &loc
         auto token = current_token();
         if (!higher_precedence(token, left, precedence))
             break;
-        auto left_fn = left_denotation(token, left);
+        auto left_fn = left_denotation(token, left, precedence);
         assert(left_fn);
         left = (this->*left_fn)(left, locals);
         m_precedence_stack.pop();
@@ -1621,6 +1621,10 @@ Node *Parser::parse_assignment_expression(Node *left, LocalsHashmap &locals) {
     return parse_assignment_expression(left, locals, true);
 }
 
+Node *Parser::parse_assignment_expression_without_multiple_values(Node *left, LocalsHashmap &locals) {
+    return parse_assignment_expression(left, locals, false);
+}
+
 Node *Parser::parse_assignment_expression(Node *left, LocalsHashmap &locals, bool allow_multiple) {
     auto token = current_token();
     if (left->type() == Node::Type::Splat) {
@@ -2233,11 +2237,14 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
     }
 }
 
-Parser::parse_left_fn Parser::left_denotation(Token &token, Node *left) {
+Parser::parse_left_fn Parser::left_denotation(Token &token, Node *left, Precedence precedence) {
     using Type = Token::Type;
     switch (token.type()) {
     case Type::Equal:
-        return &Parser::parse_assignment_expression;
+        if (precedence == Precedence::ARRAY)
+            return &Parser::parse_assignment_expression_without_multiple_values;
+        else
+            return &Parser::parse_assignment_expression;
     case Type::LParen:
         return &Parser::parse_call_expression_with_parens;
     case Type::ConstantResolution:

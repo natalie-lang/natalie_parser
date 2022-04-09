@@ -736,6 +736,7 @@ require_relative './test_helper'
         expect(parse("[\n1 , \n2,\n 3]")).must_equal s(:block, s(:array, s(:lit, 1), s(:lit, 2), s(:lit, 3)))
         expect(parse("[\n1 , \n2,\n 3\n]")).must_equal s(:block, s(:array, s(:lit, 1), s(:lit, 2), s(:lit, 3)))
         expect(parse("[\n1 , \n2,\n 3,\n]")).must_equal s(:block, s(:array, s(:lit, 1), s(:lit, 2), s(:lit, 3)))
+        expect(parse('[a = foo, b]')).must_equal s(:block, s(:array, s(:lasgn, :a, s(:call, nil, :foo)), s(:call, nil, :b)))
         if parser == 'NatalieParser'
           expect_raise_with_message(-> { parse('[ , 1]') }, SyntaxError, "(string)#1: syntax error, unexpected ',' (expected: 'expression')")
         else

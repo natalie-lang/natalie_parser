@@ -126,6 +126,7 @@ private:
     Node *parse_yield(LocalsHashmap &);
 
     Node *parse_assignment_expression(Node *, LocalsHashmap &);
+    Node *parse_assignment_expression_without_multiple_values(Node *, LocalsHashmap &);
     Node *parse_assignment_expression(Node *, LocalsHashmap &, bool);
     Node *parse_assignment_expression_value(bool, LocalsHashmap &, bool);
     Node *parse_call_expression_without_parens(Node *, LocalsHashmap &);
@@ -156,7 +157,7 @@ private:
     using parse_left_fn = Node *(Parser::*)(Node *, LocalsHashmap &);
 
     parse_null_fn null_denotation(Token::Type);
-    parse_left_fn left_denotation(Token &, Node *);
+    parse_left_fn left_denotation(Token &, Node *, Precedence);
 
     bool treat_left_bracket_as_element_reference(Node *left, Token &token) {
         return !token.whitespace_precedes() || (left->type() == Node::Type::Identifier && static_cast<IdentifierNode *>(left)->is_lvar());
