@@ -36,6 +36,11 @@ require_relative './test_helper'
         expect(parse('()')).must_equal s(:block, s(:nil))
       end
 
+      it 'parses a group' do
+        expect(parse('x = (1 + 1; 3)')).must_equal s(:block, s(:lasgn, :x, s(:block, s(:call, s(:lit, 1), :+, s(:lit, 1)), s(:lit, 3))))
+        expect(parse("x = (1 + 1\n3)")).must_equal s(:block, s(:lasgn, :x, s(:block, s(:call, s(:lit, 1), :+, s(:lit, 1)), s(:lit, 3))))
+      end
+
       it 'parses bignums' do
         expect(parse('100000000000000000000')).must_equal s(:block, s(:lit, 100000000000000000000))
         expect(parse('-100000000000000000000')).must_equal s(:block, s(:lit, -100000000000000000000))

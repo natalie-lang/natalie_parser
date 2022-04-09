@@ -1015,6 +1015,16 @@ Node *Parser::parse_group(LocalsHashmap &locals) {
         return new NilSexpNode { token };
     }
     auto exp = parse_expression(Precedence::LOWEST, locals);
+    if (current_token().is_end_of_expression()) {
+        auto block = new BlockNode { token };
+        block->add_node(exp);
+        while (current_token().is_end_of_expression()) {
+            next_expression();
+            auto next_exp = parse_expression(Precedence::LOWEST, locals);
+            block->add_node(next_exp);
+        }
+        exp = block;
+    }
     expect(Token::Type::RParen, "group closing paren");
     advance();
     return exp;
