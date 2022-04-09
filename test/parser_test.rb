@@ -250,6 +250,7 @@ require_relative './test_helper'
         expect(parse(':foo_bar')).must_equal s(:block, s(:lit, :foo_bar))
         expect(parse(':"foo bar"')).must_equal s(:block, s(:lit, :'foo bar'))
         expect(parse(':"foo #{1+1}"')).must_equal s(:block, s(:dsym, "foo ", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1)))))
+        expect(parse('foo :"bar"')).must_equal s(:block, s(:call, nil, :foo, s(:lit, :bar)))
         expect(parse(':FooBar')).must_equal s(:block, s(:lit, :FooBar))
       end
 

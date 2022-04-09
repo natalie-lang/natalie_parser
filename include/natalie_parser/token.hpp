@@ -744,6 +744,7 @@ public:
         case Token::Type::InterpolatedRegexpBegin:
         case Token::Type::InterpolatedShellBegin:
         case Token::Type::InterpolatedStringBegin:
+        case Token::Type::InterpolatedSymbolBegin:
         case Token::Type::LCurlyBrace:
         case Token::Type::LBracket:
         case Token::Type::LBracketRBracket:
