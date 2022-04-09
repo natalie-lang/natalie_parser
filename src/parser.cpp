@@ -1399,6 +1399,18 @@ Node *Parser::parse_nth_ref(LocalsHashmap &) {
     return new NthRefNode { token, token.get_fixnum() };
 }
 
+Node *Parser::parse_redo(LocalsHashmap &) {
+    auto token = current_token();
+    advance();
+    return new RedoNode { token };
+}
+
+Node *Parser::parse_retry(LocalsHashmap &) {
+    auto token = current_token();
+    advance();
+    return new RetryNode { token };
+}
+
 Node *Parser::parse_return(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
@@ -2209,6 +2221,10 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
         return &Parser::parse_not;
     case Type::NthRef:
         return &Parser::parse_nth_ref;
+    case Type::RedoKeyword:
+        return &Parser::parse_redo;
+    case Type::RetryKeyword:
+        return &Parser::parse_retry;
     case Type::ReturnKeyword:
         return &Parser::parse_return;
     case Type::SelfKeyword:

@@ -1056,6 +1056,14 @@ require_relative './test_helper'
         expect(result).must_equal s(:block, s(:lasgn, :x, s(:and, s(:call, s(:call, nil, :foo), :bar), s(:iter, s(:lambda), s(:args, :i), s(:call, nil, :baz, s(:lvar, :i))))))
       end
 
+      it 'parses redo' do
+        expect(parse('redo')).must_equal s(:block, s(:redo))
+      end
+
+      it 'parses retry' do
+        expect(parse('retry')).must_equal s(:block, s(:retry))
+      end
+
       it 'parses heredocs' do
         expect(parse("<<FOO\nFOO")).must_equal s(:block, s(:str, ""))
         doc1 = <<END
