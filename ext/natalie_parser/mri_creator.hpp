@@ -91,7 +91,8 @@ public:
     }
 
     virtual void append_symbol(TM::String &name) override {
-        rb_ary_push(m_sexp, ID2SYM(rb_intern2(name.c_str(), name.length())));
+        auto str = rb_str_new(name.c_str(), name.length());
+        rb_ary_push(m_sexp, rb_to_symbol(str));
     }
 
     virtual void append_true() override {

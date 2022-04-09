@@ -248,6 +248,19 @@ require_relative './test_helper'
         expect(parse(':FooBar')).must_equal s(:block, s(:lit, :FooBar))
       end
 
+      it 'parses symbols with correct encoding' do
+        sym = parse(':"\xC3\x9Cber"').last.last
+        expect(sym.encoding.name).must_equal 'ASCII-8BIT'
+        expect(sym.length).must_equal 5
+        sym = parse(':"\xf0\x9f\x90\xae"').last.last
+        expect(sym.encoding.name).must_equal 'ASCII-8BIT'
+        expect(sym.length).must_equal 4
+        # FIXME: how does RubyParser decide this is UTF-8?
+        #sym = parse(':"🐮"').last.last # "\xf0\x9f\x90\xae"
+        #expect(sym.encoding.name).must_equal 'UTF-8'
+        #expect(sym.length).must_equal 1
+      end
+
       it 'parses regexps' do
         expect(parse('/foo/')).must_equal s(:block, s(:lit, /foo/))
         expect(parse('/foo/i')).must_equal s(:block, s(:lit, /foo/i))
