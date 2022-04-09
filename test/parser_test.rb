@@ -978,6 +978,9 @@ require_relative './test_helper'
         expect(parse("case 1\nwhen 1 then :a\n:b\nwhen 2, 3 then :c\nelse :d\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:when, s(:array, s(:lit, 1)), s(:lit, :a), s(:lit, :b)), s(:when, s(:array, s(:lit, 2), s(:lit, 3)), s(:lit, :c)), s(:lit, :d)))
         expect(parse("case\nwhen true\n:a\nelse\n:b\nend")).must_equal s(:block, s(:case, nil, s(:when, s(:array, s(:true)), s(:lit, :a)), s(:lit, :b)))
         expect(parse("case\nwhen true then :a\nelse :b\nend")).must_equal s(:block, s(:case, nil, s(:when, s(:array, s(:true)), s(:lit, :a)), s(:lit, :b)))
+        expect(-> { parse("case 1\nelse\n:else\nend") }).must_raise SyntaxError
+        expect(-> { parse("case 1\nwhen 1\n1\nelse\n:else\nwhen 2\n2\nend") }).must_raise SyntaxError
+        expect(-> { parse("case 1\nelse\n:else\nwhen 2\n2\nend") }).must_raise SyntaxError
       end
 
       it 'parses case/in/else' do

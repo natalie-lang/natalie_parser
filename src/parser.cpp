@@ -580,6 +580,8 @@ Node *Parser::parse_case(LocalsHashmap &locals) {
             break;
         }
         case Token::Type::ElseKeyword: {
+            if (node->nodes().is_empty())
+                throw_unexpected("case 'when' or 'in'");
             advance();
             skip_newlines();
             BlockNode *body = parse_body(locals, Precedence::LOWEST);
