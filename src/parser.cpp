@@ -2406,7 +2406,7 @@ String Parser::current_line() {
     String buf;
     for (size_t i = 0; i < m_code->size(); ++i) {
         char c = (*m_code)[i];
-        if (line == current_line)
+        if (line == current_line && c != '\n')
             buf.append_char(c);
         else if (line > current_line)
             break;
