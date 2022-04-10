@@ -406,6 +406,7 @@ require_relative './test_helper'
         expect(-> { parse('undef') }).must_raise SyntaxError
         expect(parse('undef foo')).must_equal s(:block, s(:undef, s(:lit, :foo)))
         expect(parse('undef :foo')).must_equal s(:block, s(:undef, s(:lit, :foo)))
+        expect(parse('undef :"foo"')).must_equal s(:block, s(:undef, s(:lit, :foo)))
         expect(parse('undef Foo')).must_equal s(:block, s(:undef, s(:lit, :Foo)))
         multiple_args_result = parse('undef foo, :bar')
         if parser == 'NatalieParser'
@@ -1034,6 +1035,7 @@ require_relative './test_helper'
       it 'parses alias' do
         expect(parse('alias foo bar')).must_equal s(:block, s(:alias, s(:lit, :foo), s(:lit, :bar)))
         expect(parse('alias :foo :bar')).must_equal s(:block, s(:alias, s(:lit, :foo), s(:lit, :bar)))
+        expect(parse('alias :"foo" :"bar"')).must_equal s(:block, s(:alias, s(:lit, :foo), s(:lit, :bar)))
         expect(parse("alias write <<\ndef foo; end")).must_equal s(:block, s(:alias, s(:lit, :write), s(:lit, :<<)), s(:defn, :foo, s(:args), s(:nil)))
         expect(parse("alias << write\ndef foo; end")).must_equal s(:block, s(:alias, s(:lit, :<<), s(:lit, :write)), s(:defn, :foo, s(:args), s(:nil)))
         expect(parse("alias yield <<\ndef foo; end")).must_equal s(:block, s(:alias, s(:lit, :yield), s(:lit, :<<)), s(:defn, :foo, s(:args), s(:nil)))

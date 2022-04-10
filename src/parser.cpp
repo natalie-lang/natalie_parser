@@ -323,6 +323,8 @@ SymbolNode *Parser::parse_alias_arg(LocalsHashmap &locals, const char *expected_
     }
     case Token::Type::Symbol:
         return static_cast<SymbolNode *>(parse_symbol(locals));
+    case Token::Type::InterpolatedSymbolBegin:
+        return static_cast<SymbolNode *>(parse_interpolated_symbol(locals));
     default:
         if (token.is_operator() || token.is_keyword()) {
             advance();
@@ -1572,34 +1574,35 @@ Node *Parser::parse_unary_operator(LocalsHashmap &locals) {
     return new UnaryOpNode { token, message, receiver };
 }
 
-Node *Parser::parse_undef(LocalsHashmap &) {
+Node *Parser::parse_undef(LocalsHashmap &locals) {
     auto undef_token = current_token();
     advance();
-    auto name_from_token = [&](Token &token) {
+    auto symbol_from_token = [&](Token &token) {
         switch (token.type()) {
         case Token::Type::BareName:
         case Token::Type::Constant:
+            advance();
+            return new SymbolNode { token, token.literal_string() };
         case Token::Type::Symbol:
-            return token.literal_string();
+            return static_cast<SymbolNode *>(parse_symbol(locals));
+        case Token::Type::InterpolatedSymbolBegin: {
+            return static_cast<SymbolNode *>(parse_interpolated_symbol(locals));
+        }
         default:
             throw_unexpected("method name for undef");
         }
     };
     auto undef_node = new UndefNode { undef_token };
     auto token = current_token();
-    auto name = name_from_token(token);
-    advance();
-    undef_node->add_arg(new SymbolNode { token, name });
+    undef_node->add_arg(symbol_from_token(token));
     if (current_token().is_comma()) {
         auto block = new BlockNode { undef_token };
         block->add_node(undef_node);
         while (current_token().is_comma()) {
             advance();
             token = current_token();
-            name = name_from_token(token);
-            advance();
             undef_node = new UndefNode { undef_token };
-            undef_node->add_arg(new SymbolNode { token, name });
+            undef_node->add_arg(symbol_from_token(token));
             block->add_node(undef_node);
         }
         return block;
