@@ -135,9 +135,12 @@ void Lexer::rewind(size_t bytes) {
 
 bool Lexer::skip_whitespace() {
     bool whitespace_found = false;
-    while (current_char() == ' ' || current_char() == '\t') {
+    char c = current_char();
+    while (c == ' ' || c == '\t' || (c == '\\' && peek() == '\n')) {
         whitespace_found = true;
         advance();
+        if (c == '\\') advance();
+        c = current_char();
     }
     return whitespace_found;
 }

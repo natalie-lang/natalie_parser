@@ -41,6 +41,11 @@ require_relative './test_helper'
         expect(parse("x = (1 + 1\n3)")).must_equal s(:block, s(:lasgn, :x, s(:block, s(:call, s(:lit, 1), :+, s(:lit, 1)), s(:lit, 3))))
       end
 
+      it 'parses line-continuation backslash' do
+        expect(parse("foo\\\n1")).must_equal s(:block, s(:call, nil, :foo, s(:lit, 1)))
+        expect(-> { parse("foo\\     \n1") }).must_raise SyntaxError
+      end
+
       it 'parses bignums' do
         expect(parse('100000000000000000000')).must_equal s(:block, s(:lit, 100000000000000000000))
         expect(parse('-100000000000000000000')).must_equal s(:block, s(:lit, -100000000000000000000))

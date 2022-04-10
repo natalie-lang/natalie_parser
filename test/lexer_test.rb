@@ -59,6 +59,13 @@ describe 'NatalieParser' do
       ]
     end
 
+    it 'tokenizes line-continuation backslash' do
+      expect(tokenize("foo\\\n1")).must_equal [
+        { type: :name, literal: :foo },
+        { type: :fixnum, literal: 1 },
+      ]
+    end
+
     it 'tokenizes division and regexp' do
       expect(tokenize('1/2')).must_equal [{ type: :fixnum, literal: 1 }, { type: :'/' }, { type: :fixnum, literal: 2 }]
       expect(tokenize('1 / 2')).must_equal [{ type: :fixnum, literal: 1 }, { type: :'/' }, { type: :fixnum, literal: 2 }]
