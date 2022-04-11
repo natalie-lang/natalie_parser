@@ -20,6 +20,13 @@ public:
         assert(m_name);
     }
 
+    Colon2Node(const Colon2Node &other)
+        : Colon2Node { other.token(), other.left().clone(), other.name() } { }
+
+    virtual Node *clone() const override {
+        return new Colon2Node(*this);
+    }
+
     virtual Type type() const override { return Type::Colon2; }
 
     const Node &left() const { return m_left.ref(); }
