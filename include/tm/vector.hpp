@@ -247,7 +247,7 @@ public:
      * vec.first();
      * ```
      */
-    T first() {
+    T first() const {
         assert(m_size != 0);
         return m_data[0];
     }
@@ -267,7 +267,7 @@ public:
      * vec.last();
      * ```
      */
-    T last() {
+    T last() const {
         assert(m_size != 0);
         return m_data[m_size - 1];
     }

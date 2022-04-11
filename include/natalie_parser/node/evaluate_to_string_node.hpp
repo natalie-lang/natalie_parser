@@ -18,6 +18,13 @@ public:
         assert(m_node);
     }
 
+    EvaluateToStringNode(const EvaluateToStringNode &other)
+        : EvaluateToStringNode { other.token(), other.node().clone() } { }
+
+    virtual Node *clone() const override {
+        return new EvaluateToStringNode(*this);
+    }
+
     virtual Type type() const override { return Type::EvaluateToString; }
 
     const Node &node() const { return m_node.ref(); }

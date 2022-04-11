@@ -172,6 +172,8 @@ private:
         return new T { left_node->token(), left_node->left().clone(), new T { token, left_node->right().clone(), right } };
     };
 
+    Node *append_string_nodes(Node *string1, Node *string2);
+
     // FIXME: return a Token&
     Token current_token() const;
     Token peek_token() const;

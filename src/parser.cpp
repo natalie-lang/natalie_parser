@@ -6,6 +6,7 @@ namespace NatalieParser {
 enum class Parser::Precedence {
     LOWEST,
     ARRAY, // []
+    WORDARRAY, // %w[]
     HASH, // {}
     EXPRMODIFIER, // if/unless/while/until
     CASE, // case/when/else
@@ -206,13 +207,13 @@ Parser::Precedence Parser::get_precedence(Token &token, Node *left) {
 Node *Parser::parse_expression(Parser::Precedence precedence, LocalsHashmap &locals) {
     skip_newlines();
 
+    m_precedence_stack.push(precedence);
+
     auto null_fn = null_denotation(current_token().type());
     if (!null_fn)
         throw_unexpected("expression");
 
     Node *left = (this->*null_fn)(locals);
-
-    m_precedence_stack.push(precedence);
 
     while (current_token().is_valid()) {
         auto token = current_token();
@@ -1133,14 +1134,9 @@ Node *Parser::parse_if_body(LocalsHashmap &locals) {
 }
 
 void Parser::parse_interpolated_body(LocalsHashmap &locals, InterpolatedNode *node, Token::Type end_token) {
-    bool has_string = false;
     while (current_token().is_valid() && current_token().type() != end_token) {
         switch (current_token().type()) {
         case Token::Type::EvaluateToStringBegin: {
-            if (!has_string) {
-                node->add_node(new StringNode { current_token(), new String() });
-                has_string = true;
-            }
             advance();
             auto block = new BlockNode { current_token() };
             while (current_token().type() != Token::Type::EvaluateToStringEnd) {
@@ -1161,7 +1157,6 @@ void Parser::parse_interpolated_body(LocalsHashmap &locals, InterpolatedNode *no
             break;
         }
         case Token::Type::String:
-            has_string = true;
             node->add_node(new StringNode { current_token(), current_token().literal_string() });
             advance();
             break;
@@ -1259,21 +1254,44 @@ Node *Parser::parse_interpolated_shell(LocalsHashmap &locals) {
 Node *Parser::parse_interpolated_string(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
+    Node *string;
     if (current_token().type() == Token::Type::InterpolatedStringEnd) {
-        auto string = new StringNode { token, new String };
+        string = new StringNode { token, new String };
         advance();
-        return string;
     } else if (current_token().type() == Token::Type::String && peek_token().type() == Token::Type::InterpolatedStringEnd) {
-        auto string = new StringNode { token, current_token().literal_string() };
+        string = new StringNode { token, current_token().literal_string() };
         advance();
         advance();
-        return string;
     } else {
         auto interpolated_string = new InterpolatedStringNode { token };
         parse_interpolated_body(locals, interpolated_string, Token::Type::InterpolatedStringEnd);
         advance();
-        return interpolated_string;
+        string = interpolated_string;
     }
+
+    // look for adjacent strings to be appended
+    if (m_precedence_stack.is_empty() || m_precedence_stack.last() != Precedence::WORDARRAY) {
+        for (;;) {
+            token = current_token();
+            switch (token.type()) {
+            case Token::Type::String: {
+                auto next_string = parse_string(locals);
+                string = append_string_nodes(string, next_string);
+                break;
+            }
+            case Token::Type::InterpolatedStringBegin: {
+                auto next_string = parse_interpolated_string(locals);
+                string = append_string_nodes(string, next_string);
+                break;
+            }
+            default:
+                return string;
+            }
+            token = current_token();
+        }
+    }
+
+    return string;
 };
 
 Node *Parser::parse_interpolated_symbol(LocalsHashmap &locals) {
@@ -1482,12 +1500,104 @@ Node *Parser::parse_stabby_proc(LocalsHashmap &locals) {
     return parse_iter_expression(left, locals);
 };
 
-Node *Parser::parse_string(LocalsHashmap &) {
+Node *Parser::parse_string(LocalsHashmap &locals) {
     auto token = current_token();
-    auto string = new StringNode { token, token.literal_string() };
+    Node *string = new StringNode { token, token.literal_string() };
     advance();
+
+    // look for adjacent strings to be appended
+    if (m_precedence_stack.is_empty() || m_precedence_stack.last() != Precedence::WORDARRAY) {
+        for (;;) {
+            token = current_token();
+            switch (token.type()) {
+            case Token::Type::String:
+                static_cast<StringNode *>(string)->string()->append(*current_token().literal_string());
+                advance();
+                break;
+            case Token::Type::InterpolatedStringBegin: {
+                auto next_string = parse_interpolated_string(locals);
+                string = append_string_nodes(string, next_string);
+                break;
+            }
+            default:
+                return string;
+            }
+            token = current_token();
+        }
+    }
+
     return string;
 };
+
+Node *Parser::append_string_nodes(Node *string1, Node *string2) {
+    switch (string1->type()) {
+    case Node::Type::String: {
+        auto string1_node = static_cast<StringNode *>(string1);
+        switch (string2->type()) {
+        case Node::Type::String: {
+            auto string2_node = static_cast<StringNode *>(string2);
+            string1_node->string()->append(*string2_node->string());
+            delete string2;
+            return string1;
+        }
+        case Node::Type::InterpolatedString: {
+            auto string2_node = static_cast<InterpolatedStringNode *>(string2);
+            assert(!string2_node->is_empty());
+            assert(string2_node->nodes().first()->type() == Node::Type::String);
+            static_cast<StringNode *>(string2_node->nodes().first())->string()->prepend(*string1_node->string());
+            delete string1;
+            return string2;
+        }
+        default:
+            TM_UNREACHABLE();
+        }
+        break;
+    }
+    case Node::Type::InterpolatedString: {
+        auto string1_node = static_cast<InterpolatedStringNode *>(string1);
+        switch (string2->type()) {
+        case Node::Type::String: {
+            auto string2_node = static_cast<StringNode *>(string2);
+            assert(!string1_node->is_empty());
+            auto last_node = string1_node->nodes().last();
+            switch (last_node->type()) {
+            case Node::Type::String:
+                if (string1_node->nodes().size() > 1) {
+                    // For some reason, RubyParser doesn't append two string nodes
+                    // if there is an evstr present.
+                    string1_node->add_node(string2);
+                } else {
+                    static_cast<StringNode *>(last_node)->string()->append(*string2_node->string());
+                    delete string2;
+                }
+                return string1;
+            case Node::Type::EvaluateToString:
+                string1_node->add_node(string2);
+                return string1;
+            default:
+                TM_UNREACHABLE();
+            }
+        }
+        case Node::Type::InterpolatedString: {
+            auto string2_node = static_cast<InterpolatedStringNode *>(string2);
+            assert(!string1_node->is_empty());
+            assert(!string2_node->is_empty());
+            for (auto node : string2_node->nodes()) {
+                string1_node->add_node(node->clone());
+            }
+            delete string2;
+            return string1;
+        }
+        default:
+            TM_UNREACHABLE();
+        }
+        break;
+    }
+    default:
+        TM_UNREACHABLE();
+    }
+    return string1;
+}
 
 Node *Parser::parse_super(LocalsHashmap &) {
     auto token = current_token();
@@ -1614,9 +1724,8 @@ Node *Parser::parse_word_array(LocalsHashmap &locals) {
     auto token = current_token();
     auto array = new ArrayNode { token };
     advance();
-    while (!current_token().is_eof() && current_token().type() != Token::Type::RBracket) {
-        array->add_node(parse_expression(Precedence::ARRAY, locals));
-    }
+    while (!current_token().is_eof() && current_token().type() != Token::Type::RBracket)
+        array->add_node(parse_expression(Precedence::WORDARRAY, locals));
     expect(Token::Type::RBracket, "closing array bracket");
     advance();
     return array;
@@ -1627,7 +1736,7 @@ Node *Parser::parse_word_symbol_array(LocalsHashmap &locals) {
     auto array = new ArrayNode { token };
     advance();
     while (!current_token().is_eof() && current_token().type() != Token::Type::RBracket) {
-        auto string = parse_expression(Precedence::ARRAY, locals);
+        auto string = parse_expression(Precedence::WORDARRAY, locals);
         assert(string->type() == Node::Type::String);
         auto symbol = new SymbolNode { string->token(), static_cast<StringNode *>(string)->string() };
         delete string;

@@ -47,6 +47,11 @@ public:
         append_regexp(*pattern_ptr, options);
     }
 
+    void append_string(const char *string) {
+        auto s = TM::String(string);
+        append_string(s);
+    }
+
     void append_string(TM::SharedPtr<TM::String> string_ptr) {
         if (!string_ptr) {
             auto s = TM::String("");
