@@ -555,6 +555,19 @@ describe 'NatalieParser' do
       ]
     end
 
+    it 'tokenizes method call with symbol key' do
+      expect(tokenize("foo a: b")).must_equal [
+        { type: :name, literal: :foo },
+        { type: :symbol_key, literal: :a },
+        { type: :name, literal: :b },
+      ]
+      expect(tokenize("foo self: a")).must_equal [
+        { type: :name, literal: :foo },
+        { type: :symbol_key, literal: :self },
+        { type: :name, literal: :a },
+      ]
+    end
+
     it 'tokenizes class variables' do
       expect(tokenize('@@foo')).must_equal [{ type: :cvar, literal: :@@foo }]
     end

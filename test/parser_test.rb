@@ -597,6 +597,7 @@ require_relative './test_helper'
         expect(parse("foo a and b { 1 }")).must_equal s(:block, s(:and, s(:call, nil, :foo, s(:call, nil, :a)), s(:iter, s(:call, nil, :b), 0, s(:lit, 1))))
         expect(parse("foo a and b do\n1\nend")).must_equal s(:block, s(:and, s(:call, nil, :foo, s(:call, nil, :a)), s(:iter, s(:call, nil, :b), 0, s(:lit, 1))))
         expect(parse("foo a == b, c")).must_equal s(:block, s(:call, nil, :foo, s(:call, s(:call, nil, :a), :==, s(:call, nil, :b)), s(:call, nil, :c)))
+        expect(parse("foo self: a")).must_equal s(:block, s(:call, nil, :foo, s(:hash, s(:lit, :self), s(:call, nil, :a))))
       end
 
       it 'parses operator method calls' do

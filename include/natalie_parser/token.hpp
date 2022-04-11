@@ -758,7 +758,6 @@ public:
         case Token::Type::PercentLowerW:
         case Token::Type::PercentUpperI:
         case Token::Type::PercentUpperW:
-        case Token::Type::SelfKeyword:
         case Token::Type::String:
         case Token::Type::SuperKeyword:
         case Token::Type::Symbol:

@@ -780,88 +780,98 @@ Token Lexer::build_next_token() {
     }
     };
 
+    Token keyword_token;
     if (match(12, "__ENCODING__"))
-        return Token { Token::Type::ENCODINGKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::ENCODINGKeyword, m_file, m_token_line, m_token_column };
     else if (match(8, "__LINE__"))
-        return Token { Token::Type::LINEKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::LINEKeyword, m_file, m_token_line, m_token_column };
     else if (match(8, "__FILE__"))
-        return Token { Token::Type::FILEKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::FILEKeyword, m_file, m_token_line, m_token_column };
     else if (match(5, "BEGIN"))
-        return Token { Token::Type::BEGINKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::BEGINKeyword, m_file, m_token_line, m_token_column };
     else if (match(3, "END"))
-        return Token { Token::Type::ENDKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::ENDKeyword, m_file, m_token_line, m_token_column };
     else if (match(5, "alias"))
-        return Token { Token::Type::AliasKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::AliasKeyword, m_file, m_token_line, m_token_column };
     else if (match(3, "and"))
-        return Token { Token::Type::AndKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::AndKeyword, m_file, m_token_line, m_token_column };
     else if (match(5, "begin"))
-        return Token { Token::Type::BeginKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::BeginKeyword, m_file, m_token_line, m_token_column };
     else if (match(5, "break"))
-        return Token { Token::Type::BreakKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::BreakKeyword, m_file, m_token_line, m_token_column };
     else if (match(4, "case"))
-        return Token { Token::Type::CaseKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::CaseKeyword, m_file, m_token_line, m_token_column };
     else if (match(5, "class"))
-        return Token { Token::Type::ClassKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::ClassKeyword, m_file, m_token_line, m_token_column };
     else if (match(8, "defined?"))
-        return Token { Token::Type::DefinedKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::DefinedKeyword, m_file, m_token_line, m_token_column };
     else if (match(3, "def"))
-        return Token { Token::Type::DefKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::DefKeyword, m_file, m_token_line, m_token_column };
     else if (match(2, "do"))
-        return Token { Token::Type::DoKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::DoKeyword, m_file, m_token_line, m_token_column };
     else if (match(4, "else"))
-        return Token { Token::Type::ElseKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::ElseKeyword, m_file, m_token_line, m_token_column };
     else if (match(5, "elsif"))
-        return Token { Token::Type::ElsifKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::ElsifKeyword, m_file, m_token_line, m_token_column };
     else if (match(3, "end"))
-        return Token { Token::Type::EndKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::EndKeyword, m_file, m_token_line, m_token_column };
     else if (match(6, "ensure"))
-        return Token { Token::Type::EnsureKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::EnsureKeyword, m_file, m_token_line, m_token_column };
     else if (match(5, "false"))
-        return Token { Token::Type::FalseKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::FalseKeyword, m_file, m_token_line, m_token_column };
     else if (match(3, "for"))
-        return Token { Token::Type::ForKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::ForKeyword, m_file, m_token_line, m_token_column };
     else if (match(2, "if"))
-        return Token { Token::Type::IfKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::IfKeyword, m_file, m_token_line, m_token_column };
     else if (match(2, "in"))
-        return Token { Token::Type::InKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::InKeyword, m_file, m_token_line, m_token_column };
     else if (match(6, "module"))
-        return Token { Token::Type::ModuleKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::ModuleKeyword, m_file, m_token_line, m_token_column };
     else if (match(4, "next"))
-        return Token { Token::Type::NextKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::NextKeyword, m_file, m_token_line, m_token_column };
     else if (match(3, "nil"))
-        return Token { Token::Type::NilKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::NilKeyword, m_file, m_token_line, m_token_column };
     else if (match(3, "not"))
-        return Token { Token::Type::NotKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::NotKeyword, m_file, m_token_line, m_token_column };
     else if (match(2, "or"))
-        return Token { Token::Type::OrKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::OrKeyword, m_file, m_token_line, m_token_column };
     else if (match(4, "redo"))
-        return Token { Token::Type::RedoKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::RedoKeyword, m_file, m_token_line, m_token_column };
     else if (match(6, "rescue"))
-        return Token { Token::Type::RescueKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::RescueKeyword, m_file, m_token_line, m_token_column };
     else if (match(5, "retry"))
-        return Token { Token::Type::RetryKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::RetryKeyword, m_file, m_token_line, m_token_column };
     else if (match(6, "return"))
-        return Token { Token::Type::ReturnKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::ReturnKeyword, m_file, m_token_line, m_token_column };
     else if (match(4, "self"))
-        return Token { Token::Type::SelfKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::SelfKeyword, m_file, m_token_line, m_token_column };
     else if (match(5, "super"))
-        return Token { Token::Type::SuperKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::SuperKeyword, m_file, m_token_line, m_token_column };
     else if (match(4, "then"))
-        return Token { Token::Type::ThenKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::ThenKeyword, m_file, m_token_line, m_token_column };
     else if (match(4, "true"))
-        return Token { Token::Type::TrueKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::TrueKeyword, m_file, m_token_line, m_token_column };
     else if (match(5, "undef"))
-        return Token { Token::Type::UndefKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::UndefKeyword, m_file, m_token_line, m_token_column };
     else if (match(6, "unless"))
-        return Token { Token::Type::UnlessKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::UnlessKeyword, m_file, m_token_line, m_token_column };
     else if (match(5, "until"))
-        return Token { Token::Type::UntilKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::UntilKeyword, m_file, m_token_line, m_token_column };
     else if (match(4, "when"))
-        return Token { Token::Type::WhenKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::WhenKeyword, m_file, m_token_line, m_token_column };
     else if (match(5, "while"))
-        return Token { Token::Type::WhileKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::WhileKeyword, m_file, m_token_line, m_token_column };
     else if (match(5, "yield"))
-        return Token { Token::Type::YieldKeyword, m_file, m_token_line, m_token_column };
+        keyword_token = { Token::Type::YieldKeyword, m_file, m_token_line, m_token_column };
+
+    // if a colon comes next, it's not a keyword -- it's a symbol!
+    if (keyword_token && current_char() == ':' && peek() != ':') {
+        advance(); // :
+        auto name = keyword_token.type_value();
+        return Token { Token::Type::SymbolKey, name, m_file, m_token_line, m_token_column };
+    } else if (keyword_token) {
+        return keyword_token;
+    }
 
     auto c = current_char();
     if ((c >= 'a' && c <= 'z') || c == '_') {
