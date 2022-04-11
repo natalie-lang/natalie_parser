@@ -1490,7 +1490,7 @@ Node *Parser::parse_stabby_proc(LocalsHashmap &locals) {
             expect(Token::Type::RParen, "proc args closing paren");
             advance();
         }
-    } else if (current_token().is_bare_name()) {
+    } else if (current_token().is_bare_name() || current_token().type() == Token::Type::Multiply) {
         has_args = true;
         args = parse_def_args(locals);
     }
