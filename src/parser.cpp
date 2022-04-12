@@ -47,23 +47,6 @@ enum class Parser::Precedence {
 bool Parser::higher_precedence(Token &token, Node *left, Precedence current_precedence) {
     auto next_precedence = get_precedence(token, left);
 
-    if (current_precedence == Precedence::ASSIGNMENTVAL && next_precedence == Precedence::ASSIGNMENTVAL) {
-        // Simple precedence comparison would not properly order
-        // assignment, as in the following code:
-        //
-        //     x = y = 2
-        //
-        // ...which is equivalent to:
-        //
-        //     x = (y = 2)
-        //
-        // So if we see two ASSIGNMENTVAL precedences in a row, bind
-        // the right-most one together first (which is to say,
-        // return true.)
-        //
-        return true;
-    }
-
     if (next_precedence == Precedence::ITER_BLOCK && next_precedence <= current_precedence) {
         // Simple precedence comparison to the nearest neighbor is not
         // sufficient when BARECALLARGS (a method call without parentheses)
