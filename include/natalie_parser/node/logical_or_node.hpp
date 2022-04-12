@@ -20,6 +20,13 @@ public:
         assert(m_right);
     }
 
+    LogicalOrNode(const LogicalOrNode &other)
+        : LogicalOrNode { other.token(), other.left().clone(), other.right().clone() } { }
+
+    virtual Node *clone() const override {
+        return new LogicalOrNode(*this);
+    }
+
     virtual Type type() const override { return Type::LogicalOr; }
 
     const Node &left() const { return m_left.ref(); }

@@ -20,6 +20,13 @@ public:
         assert(m_right);
     }
 
+    LogicalAndNode(const LogicalAndNode &other)
+        : LogicalAndNode { other.token(), other.left().clone(), other.right().clone() } { }
+
+    virtual Node *clone() const override {
+        return new LogicalAndNode(*this);
+    }
+
     virtual Type type() const override { return Type::LogicalAnd; }
 
     const Node &left() const { return m_left.ref(); }
