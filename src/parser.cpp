@@ -2523,21 +2523,21 @@ void Parser::throw_unexpected(const Token &token, const char *expected) {
         message = String::format(
             "{}#{}: syntax error, unexpected end-of-input (expected: '{}')\n"
             "{}\n"
-            "{}^ stopped here, expected '{}'",
+            "{}^ here, expected '{}'",
             file, line, expected, current_line(), indent, expected);
     } else if (literal) {
         auto indent = String { token.column(), ' ' };
         message = String::format(
             "{}#{}: syntax error, unexpected {} '{}' (expected: '{}')\n"
             "{}\n"
-            "{}^ stopped here, expected '{}'",
+            "{}^ here, expected '{}'",
             file, line, type, literal, expected, current_line(), indent, expected);
     } else {
         auto indent = String { token.column(), ' ' };
         message = String::format(
             "{}#{}: syntax error, unexpected '{}' (expected: '{}')\n"
             "{}\n"
-            "{}^ stopped here, expected '{}'",
+            "{}^ here, expected '{}'",
             file, line, type, expected, current_line(), indent, expected);
     }
     throw SyntaxError { message };
