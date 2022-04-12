@@ -354,6 +354,11 @@ require_relative './test_helper'
         expect(parse('*a.b, c = 1, 2')).must_equal s(:block, s(:masgn, s(:array, s(:splat, s(:attrasgn, s(:call, nil, :a), :b=)), s(:lasgn, :c)), s(:array, s(:lit, 1), s(:lit, 2))))
         expect(parse('a, *b.c = 1, 2')).must_equal s(:block, s(:masgn, s(:array, s(:lasgn, :a), s(:splat, s(:attrasgn, s(:call, nil, :b), :c=))), s(:array, s(:lit, 1), s(:lit, 2))))
         expect(parse('*a = 1, 2')).must_equal s(:block, s(:masgn, s(:array, s(:splat, s(:lasgn, :a))), s(:array, s(:lit, 1), s(:lit, 2))))
+        expect(parse('x = 1 && 2 && 3')).must_equal s(:block, s(:lasgn, :x, s(:and, s(:lit, 1), s(:and, s(:lit, 2), s(:lit, 3)))))
+        expect(parse('true && false && x = 1')).must_equal s(:block, s(:and, s(:true), s(:and, s(:false), s(:lasgn, :x, s(:lit, 1)))))
+        expect(parse('true and false and x = 1')).must_equal s(:block, s(:and, s(:true), s(:and, s(:false), s(:lasgn, :x, s(:lit, 1)))))
+        expect(parse('x = 1 && 2 && 3')).must_equal s(:block, s(:lasgn, :x, s(:and, s(:lit, 1), s(:and, s(:lit, 2), s(:lit, 3)))))
+        expect(parse('x = 1 and 2 and 3')).must_equal s(:block, s(:and, s(:lasgn, :x, s(:lit, 1)), s(:and, s(:lit, 2), s(:lit, 3))))
       end
 
       it 'parses attr assignment' do
@@ -593,6 +598,7 @@ require_relative './test_helper'
         expect(parse('foo a || b')).must_equal s(:block, s(:call, nil, :foo, s(:or, s(:call, nil, :a), s(:call, nil, :b))))
         expect(parse('foo a ? b : c')).must_equal s(:block, s(:call, nil, :foo, s(:if, s(:call, nil, :a), s(:call, nil, :b), s(:call, nil, :c))))
         expect(parse('foo a += 1')).must_equal s(:block, s(:call, nil, :foo, s(:lasgn, :a, s(:call, s(:lvar, :a), :+, s(:lit, 1)))))
+        expect(parse('foo a += 1, 2')).must_equal s(:block, s(:call, nil, :foo, s(:lasgn, :a, s(:call, s(:lvar, :a), :+, s(:lit, 1))), s(:lit, 2)))
         expect(parse('foo a and b')).must_equal s(:block, s(:and, s(:call, nil, :foo, s(:call, nil, :a)), s(:call, nil, :b)))
         expect(parse("foo a and b { 1 }")).must_equal s(:block, s(:and, s(:call, nil, :foo, s(:call, nil, :a)), s(:iter, s(:call, nil, :b), 0, s(:lit, 1))))
         expect(parse("foo a and b do\n1\nend")).must_equal s(:block, s(:and, s(:call, nil, :foo, s(:call, nil, :a)), s(:iter, s(:call, nil, :b), 0, s(:lit, 1))))

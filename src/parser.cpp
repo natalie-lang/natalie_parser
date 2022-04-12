@@ -10,10 +10,8 @@ enum class Parser::Precedence {
     HASH, // {}
     EXPRMODIFIER, // if/unless/while/until
     CASE, // case/when/else
-    ASSIGNMENT, // =
-    SPLAT, // *args, **kwargs
-    CALLARGS, // foo(a, b)
     COMPOSITION, // and/or
+    ASSIGNMENTVAL, // x = (_)
     TERNARYFALSE, // _ ? _ : (_)
     ITER_BLOCK, // do |n| ... end
     BARECALLARGS, // foo a, b
@@ -21,6 +19,10 @@ enum class Parser::Precedence {
     TERNARYTRUE, // _ ? (_) : _
     LOGICALOR, // ||
     LOGICALAND, // &&
+    ASSIGNMENTNAME, // (_) = 1
+    CALLARGS, // foo(a, b)
+    TERNARYQUESTION, // (_) ? _ : _
+    SPLAT, // *args, **kwargs
     RANGE, // ..
     LOGICALNOT, // not
     EQUALITY, // <=> == === != =~ !~
@@ -36,7 +38,6 @@ enum class Parser::Precedence {
     UNARY_MINUS, // -
     EXPONENT, // **
     UNARY_PLUS, // ! ~ +
-    ASSIGNMENTIDENTIFIER,
     CONSTANTRESOLUTION, // ::
     DOT, // foo.bar foo&.bar
     CALL, // foo()
@@ -46,7 +47,7 @@ enum class Parser::Precedence {
 bool Parser::higher_precedence(Token &token, Node *left, Precedence current_precedence) {
     auto next_precedence = get_precedence(token, left);
 
-    if (current_precedence == Precedence::ASSIGNMENT && next_precedence == Precedence::ASSIGNMENT) {
+    if (current_precedence == Precedence::ASSIGNMENTVAL && next_precedence == Precedence::ASSIGNMENTVAL) {
         // Simple precedence comparison would not properly order
         // assignment, as in the following code:
         //
@@ -56,7 +57,7 @@ bool Parser::higher_precedence(Token &token, Node *left, Precedence current_prec
         //
         //     x = (y = 2)
         //
-        // So if we see two ASSIGNMENT precedences in a row, bind
+        // So if we see two ASSIGNMENTVAL precedences in a row, bind
         // the right-most one together first (which is to say,
         // return true.)
         //
@@ -106,7 +107,7 @@ Parser::Precedence Parser::get_precedence(Token &token, Node *left) {
     case Token::Type::Minus:
         return left ? Precedence::SUM : Precedence::UNARY_MINUS;
     case Token::Type::Equal:
-        return Precedence::ASSIGNMENT;
+        return Precedence::ASSIGNMENTNAME;
     case Token::Type::AndEqual:
     case Token::Type::BitwiseAndEqual:
     case Token::Type::BitwiseOrEqual:
@@ -189,7 +190,7 @@ Parser::Precedence Parser::get_precedence(Token &token, Node *left) {
         break;
     }
     case Token::Type::TernaryQuestion:
-        return Precedence::TERNARYTRUE;
+        return Precedence::TERNARYQUESTION;
     case Token::Type::TernaryColon:
         return Precedence::TERNARYFALSE;
     case Token::Type::Not:
@@ -771,7 +772,7 @@ Node *Parser::parse_multiple_assignment_expression(Node *left, LocalsHashmap &lo
         case Token::Type::ConstantResolution:
         case Token::Type::GlobalVariable:
         case Token::Type::InstanceVariable:
-            list->add_node(parse_expression(Precedence::ASSIGNMENTIDENTIFIER, locals));
+            list->add_node(parse_expression(Precedence::ASSIGNMENTNAME, locals));
             break;
         case Token::Type::LParen:
             list->add_node(parse_group(locals));
@@ -780,7 +781,7 @@ Node *Parser::parse_multiple_assignment_expression(Node *left, LocalsHashmap &lo
             auto splat_token = current_token();
             advance();
             if (current_token().is_assignable()) {
-                auto node = parse_expression(Precedence::ASSIGNMENTIDENTIFIER, locals);
+                auto node = parse_expression(Precedence::ASSIGNMENTNAME, locals);
                 list->add_node(new SplatNode { splat_token, node });
             } else {
                 list->add_node(new SplatNode { splat_token });
@@ -1794,7 +1795,7 @@ Node *Parser::parse_assignment_expression(Node *left, LocalsHashmap &locals, boo
 
 Node *Parser::parse_assignment_expression_value(bool to_array, LocalsHashmap &locals, bool allow_multiple) {
     auto token = current_token();
-    auto value = parse_expression(Precedence::ASSIGNMENT, locals);
+    auto value = parse_expression(Precedence::ASSIGNMENTVAL, locals);
     bool is_splat;
 
     if (allow_multiple && current_token().type() == Token::Type::Comma) {
@@ -1802,7 +1803,7 @@ Node *Parser::parse_assignment_expression_value(bool to_array, LocalsHashmap &lo
         array->add_node(value);
         while (current_token().type() == Token::Type::Comma) {
             advance();
-            array->add_node(parse_expression(Precedence::ASSIGNMENT, locals));
+            array->add_node(parse_expression(Precedence::ASSIGNMENTVAL, locals));
         }
         value = array;
         is_splat = true;
@@ -2065,7 +2066,7 @@ Node *Parser::parse_op_assign_expression(Node *left, LocalsHashmap &locals) {
     advance();
     switch (token.type()) {
     case Token::Type::AndEqual:
-        return new OpAssignAndNode { token, left_identifier, parse_expression(Precedence::ASSIGNMENT, locals) };
+        return new OpAssignAndNode { token, left_identifier, parse_expression(Precedence::ASSIGNMENTVAL, locals) };
     case Token::Type::BitwiseAndEqual:
     case Token::Type::BitwiseOrEqual:
     case Token::Type::BitwiseXorEqual:
@@ -2079,10 +2080,10 @@ Node *Parser::parse_op_assign_expression(Node *left, LocalsHashmap &locals) {
     case Token::Type::RightShiftEqual: {
         auto op = new String(token.type_value());
         op->chomp();
-        return new OpAssignNode { token, op, left_identifier, parse_expression(Precedence::ASSIGNMENT, locals) };
+        return new OpAssignNode { token, op, left_identifier, parse_expression(Precedence::ASSIGNMENTVAL, locals) };
     }
     case Token::Type::OrEqual:
-        return new OpAssignOrNode { token, left_identifier, parse_expression(Precedence::ASSIGNMENT, locals) };
+        return new OpAssignOrNode { token, left_identifier, parse_expression(Precedence::ASSIGNMENTVAL, locals) };
     default:
         TM_UNREACHABLE();
     }
@@ -2381,7 +2382,7 @@ Parser::parse_left_fn Parser::left_denotation(Token &token, Node *left, Preceden
     using Type = Token::Type;
     switch (token.type()) {
     case Type::Equal:
-        if (precedence == Precedence::ARRAY)
+        if (precedence == Precedence::ARRAY || precedence == Precedence::BARECALLARGS)
             return &Parser::parse_assignment_expression_without_multiple_values;
         else
             return &Parser::parse_assignment_expression;
