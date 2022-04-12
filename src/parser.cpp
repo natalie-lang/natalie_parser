@@ -6,39 +6,39 @@ namespace NatalieParser {
 enum class Parser::Precedence {
     LOWEST,
     ARRAY, // []
-    WORDARRAY, // %w[]
+    WORD_ARRAY, // %w[]
     HASH, // {}
-    EXPRMODIFIER, // if/unless/while/until
+    EXPR_MODIFIER, // if/unless/while/until
     CASE, // case/when/else
     COMPOSITION, // and/or
-    ASSIGNMENTVAL, // x = (_)
-    TERNARYFALSE, // _ ? _ : (_)
+    ASSIGNMENT_RHS, // a = (_)
+    TERNARY_FALSE, // _ ? _ : (_)
     ITER_BLOCK, // do |n| ... end
-    BARECALLARGS, // foo a, b
-    OPASSIGNMENT, // += -= *= **= /= %= |= &= ^= >>= <<= ||= &&=
-    TERNARYTRUE, // _ ? (_) : _
-    LOGICALOR, // ||
-    LOGICALAND, // &&
-    ASSIGNMENTNAME, // (_) = 1
-    CALLARGS, // foo(a, b)
-    TERNARYQUESTION, // (_) ? _ : _
+    BARE_CALL_ARG, // foo (_), b
+    OP_ASSIGNMENT, // += -= *= **= /= %= |= &= ^= >>= <<= ||= &&=
+    TERNARY_TRUE, // _ ? (_) : _
+    LOGICAL_OR, // ||
+    LOGICAL_AND, // &&
+    ASSIGNMENT_LHS, // (_) = 1
+    CALL_ARG, // foo( (_), b )
+    TERNARY_QUESTION, // (_) ? _ : _
     SPLAT, // *args, **kwargs
     RANGE, // ..
-    LOGICALNOT, // not
+    LOGICAL_NOT, // not
     EQUALITY, // <=> == === != =~ !~
     ITER_CURLY, // { |n| ... }
-    LESSGREATER, // <= < > >=
-    BITWISEOR, // ^ |
-    BITWISEAND, // &
-    BITWISESHIFT, // << >>
-    DEFARGS, // def foo(a, b) and { |a, b| ... }
+    LESS_GREATER, // <= < > >=
+    BITWISE_OR, // ^ |
+    BITWISE_AND, // &
+    BITWISE_SHIFT, // << >>
+    DEF_ARG, // def foo( (_), b ) and { | (_), b | ... }
     SUM, // + -
     PRODUCT, // * / %
-    NUMBERDOT, // 2.bar 2&.bar
+    NUMBER_DOT, // 2.bar 2&.bar
     UNARY_MINUS, // -
     EXPONENT, // **
     UNARY_PLUS, // ! ~ +
-    CONSTANTRESOLUTION, // ::
+    CONSTANT_RESOLUTION, // ::
     DOT, // foo.bar foo&.bar
     CALL, // foo()
     REF, // foo[1] / foo[1] = 2
@@ -49,7 +49,7 @@ bool Parser::higher_precedence(Token &token, Node *left, Precedence current_prec
 
     if (next_precedence == Precedence::ITER_BLOCK && next_precedence <= current_precedence) {
         // Simple precedence comparison to the nearest neighbor is not
-        // sufficient when BARECALLARGS (a method call without parentheses)
+        // sufficient when BARE_CALL_ARG (a method call without parentheses)
         // is in use. For example, the following code, if looking at
         // precedence rules alone, would attach the block to the '+' op,
         // which would be incorrect:
@@ -69,12 +69,12 @@ bool Parser::higher_precedence(Token &token, Node *left, Precedence current_prec
         //     ^ block attaches here
         //
         // Thus the answer is to keep a stack of precedences and look
-        // further left to see if BARECALLARGS are in use. If not, then
+        // further left to see if BARE_CALL_ARG are in use. If not, then
         // we should attach the block now, to the nearest call
         // (which is to say, we should return true).
         //
         for (auto precedence : m_precedence_stack) {
-            if (precedence == Precedence::BARECALLARGS)
+            if (precedence == Precedence::BARE_CALL_ARG)
                 return false;
         }
         return true;
@@ -90,7 +90,7 @@ Parser::Precedence Parser::get_precedence(Token &token, Node *left) {
     case Token::Type::Minus:
         return left ? Precedence::SUM : Precedence::UNARY_MINUS;
     case Token::Type::Equal:
-        return Precedence::ASSIGNMENTNAME;
+        return Precedence::ASSIGNMENT_LHS;
     case Token::Type::AndEqual:
     case Token::Type::BitwiseAndEqual:
     case Token::Type::BitwiseOrEqual:
@@ -104,29 +104,29 @@ Parser::Precedence Parser::get_precedence(Token &token, Node *left) {
     case Token::Type::OrEqual:
     case Token::Type::PlusEqual:
     case Token::Type::RightShiftEqual:
-        return Precedence::OPASSIGNMENT;
+        return Precedence::OP_ASSIGNMENT;
     case Token::Type::BitwiseAnd:
-        return Precedence::BITWISEAND;
+        return Precedence::BITWISE_AND;
     case Token::Type::BitwiseOr:
     case Token::Type::BitwiseXor:
-        return Precedence::BITWISEOR;
+        return Precedence::BITWISE_OR;
     case Token::Type::Comma:
         // NOTE: the only time this precedence is used is for multiple assignment
         return Precedence::ARRAY;
     case Token::Type::LeftShift:
     case Token::Type::RightShift:
-        return Precedence::BITWISESHIFT;
+        return Precedence::BITWISE_SHIFT;
     case Token::Type::LParen:
         return Precedence::CALL;
     case Token::Type::AndKeyword:
     case Token::Type::OrKeyword:
         return Precedence::COMPOSITION;
     case Token::Type::ConstantResolution:
-        return Precedence::CONSTANTRESOLUTION;
+        return Precedence::CONSTANT_RESOLUTION;
     case Token::Type::Dot:
     case Token::Type::SafeNavigation:
         if (left && left->is_numeric())
-            return Precedence::NUMBERDOT;
+            return Precedence::NUMBER_DOT;
         return Precedence::DOT;
     case Token::Type::EqualEqual:
     case Token::Type::EqualEqualEqual:
@@ -141,7 +141,7 @@ Parser::Precedence Parser::get_precedence(Token &token, Node *left) {
     case Token::Type::WhileKeyword:
     case Token::Type::UntilKeyword:
     case Token::Type::RescueKeyword:
-        return Precedence::EXPRMODIFIER;
+        return Precedence::EXPR_MODIFIER;
     case Token::Type::DoKeyword:
         return Precedence::ITER_BLOCK;
     case Token::Type::LCurlyBrace:
@@ -151,13 +151,13 @@ Parser::Precedence Parser::get_precedence(Token &token, Node *left) {
     case Token::Type::LessThanOrEqual:
     case Token::Type::GreaterThan:
     case Token::Type::GreaterThanOrEqual:
-        return Precedence::LESSGREATER;
+        return Precedence::LESS_GREATER;
     case Token::Type::And:
-        return Precedence::LOGICALAND;
+        return Precedence::LOGICAL_AND;
     case Token::Type::NotKeyword:
-        return Precedence::LOGICALNOT;
+        return Precedence::LOGICAL_NOT;
     case Token::Type::Or:
-        return Precedence::LOGICALOR;
+        return Precedence::LOGICAL_OR;
     case Token::Type::Divide:
     case Token::Type::Modulus:
     case Token::Type::Multiply:
@@ -173,9 +173,9 @@ Parser::Precedence Parser::get_precedence(Token &token, Node *left) {
         break;
     }
     case Token::Type::TernaryQuestion:
-        return Precedence::TERNARYQUESTION;
+        return Precedence::TERNARY_QUESTION;
     case Token::Type::TernaryColon:
-        return Precedence::TERNARYFALSE;
+        return Precedence::TERNARY_FALSE;
     case Token::Type::Not:
     case Token::Type::Tilde:
         return Precedence::UNARY_PLUS;
@@ -419,11 +419,11 @@ void Parser::parse_rest_of_begin(BeginNode *begin_node, LocalsHashmap &locals) {
             auto rescue_node = new BeginRescueNode { current_token() };
             advance();
             if (!current_token().is_eol() && current_token().type() != Token::Type::HashRocket) {
-                auto name = parse_expression(Precedence::BARECALLARGS, locals);
+                auto name = parse_expression(Precedence::BARE_CALL_ARG, locals);
                 rescue_node->add_exception_node(name);
                 while (current_token().is_comma()) {
                     advance();
-                    auto name = parse_expression(Precedence::BARECALLARGS, locals);
+                    auto name = parse_expression(Precedence::BARE_CALL_ARG, locals);
                     rescue_node->add_exception_node(name);
                 }
             }
@@ -502,19 +502,19 @@ Node *Parser::parse_break(LocalsHashmap &locals) {
             advance();
             return new BreakNode { token, new NilSexpNode { token } };
         } else {
-            auto arg = parse_expression(Precedence::BARECALLARGS, locals);
+            auto arg = parse_expression(Precedence::BARE_CALL_ARG, locals);
             expect(Token::Type::RParen, "break closing paren");
             advance();
             return new BreakNode { token, arg };
         }
     } else if (current_token().can_be_first_arg_of_implicit_call()) {
-        auto value = parse_expression(Precedence::BARECALLARGS, locals);
+        auto value = parse_expression(Precedence::BARE_CALL_ARG, locals);
         if (current_token().is_comma()) {
             auto array = new ArrayNode { token };
             array->add_node(value);
             while (current_token().is_comma()) {
                 advance();
-                array->add_node(parse_expression(Precedence::BARECALLARGS, locals));
+                array->add_node(parse_expression(Precedence::BARE_CALL_ARG, locals));
             }
             value = array;
         }
@@ -720,7 +720,7 @@ Node *Parser::parse_class_or_module_name(LocalsHashmap &locals) {
     }
     if (name_token.type() != Token::Type::Constant)
         throw SyntaxError { "class/module name must be CONSTANT" };
-    return parse_expression(Precedence::LESSGREATER, locals);
+    return parse_expression(Precedence::LESS_GREATER, locals);
 }
 
 Node *Parser::parse_class(LocalsHashmap &locals) {
@@ -755,7 +755,7 @@ Node *Parser::parse_multiple_assignment_expression(Node *left, LocalsHashmap &lo
         case Token::Type::ConstantResolution:
         case Token::Type::GlobalVariable:
         case Token::Type::InstanceVariable:
-            list->add_node(parse_expression(Precedence::ASSIGNMENTNAME, locals));
+            list->add_node(parse_expression(Precedence::ASSIGNMENT_LHS, locals));
             break;
         case Token::Type::LParen:
             list->add_node(parse_group(locals));
@@ -764,7 +764,7 @@ Node *Parser::parse_multiple_assignment_expression(Node *left, LocalsHashmap &lo
             auto splat_token = current_token();
             advance();
             if (current_token().is_assignable()) {
-                auto node = parse_expression(Precedence::ASSIGNMENTNAME, locals);
+                auto node = parse_expression(Precedence::ASSIGNMENT_LHS, locals);
                 list->add_node(new SplatNode { splat_token, node });
             } else {
                 list->add_node(new SplatNode { splat_token });
@@ -851,7 +851,7 @@ Node *Parser::parse_def(LocalsHashmap &locals) {
 Node *Parser::parse_defined(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    auto arg = parse_expression(Precedence::BARECALLARGS, locals);
+    auto arg = parse_expression(Precedence::BARE_CALL_ARG, locals);
     return new DefinedNode { token, arg };
 }
 
@@ -874,7 +874,7 @@ Node *Parser::parse_def_single_arg(LocalsHashmap &locals) {
         arg->add_to_locals(locals);
         if (current_token().type() == Token::Type::Equal) {
             advance();
-            arg->set_value(parse_expression(Precedence::DEFARGS, locals));
+            arg->set_value(parse_expression(Precedence::DEF_ARG, locals));
         }
         return arg;
     }
@@ -934,7 +934,7 @@ Node *Parser::parse_def_single_arg(LocalsHashmap &locals) {
         case Token::Type::BitwiseOr:
             break;
         default:
-            arg->set_value(parse_expression(Precedence::DEFARGS, locals));
+            arg->set_value(parse_expression(Precedence::DEF_ARG, locals));
         }
         arg->add_to_locals(locals);
         return arg;
@@ -1254,7 +1254,7 @@ Node *Parser::parse_interpolated_string(LocalsHashmap &locals) {
     }
 
     // look for adjacent strings to be appended
-    if (m_precedence_stack.is_empty() || m_precedence_stack.last() != Precedence::WORDARRAY) {
+    if (m_precedence_stack.is_empty() || m_precedence_stack.last() != Precedence::WORD_ARRAY) {
         for (;;) {
             token = current_token();
             switch (token.type()) {
@@ -1359,19 +1359,19 @@ Node *Parser::parse_next(LocalsHashmap &locals) {
             advance();
             return new NextNode { token, new NilSexpNode { token } };
         } else {
-            auto arg = parse_expression(Precedence::BARECALLARGS, locals);
+            auto arg = parse_expression(Precedence::BARE_CALL_ARG, locals);
             expect(Token::Type::RParen, "break closing paren");
             advance();
             return new NextNode { token, arg };
         }
     } else if (current_token().can_be_first_arg_of_implicit_call()) {
-        auto value = parse_expression(Precedence::BARECALLARGS, locals);
+        auto value = parse_expression(Precedence::BARE_CALL_ARG, locals);
         if (current_token().is_comma()) {
             auto array = new ArrayNode { token };
             array->add_node(value);
             while (current_token().is_comma()) {
                 advance();
-                array->add_node(parse_expression(Precedence::BARECALLARGS, locals));
+                array->add_node(parse_expression(Precedence::BARE_CALL_ARG, locals));
             }
             value = array;
         }
@@ -1440,7 +1440,7 @@ Node *Parser::parse_sclass(LocalsHashmap &locals) {
     auto token = current_token();
     advance(); // class
     advance(); // <<
-    auto klass = parse_expression(Precedence::BARECALLARGS, locals);
+    auto klass = parse_expression(Precedence::BARE_CALL_ARG, locals);
     auto body = parse_body(locals, Precedence::LOWEST);
     expect(Token::Type::EndKeyword, "sclass end");
     advance();
@@ -1490,7 +1490,7 @@ Node *Parser::parse_string(LocalsHashmap &locals) {
     advance();
 
     // look for adjacent strings to be appended
-    if (m_precedence_stack.is_empty() || m_precedence_stack.last() != Precedence::WORDARRAY) {
+    if (m_precedence_stack.is_empty() || m_precedence_stack.last() != Precedence::WORD_ARRAY) {
         for (;;) {
             token = current_token();
             switch (token.type()) {
@@ -1709,7 +1709,7 @@ Node *Parser::parse_word_array(LocalsHashmap &locals) {
     auto array = new ArrayNode { token };
     advance();
     while (!current_token().is_eof() && current_token().type() != Token::Type::RBracket)
-        array->add_node(parse_expression(Precedence::WORDARRAY, locals));
+        array->add_node(parse_expression(Precedence::WORD_ARRAY, locals));
     expect(Token::Type::RBracket, "closing array bracket");
     advance();
     return array;
@@ -1720,7 +1720,7 @@ Node *Parser::parse_word_symbol_array(LocalsHashmap &locals) {
     auto array = new ArrayNode { token };
     advance();
     while (!current_token().is_eof() && current_token().type() != Token::Type::RBracket) {
-        auto string = parse_expression(Precedence::WORDARRAY, locals);
+        auto string = parse_expression(Precedence::WORD_ARRAY, locals);
         assert(string->type() == Node::Type::String);
         auto symbol = new SymbolNode { string->token(), static_cast<StringNode *>(string)->string() };
         delete string;
@@ -1778,7 +1778,7 @@ Node *Parser::parse_assignment_expression(Node *left, LocalsHashmap &locals, boo
 
 Node *Parser::parse_assignment_expression_value(bool to_array, LocalsHashmap &locals, bool allow_multiple) {
     auto token = current_token();
-    auto value = parse_expression(Precedence::ASSIGNMENTVAL, locals);
+    auto value = parse_expression(Precedence::ASSIGNMENT_RHS, locals);
     bool is_splat;
 
     if (allow_multiple && current_token().type() == Token::Type::Comma) {
@@ -1786,7 +1786,7 @@ Node *Parser::parse_assignment_expression_value(bool to_array, LocalsHashmap &lo
         array->add_node(value);
         while (current_token().type() == Token::Type::Comma) {
             advance();
-            array->add_node(parse_expression(Precedence::ASSIGNMENTVAL, locals));
+            array->add_node(parse_expression(Precedence::ASSIGNMENT_RHS, locals));
         }
         value = array;
         is_splat = true;
@@ -1874,7 +1874,7 @@ Node *Parser::parse_call_expression_with_parens(Node *left, LocalsHashmap &local
 }
 
 Node *Parser::parse_call_arg(LocalsHashmap &locals, bool bare) {
-    auto arg = parse_expression(bare ? Precedence::BARECALLARGS : Precedence::CALLARGS, locals);
+    auto arg = parse_expression(bare ? Precedence::BARE_CALL_ARG : Precedence::CALL_ARG, locals);
     if (current_token().type() == Token::Type::Equal) {
         return parse_assignment_expression(arg, locals, false);
     } else {
@@ -1906,9 +1906,9 @@ void Parser::parse_call_args(NodeWithArgs *node, LocalsHashmap &locals, bool bar
 
 Node *Parser::parse_call_hash_args(LocalsHashmap &locals, bool bare) {
     if (bare)
-        return parse_hash_inner(locals, Precedence::BARECALLARGS, Token::Type::Invalid);
+        return parse_hash_inner(locals, Precedence::BARE_CALL_ARG, Token::Type::Invalid);
     else
-        return parse_hash_inner(locals, Precedence::CALLARGS, Token::Type::RParen);
+        return parse_hash_inner(locals, Precedence::CALL_ARG, Token::Type::RParen);
 }
 
 Node *Parser::parse_call_expression_without_parens(Node *left, LocalsHashmap &locals) {
@@ -1973,7 +1973,7 @@ Node *Parser::parse_logical_expression(Node *left, LocalsHashmap &locals) {
     switch (token.type()) {
     case Token::Type::And: {
         advance();
-        auto right = parse_expression(Precedence::LOGICALAND, locals);
+        auto right = parse_expression(Precedence::LOGICAL_AND, locals);
         if (left->type() == Node::Type::LogicalAnd) {
             return regroup<LogicalAndNode>(token, left, right);
         } else {
@@ -1991,7 +1991,7 @@ Node *Parser::parse_logical_expression(Node *left, LocalsHashmap &locals) {
     }
     case Token::Type::Or: {
         advance();
-        auto right = parse_expression(Precedence::LOGICALOR, locals);
+        auto right = parse_expression(Precedence::LOGICAL_OR, locals);
         if (left->type() == Node::Type::LogicalOr) {
             return regroup<LogicalOrNode>(token, left, right);
         } else {
@@ -2049,7 +2049,7 @@ Node *Parser::parse_op_assign_expression(Node *left, LocalsHashmap &locals) {
     advance();
     switch (token.type()) {
     case Token::Type::AndEqual:
-        return new OpAssignAndNode { token, left_identifier, parse_expression(Precedence::ASSIGNMENTVAL, locals) };
+        return new OpAssignAndNode { token, left_identifier, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
     case Token::Type::BitwiseAndEqual:
     case Token::Type::BitwiseOrEqual:
     case Token::Type::BitwiseXorEqual:
@@ -2063,10 +2063,10 @@ Node *Parser::parse_op_assign_expression(Node *left, LocalsHashmap &locals) {
     case Token::Type::RightShiftEqual: {
         auto op = new String(token.type_value());
         op->chomp();
-        return new OpAssignNode { token, op, left_identifier, parse_expression(Precedence::ASSIGNMENTVAL, locals) };
+        return new OpAssignNode { token, op, left_identifier, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
     }
     case Token::Type::OrEqual:
-        return new OpAssignOrNode { token, left_identifier, parse_expression(Precedence::ASSIGNMENTVAL, locals) };
+        return new OpAssignOrNode { token, left_identifier, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
     default:
         TM_UNREACHABLE();
     }
@@ -2087,7 +2087,7 @@ Node *Parser::parse_op_attr_assign_expression(Node *left, LocalsHashmap &locals)
         op,
         left_call->receiver().clone(),
         message,
-        parse_expression(Precedence::OPASSIGNMENT, locals),
+        parse_expression(Precedence::OP_ASSIGNMENT, locals),
         left_call->args(),
     };
 }
@@ -2205,10 +2205,10 @@ Node *Parser::parse_ternary_expression(Node *left, LocalsHashmap &locals) {
     auto token = current_token();
     expect(Token::Type::TernaryQuestion, "ternary question");
     advance();
-    auto true_expr = parse_expression(Precedence::TERNARYTRUE, locals);
+    auto true_expr = parse_expression(Precedence::TERNARY_TRUE, locals);
     expect(Token::Type::TernaryColon, "ternary colon");
     advance();
-    auto false_expr = parse_expression(Precedence::TERNARYFALSE, locals);
+    auto false_expr = parse_expression(Precedence::TERNARY_FALSE, locals);
     return new IfNode { token, left, true_expr, false_expr };
 }
 
@@ -2365,7 +2365,7 @@ Parser::parse_left_fn Parser::left_denotation(Token &token, Node *left, Preceden
     using Type = Token::Type;
     switch (token.type()) {
     case Type::Equal:
-        if (precedence == Precedence::ARRAY || precedence == Precedence::BARECALLARGS)
+        if (precedence == Precedence::ARRAY || precedence == Precedence::BARE_CALL_ARG)
             return &Parser::parse_assignment_expression_without_multiple_values;
         else
             return &Parser::parse_assignment_expression;
