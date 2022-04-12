@@ -1,3 +1,5 @@
+#pragma once
+
 #include "natalie_parser/creator.hpp"
 #include "natalie_parser/node.hpp"
 
@@ -5,8 +7,6 @@ namespace NatalieParser {
 
 class DebugCreator : public Creator {
 public:
-    DebugCreator(const Node *) { }
-
     virtual ~DebugCreator() { }
 
     virtual void set_comments(const TM::String &) override {
@@ -25,14 +25,14 @@ public:
             m_nodes.push("nil");
             return;
         }
-        DebugCreator creator { &node };
+        DebugCreator creator;
         creator.set_assignment(assignment());
         node.transform(&creator);
         m_nodes.push(creator.to_string());
     }
 
     virtual void append_array(const ArrayNode &array) override {
-        DebugCreator creator { &array };
+        DebugCreator creator;
         creator.set_assignment(assignment());
         array.ArrayNode::transform(&creator);
         m_nodes.push(creator.to_string());
@@ -72,7 +72,7 @@ public:
     }
 
     virtual void append_sexp(std::function<void(Creator *)> fn) override {
-        DebugCreator creator { nullptr };
+        DebugCreator creator;
         fn(&creator);
         m_nodes.push(creator.to_string());
     }

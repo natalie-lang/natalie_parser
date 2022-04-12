@@ -14,15 +14,15 @@ TM::String *read_file(const char *path) {
     return buf;
 }
 
-void test() {
+void test_boardslam() {
     TM::SharedPtr<TM::String> code = read_file("test/boardslam.rb");
-    TM::SharedPtr<TM::String> file = new String { "(string)" };
+    TM::SharedPtr<TM::String> file = new String { "test/boardslam.rb" };
     auto parser = Parser { code, file };
     auto tree = parser.tree();
-    auto creator = DebugCreator { tree };
+    auto creator = DebugCreator {};
     tree->transform(&creator);
     auto output = creator.to_string();
-    size_t expected_output_size = 4354;
+    size_t expected_output_size = 4363;
     if (output.size() != expected_output_size) {
         printf("Expected output to be %zu bytes, but it was %zu bytes.\n", expected_output_size, output.size());
         printf("%s\n", output.c_str());
@@ -32,6 +32,6 @@ void test() {
 }
 
 int main() {
-    test();
+    test_boardslam();
     return 0;
 }
