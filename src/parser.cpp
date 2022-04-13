@@ -1828,7 +1828,6 @@ Node *Parser::parse_iter_expression(Node *left, LocalsHashmap &locals) {
         if (current_token().type() == Token::Type::Or) {
             has_args = true;
             advance();
-            // TODO: args don't render as 0
         } else if (current_token().is_block_arg_delimiter()) {
             has_args = true;
             advance();
