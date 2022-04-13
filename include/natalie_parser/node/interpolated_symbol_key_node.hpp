@@ -12,5 +12,7 @@ public:
         : InterpolatedSymbolNode { other } { }
 
     virtual Type type() const override { return Type::InterpolatedSymbolKey; }
+
+    virtual bool is_symbol_key() const override { return true; }
 };
 }

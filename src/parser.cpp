@@ -47,6 +47,14 @@ enum class Parser::Precedence {
 bool Parser::higher_precedence(Token &token, Node *left, Precedence current_precedence) {
     auto next_precedence = get_precedence(token, left);
 
+    // printf("token %d, left %d, current_precedence %d, next_precedence %d\n", (int)token.type(), (int)left->type(), (int)current_precedence, (int)next_precedence);
+
+    if (left->is_symbol_key()) {
+        // Symbol keys are handled by parse_hash and parse_call_hash_args,
+        // so return as soon as possible to one of those functions.
+        return false;
+    }
+
     if (next_precedence == Precedence::ITER_BLOCK && next_precedence <= current_precedence) {
         // Simple precedence comparison to the nearest neighbor is not
         // sufficient when BARE_CALL_ARG (a method call without parentheses)
@@ -1042,7 +1050,7 @@ Node *Parser::parse_hash_inner(LocalsHashmap &locals, Precedence precedence, Tok
     if (!first_key)
         first_key = parse_expression(precedence, locals);
     hash->add_node(first_key);
-    if (first_key->type() != Node::Type::SymbolKey && first_key->type() != Node::Type::InterpolatedSymbolKey) {
+    if (!first_key->is_symbol_key()) {
         expect(Token::Type::HashRocket, "hash rocket");
         advance();
     }
@@ -1053,7 +1061,7 @@ Node *Parser::parse_hash_inner(LocalsHashmap &locals, Precedence precedence, Tok
             break;
         auto key = parse_expression(precedence, locals);
         hash->add_node(key);
-        if (key->type() != Node::Type::SymbolKey && key->type() != Node::Type::InterpolatedSymbolKey) {
+        if (!key->is_symbol_key()) {
             expect(Token::Type::HashRocket, "hash rocket");
             advance();
         }
@@ -1894,7 +1902,7 @@ Node *Parser::parse_call_expression_with_parens(Node *left, LocalsHashmap &local
 
 void Parser::parse_call_args(NodeWithArgs *node, LocalsHashmap &locals, bool bare) {
     auto arg = parse_expression(bare ? Precedence::BARE_CALL_ARG : Precedence::CALL_ARG, locals);
-    if (current_token().type() == Token::Type::HashRocket || arg->type() == Node::Type::SymbolKey || arg->type() == Node::Type::InterpolatedSymbolKey) {
+    if (current_token().type() == Token::Type::HashRocket || arg->is_symbol_key()) {
         node->add_arg(parse_call_hash_args(locals, bare, arg));
     } else {
         node->add_arg(arg);
@@ -1906,7 +1914,7 @@ void Parser::parse_call_args(NodeWithArgs *node, LocalsHashmap &locals, bool bar
                 break;
             }
             arg = parse_expression(bare ? Precedence::BARE_CALL_ARG : Precedence::CALL_ARG, locals);
-            if (current_token().type() == Token::Type::HashRocket || arg->type() == Node::Type::SymbolKey || arg->type() == Node::Type::InterpolatedSymbolKey) {
+            if (current_token().type() == Token::Type::HashRocket || arg->is_symbol_key()) {
                 node->add_arg(parse_call_hash_args(locals, bare, arg));
                 break;
             } else {

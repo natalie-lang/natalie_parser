@@ -809,6 +809,7 @@ require_relative './test_helper'
         expect(parse('{ a => b, c => d }')).must_equal s(:block, s(:hash, s(:call, nil, :a), s(:call, nil, :b), s(:call, nil, :c), s(:call, nil, :d)))
         expect(parse("{ 'a': 'b' }")).must_equal s(:block, s(:hash, s(:lit, :a), s(:str, "b")))
         expect(parse('{ "a": "b" }')).must_equal s(:block, s(:hash, s(:lit, :a), s(:str, "b")))
+        expect(parse('{ a: -1, b: 2 }')).must_equal s(:block, s(:hash, s(:lit, :a), s(:lit, -1), s(:lit, :b), s(:lit, 2)))
         expect(parse('{ "a#{1+1}": "b" }')).must_equal s(:block, s(:hash, s(:dsym, "a", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1)))), s(:str, "b")))
         if parser == 'NatalieParser'
           expect_raise_with_message(-> { parse('{ , 1 => 2 }') }, SyntaxError, "(string)#1: syntax error, unexpected ',' (expected: 'expression')")

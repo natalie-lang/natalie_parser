@@ -106,6 +106,7 @@ public:
 
     virtual bool is_callable() const { return false; }
     virtual bool is_numeric() const { return false; }
+    virtual bool is_symbol_key() const { return false; }
     virtual bool can_accept_a_block() const { return false; }
 
     virtual Node *clone() const {

@@ -19,5 +19,7 @@ public:
     }
 
     virtual Type type() const override { return Type::SymbolKey; }
+
+    virtual bool is_symbol_key() const override { return true; }
 };
 }
