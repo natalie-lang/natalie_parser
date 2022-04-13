@@ -247,21 +247,12 @@ BlockNode *Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Toke
     while (!current_token().is_eof() && current_token().type() != end_token_type) {
         auto exp = parse_expression(precedence, locals);
         body->add_node(exp);
-        current_token().validate();
-        if (end_token_type == Token::Type::EndKeyword) {
-            next_expression();
-        } else {
-            auto token = current_token();
-            if (token.type() != end_token_type && !token.is_end_of_expression()) {
-                delete body;
-                throw_unexpected("end-of-line");
-            }
-            skip_newlines();
-        }
+        next_expression();
     }
     return body;
 }
 
+// FIXME: Maybe pass a lambda in that can just compare the two types? (No vector needed.)
 BlockNode *Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Vector<Token::Type> &end_tokens, const char *expected_message) {
     auto body = new BlockNode { current_token() };
     current_token().validate();
@@ -1869,8 +1860,8 @@ Node *Parser::parse_iter_expression(Node *left, LocalsHashmap &locals) {
     } else {
         throw_unexpected(left->token(), "call to accept block");
     }
+    auto body = parse_iter_body(our_locals, curly_brace);
     auto end_token_type = curly_brace ? Token::Type::RCurlyBrace : Token::Type::EndKeyword;
-    auto body = parse_body(our_locals, Precedence::LOWEST, end_token_type);
     expect(end_token_type, curly_brace ? "}" : "end");
     advance();
     return new IterNode { token, left, has_args, *args, body };
@@ -1887,6 +1878,25 @@ void Parser::parse_iter_args(SharedPtr<Vector<Node *>> args, LocalsHashmap &loca
         }
         args->push(parse_def_single_arg(locals));
     }
+}
+
+BlockNode *Parser::parse_iter_body(LocalsHashmap &locals, bool curly_brace) {
+    auto token = current_token();
+    auto end_token_type = curly_brace ? Token::Type::RCurlyBrace : Token::Type::EndKeyword;
+    auto body = new BlockNode { token };
+    skip_newlines();
+    while (!current_token().is_eof() && current_token().type() != end_token_type) {
+        if (!curly_brace && current_token().type() == Token::Type::RescueKeyword) {
+            auto begin_node = new BeginNode { token, body };
+            parse_rest_of_begin(begin_node, locals);
+            rewind(); // so the 'end' keyword can be consumed by parse_iter_expression
+            return new BlockNode { token, begin_node };
+        }
+        auto exp = parse_expression(Precedence::LOWEST, locals);
+        body->add_node(exp);
+        next_expression();
+    }
+    return body;
 }
 
 Node *Parser::parse_call_expression_with_parens(Node *left, LocalsHashmap &locals) {

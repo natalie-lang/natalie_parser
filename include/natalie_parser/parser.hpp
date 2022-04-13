@@ -141,6 +141,7 @@ private:
     Node *parse_proc_call_expression(Node *, LocalsHashmap &);
     Node *parse_iter_expression(Node *, LocalsHashmap &);
     void parse_iter_args(SharedPtr<Vector<Node *>>, LocalsHashmap &);
+    BlockNode *parse_iter_body(LocalsHashmap &, bool);
     Node *parse_logical_expression(Node *, LocalsHashmap &);
     Node *parse_match_expression(Node *, LocalsHashmap &);
     Node *parse_modifier_expression(Node *, LocalsHashmap &);

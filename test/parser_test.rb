@@ -1055,6 +1055,8 @@ require_relative './test_helper'
         expect(parse('begin;0;ensure;1;end')).must_equal s(:block, s(:ensure, s(:lit, 0), s(:lit, 1)))
         expect(parse('x ||= begin;0;rescue;1;end')).must_equal s(:block, s(:op_asgn_or, s(:lvar, :x), s(:lasgn, :x, s(:rescue, s(:lit, 0), s(:resbody, s(:array), s(:lit, 1))))))
         expect(parse('x = begin;1;2;end')).must_equal s(:block, s(:lasgn, :x, s(:block, s(:lit, 1), s(:lit, 2))))
+        expect(parse("foo do raise ArgumentError; rescue; 1; end")).must_equal s(:block, s(:iter, s(:call, nil, :foo), 0, s(:rescue, s(:call, nil, :raise, s(:const, :ArgumentError)), s(:resbody, s(:array), s(:lit, 1)))))
+        expect(parse("foo do\nraise ArgumentError\nrescue\n1\nend")).must_equal s(:block, s(:iter, s(:call, nil, :foo), 0, s(:rescue, s(:call, nil, :raise, s(:const, :ArgumentError)), s(:resbody, s(:array), s(:lit, 1)))))
       end
 
       it 'parses inline rescue' do

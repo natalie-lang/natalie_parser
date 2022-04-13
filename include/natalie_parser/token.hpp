@@ -618,7 +618,7 @@ public:
     bool is_else_keyword() const { return m_type == Type::ElseKeyword; }
     bool is_elsif_keyword() const { return m_type == Type::ElsifKeyword; }
     bool is_end_keyword() const { return m_type == Type::EndKeyword; }
-    bool is_end_of_expression() const { return m_type == Type::EndKeyword || m_type == Type::Eol || m_type == Type::Eof || is_expression_modifier(); }
+    bool is_end_of_expression() const { return m_type == Type::EndKeyword || m_type == Type::RCurlyBrace || m_type == Type::Eol || m_type == Type::Eof || is_expression_modifier(); }
     bool is_eof() const { return m_type == Type::Eof; }
     bool is_eol() const { return m_type == Type::Eol; }
     bool is_expression_modifier() const { return m_type == Type::IfKeyword || m_type == Type::UnlessKeyword || m_type == Type::WhileKeyword || m_type == Type::UntilKeyword; }
