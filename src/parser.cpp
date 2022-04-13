@@ -26,7 +26,6 @@ enum class Parser::Precedence {
     RANGE, // ..
     LOGICAL_NOT, // not
     EQUALITY, // <=> == === != =~ !~
-    ITER_CURLY, // { |n| ... }
     LESS_GREATER, // <= < > >=
     BITWISE_OR, // ^ |
     BITWISE_AND, // &
@@ -38,6 +37,7 @@ enum class Parser::Precedence {
     UNARY_MINUS, // -
     EXPONENT, // **
     UNARY_PLUS, // ! ~ +
+    ITER_CURLY, // { |n| ... }
     CONSTANT_RESOLUTION, // ::
     DOT, // foo.bar foo&.bar
     CALL, // foo()
@@ -47,7 +47,7 @@ enum class Parser::Precedence {
 bool Parser::higher_precedence(Token &token, Node *left, Precedence current_precedence) {
     auto next_precedence = get_precedence(token, left);
 
-    // printf("token %d, left %d, current_precedence %d, next_precedence %d\n", (int)token.type(), (int)left->type(), (int)current_precedence, (int)next_precedence);
+    //printf("token %d, left %d, current_precedence %d, next_precedence %d\n", (int)token.type(), (int)left->type(), (int)current_precedence, (int)next_precedence);
 
     if (left->is_symbol_key()) {
         // Symbol keys are handled by parse_hash and parse_call_hash_args,
