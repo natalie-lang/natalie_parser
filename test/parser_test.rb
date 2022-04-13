@@ -560,6 +560,8 @@ require_relative './test_helper'
         expect(parse('foo(:a, :b)')).must_equal s(:block, s(:call, nil, :foo, s(:lit, :a), s(:lit, :b)))
         expect(parse('foo(a: 1)')).must_equal s(:block, s(:call, nil, :foo, s(:hash, s(:lit, :a), s(:lit, 1))))
         expect(parse("foo(0, a: 1, b: 'two')")).must_equal s(:block, s(:call, nil, :foo, s(:lit, 0), s(:hash, s(:lit, :a), s(:lit, 1), s(:lit, :b), s(:str, 'two'))))
+        expect(parse('foo("a": "b")')).must_equal s(:block, s(:call, nil, :foo, s(:hash, s(:lit, :a), s(:str, "b"))))
+        expect(parse('foo("a#{1+1}": "b")')).must_equal s(:block, s(:call, nil, :foo, s(:hash, s(:dsym, "a", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1)))), s(:str, "b"))))
         expect(parse("foo(bar: 1 && 2)")).must_equal s(:block, s(:call, nil, :foo, s(:hash, s(:lit, :bar), s(:and, s(:lit, 1), s(:lit, 2)))))
         expect(parse("foo(0, 1 => 2, 3 => 4)")).must_equal s(:block, s(:call, nil, :foo, s(:lit, 0), s(:hash, s(:lit, 1), s(:lit, 2), s(:lit, 3), s(:lit, 4))))
         expect(parse('foo(a, *b, c)')).must_equal s(:block, s(:call, nil, :foo, s(:call, nil, :a), s(:splat, s(:call, nil, :b)), s(:call, nil, :c)))
@@ -587,6 +589,8 @@ require_relative './test_helper'
         expect(parse('foo 1, { a: 2 }')).must_equal s(:block, s(:call, nil, :foo, s(:lit, 1), s(:hash, s(:lit, :a), s(:lit, 2))))
         expect(parse('foo a: 1')).must_equal s(:block, s(:call, nil, :foo, s(:hash, s(:lit, :a), s(:lit, 1))))
         expect(parse("foo 0, a: 1, b: 'two'")).must_equal s(:block, s(:call, nil, :foo, s(:lit, 0), s(:hash, s(:lit, :a), s(:lit, 1), s(:lit, :b), s(:str, 'two'))))
+        expect(parse('foo "a": "b"')).must_equal s(:block, s(:call, nil, :foo, s(:hash, s(:lit, :a), s(:str, "b"))))
+        expect(parse('foo "a#{1+1}": "b"')).must_equal s(:block, s(:call, nil, :foo, s(:hash, s(:dsym, "a", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1)))), s(:str, "b"))))
         expect(parse('foo :a, :b')).must_equal s(:block, s(:call, nil, :foo, s(:lit, :a), s(:lit, :b)))
         expect(parse('self.class')).must_equal s(:block, s(:call, s(:self), :class))
         expect(parse('self.begin')).must_equal s(:block, s(:call, s(:self), :begin))
@@ -802,6 +806,9 @@ require_relative './test_helper'
         expect(parse("{\n 1 => \n2,\n 'foo' =>\n'bar'\n}")).must_equal s(:block, s(:hash, s(:lit, 1), s(:lit, 2), s(:str, 'foo'), s(:str, 'bar')))
         expect(parse("{ foo: 'bar', baz: 'buz' }")).must_equal s(:block, s(:hash, s(:lit, :foo), s(:str, 'bar'), s(:lit, :baz), s(:str, 'buz')))
         expect(parse('{ a => b, c => d }')).must_equal s(:block, s(:hash, s(:call, nil, :a), s(:call, nil, :b), s(:call, nil, :c), s(:call, nil, :d)))
+        expect(parse("{ 'a': 'b' }")).must_equal s(:block, s(:hash, s(:lit, :a), s(:str, "b")))
+        expect(parse('{ "a": "b" }')).must_equal s(:block, s(:hash, s(:lit, :a), s(:str, "b")))
+        expect(parse('{ "a#{1+1}": "b" }')).must_equal s(:block, s(:hash, s(:dsym, "a", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1)))), s(:str, "b")))
         if parser == 'NatalieParser'
           expect_raise_with_message(-> { parse('{ , 1 => 2 }') }, SyntaxError, "(string)#1: syntax error, unexpected ',' (expected: 'expression')")
         else

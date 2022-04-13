@@ -1039,13 +1039,10 @@ Node *Parser::parse_hash(LocalsHashmap &locals) {
 Node *Parser::parse_hash_inner(LocalsHashmap &locals, Precedence precedence, Token::Type closing_token, Node *first_key) {
     auto token = current_token();
     auto hash = new HashNode { token };
-    if (current_token().type() == Token::Type::SymbolKey) {
-        hash->add_node(parse_symbol(locals));
-    } else {
-        if (first_key)
-            hash->add_node(first_key);
-        else
-            hash->add_node(parse_expression(precedence, locals));
+    if (!first_key)
+        first_key = parse_expression(precedence, locals);
+    hash->add_node(first_key);
+    if (first_key->type() != Node::Type::SymbolKey && first_key->type() != Node::Type::InterpolatedSymbolKey) {
         expect(Token::Type::HashRocket, "hash rocket");
         advance();
     }
@@ -1054,10 +1051,9 @@ Node *Parser::parse_hash_inner(LocalsHashmap &locals, Precedence precedence, Tok
         advance();
         if (current_token().type() == closing_token)
             break;
-        if (current_token().type() == Token::Type::SymbolKey) {
-            hash->add_node(parse_symbol(locals));
-        } else {
-            hash->add_node(parse_expression(precedence, locals));
+        auto key = parse_expression(precedence, locals);
+        hash->add_node(key);
+        if (key->type() != Node::Type::SymbolKey && key->type() != Node::Type::InterpolatedSymbolKey) {
             expect(Token::Type::HashRocket, "hash rocket");
             advance();
         }
@@ -1238,6 +1234,25 @@ Node *Parser::parse_interpolated_shell(LocalsHashmap &locals) {
     }
 };
 
+static Node *convert_string_to_symbol_key(Node *string) {
+    switch (string->type()) {
+    case Node::Type::String: {
+        auto token = string->token();
+        auto name = static_cast<StringNode *>(string)->string();
+        delete string;
+        return new SymbolKeyNode { token, name };
+    }
+    case Node::Type::InterpolatedString: {
+        auto token = string->token();
+        auto node = new InterpolatedSymbolKeyNode { *static_cast<InterpolatedStringNode *>(string) };
+        delete string;
+        return node;
+    }
+    default:
+        TM_UNREACHABLE();
+    }
+}
+
 Node *Parser::parse_interpolated_string(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
@@ -1256,26 +1271,13 @@ Node *Parser::parse_interpolated_string(LocalsHashmap &locals) {
         string = interpolated_string;
     }
 
-    // look for adjacent strings to be appended
-    if (m_precedence_stack.is_empty() || m_precedence_stack.last() != Precedence::WORD_ARRAY) {
-        for (;;) {
-            token = current_token();
-            switch (token.type()) {
-            case Token::Type::String: {
-                auto next_string = parse_string(locals);
-                string = append_string_nodes(string, next_string);
-                break;
-            }
-            case Token::Type::InterpolatedStringBegin: {
-                auto next_string = parse_interpolated_string(locals);
-                string = append_string_nodes(string, next_string);
-                break;
-            }
-            default:
-                return string;
-            }
-            token = current_token();
-        }
+    bool adjacent_strings_were_appended = false;
+    if (m_precedence_stack.is_empty() || m_precedence_stack.last() != Precedence::WORD_ARRAY)
+        string = concat_adjacent_strings(string, locals, adjacent_strings_were_appended);
+
+    if (!adjacent_strings_were_appended && current_token().type() == Token::Type::TernaryColon) {
+        advance();
+        return convert_string_to_symbol_key(string);
     }
 
     return string;
@@ -1425,14 +1427,14 @@ Node *Parser::parse_return(LocalsHashmap &locals) {
     if (current_token().is_end_of_expression()) {
         value = new NilNode { token };
     } else {
-        value = parse_call_arg(locals, true);
+        value = parse_expression(Precedence::BARE_CALL_ARG, locals);
     }
     if (current_token().is_comma()) {
         auto array = new ArrayNode { current_token() };
         array->add_node(value);
         while (current_token().is_comma()) {
             advance();
-            array->add_node(parse_call_arg(locals, true));
+            array->add_node(parse_expression(Precedence::BARE_CALL_ARG, locals));
         }
         value = array;
     }
@@ -1488,33 +1490,44 @@ Node *Parser::parse_stabby_proc(LocalsHashmap &locals) {
 };
 
 Node *Parser::parse_string(LocalsHashmap &locals) {
-    auto token = current_token();
-    Node *string = new StringNode { token, token.literal_string() };
+    auto string_token = current_token();
+    Node *string = new StringNode { string_token, string_token.literal_string() };
     advance();
 
-    // look for adjacent strings to be appended
-    if (m_precedence_stack.is_empty() || m_precedence_stack.last() != Precedence::WORD_ARRAY) {
-        for (;;) {
-            token = current_token();
-            switch (token.type()) {
-            case Token::Type::String:
-                static_cast<StringNode *>(string)->string()->append(*current_token().literal_string());
-                advance();
-                break;
-            case Token::Type::InterpolatedStringBegin: {
-                auto next_string = parse_interpolated_string(locals);
-                string = append_string_nodes(string, next_string);
-                break;
-            }
-            default:
-                return string;
-            }
-            token = current_token();
-        }
+    bool adjacent_strings_were_appended = false;
+    if (m_precedence_stack.is_empty() || m_precedence_stack.last() != Precedence::WORD_ARRAY)
+        string = concat_adjacent_strings(string, locals, adjacent_strings_were_appended);
+
+    if (!adjacent_strings_were_appended && current_token().type() == Token::Type::TernaryColon) {
+        advance();
+        return convert_string_to_symbol_key(string);
     }
 
     return string;
 };
+
+Node *Parser::concat_adjacent_strings(Node *string, LocalsHashmap &locals, bool &strings_were_appended) {
+    auto token = current_token();
+    while (token.type() == Token::Type::String || token.type() == Token::Type::InterpolatedStringBegin) {
+        switch (token.type()) {
+        case Token::Type::String: {
+            auto next_string = parse_string(locals);
+            string = append_string_nodes(string, next_string);
+            break;
+        }
+        case Token::Type::InterpolatedStringBegin: {
+            auto next_string = parse_interpolated_string(locals);
+            string = append_string_nodes(string, next_string);
+            break;
+        }
+        default:
+            TM_UNREACHABLE();
+        }
+        token = current_token();
+        strings_were_appended = true;
+    }
+    return string;
+}
 
 Node *Parser::append_string_nodes(Node *string1, Node *string2) {
     switch (string1->type()) {
@@ -1598,6 +1611,13 @@ Node *Parser::parse_super(LocalsHashmap &) {
 Node *Parser::parse_symbol(LocalsHashmap &) {
     auto token = current_token();
     auto symbol = new SymbolNode { token, current_token().literal_string() };
+    advance();
+    return symbol;
+};
+
+Node *Parser::parse_symbol_key(LocalsHashmap &) {
+    auto token = current_token();
+    auto symbol = new SymbolKeyNode { token, current_token().literal_string() };
     advance();
     return symbol;
 };
@@ -1872,15 +1892,12 @@ Node *Parser::parse_call_expression_with_parens(Node *left, LocalsHashmap &local
     return call_node;
 }
 
-Node *Parser::parse_call_arg(LocalsHashmap &locals, bool bare) {
-    return parse_expression(bare ? Precedence::BARE_CALL_ARG : Precedence::CALL_ARG, locals);
-}
-
 void Parser::parse_call_args(NodeWithArgs *node, LocalsHashmap &locals, bool bare) {
-    if (peek_token().type() == Token::Type::HashRocket || current_token().type() == Token::Type::SymbolKey) {
-        node->add_arg(parse_call_hash_args(locals, bare));
+    auto arg = parse_expression(bare ? Precedence::BARE_CALL_ARG : Precedence::CALL_ARG, locals);
+    if (current_token().type() == Token::Type::HashRocket || arg->type() == Node::Type::SymbolKey || arg->type() == Node::Type::InterpolatedSymbolKey) {
+        node->add_arg(parse_call_hash_args(locals, bare, arg));
     } else {
-        node->add_arg(parse_call_arg(locals, bare));
+        node->add_arg(arg);
         while (current_token().is_comma()) {
             advance();
             auto token = current_token();
@@ -1888,21 +1905,22 @@ void Parser::parse_call_args(NodeWithArgs *node, LocalsHashmap &locals, bool bar
                 // trailing comma with no additional arg
                 break;
             }
-            if (peek_token().type() == Token::Type::HashRocket || current_token().type() == Token::Type::SymbolKey) {
-                node->add_arg(parse_call_hash_args(locals, bare));
+            arg = parse_expression(bare ? Precedence::BARE_CALL_ARG : Precedence::CALL_ARG, locals);
+            if (current_token().type() == Token::Type::HashRocket || arg->type() == Node::Type::SymbolKey || arg->type() == Node::Type::InterpolatedSymbolKey) {
+                node->add_arg(parse_call_hash_args(locals, bare, arg));
                 break;
             } else {
-                node->add_arg(parse_call_arg(locals, bare));
+                node->add_arg(arg);
             }
         }
     }
 }
 
-Node *Parser::parse_call_hash_args(LocalsHashmap &locals, bool bare) {
+Node *Parser::parse_call_hash_args(LocalsHashmap &locals, bool bare, Node *first_arg) {
     if (bare)
-        return parse_hash_inner(locals, Precedence::BARE_CALL_ARG, Token::Type::Invalid);
+        return parse_hash_inner(locals, Precedence::BARE_CALL_ARG, Token::Type::Invalid, first_arg);
     else
-        return parse_hash_inner(locals, Precedence::CALL_ARG, Token::Type::RParen);
+        return parse_hash_inner(locals, Precedence::CALL_ARG, Token::Type::RParen, first_arg);
 }
 
 Node *Parser::parse_call_expression_without_parens(Node *left, LocalsHashmap &locals) {
@@ -2329,6 +2347,8 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
         return &Parser::parse_super;
     case Type::Symbol:
         return &Parser::parse_symbol;
+    case Type::SymbolKey:
+        return &Parser::parse_symbol_key;
     case Type::ConstantResolution:
         return &Parser::parse_top_level_constant;
     case Type::Minus:

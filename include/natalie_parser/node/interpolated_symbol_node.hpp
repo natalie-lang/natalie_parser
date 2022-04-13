@@ -15,6 +15,9 @@ public:
     InterpolatedSymbolNode(const Token &token)
         : InterpolatedNode { token } { }
 
+    InterpolatedSymbolNode(const InterpolatedNode &other)
+        : InterpolatedNode { other } { }
+
     virtual Type type() const override { return Type::InterpolatedSymbol; }
 
     virtual void transform(Creator *creator) const override;

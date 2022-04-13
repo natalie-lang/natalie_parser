@@ -117,6 +117,7 @@ private:
     Node *parse_string(LocalsHashmap &);
     Node *parse_super(LocalsHashmap &);
     Node *parse_symbol(LocalsHashmap &);
+    Node *parse_symbol_key(LocalsHashmap &);
     Node *parse_statement_keyword(LocalsHashmap &);
     Node *parse_top_level_constant(LocalsHashmap &);
     Node *parse_unary_operator(LocalsHashmap &);
@@ -133,9 +134,8 @@ private:
     Node *parse_assignment_expression_value(bool, LocalsHashmap &, bool);
     Node *parse_call_expression_without_parens(Node *, LocalsHashmap &);
     Node *parse_call_expression_with_parens(Node *, LocalsHashmap &);
-    Node *parse_call_arg(LocalsHashmap &, bool);
     void parse_call_args(NodeWithArgs *, LocalsHashmap &, bool = false);
-    Node *parse_call_hash_args(LocalsHashmap &, bool);
+    Node *parse_call_hash_args(LocalsHashmap &, bool, Node *);
     Node *parse_constant_resolution_expression(Node *, LocalsHashmap &);
     Node *parse_infix_expression(Node *, LocalsHashmap &);
     Node *parse_proc_call_expression(Node *, LocalsHashmap &);
@@ -173,6 +173,7 @@ private:
     };
 
     Node *append_string_nodes(Node *string1, Node *string2);
+    Node *concat_adjacent_strings(Node *string, LocalsHashmap &locals, bool &strings_were_appended);
 
     // FIXME: return a Token&
     Token current_token() const;
