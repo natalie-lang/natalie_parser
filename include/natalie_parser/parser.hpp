@@ -140,7 +140,7 @@ private:
     Node *parse_infix_expression(Node *, LocalsHashmap &);
     Node *parse_proc_call_expression(Node *, LocalsHashmap &);
     Node *parse_iter_expression(Node *, LocalsHashmap &);
-    SharedPtr<Vector<Node *>> parse_iter_args(LocalsHashmap &);
+    void parse_iter_args(SharedPtr<Vector<Node *>>, LocalsHashmap &);
     Node *parse_logical_expression(Node *, LocalsHashmap &);
     Node *parse_match_expression(Node *, LocalsHashmap &);
     Node *parse_modifier_expression(Node *, LocalsHashmap &);

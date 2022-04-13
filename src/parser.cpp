@@ -1816,7 +1816,6 @@ Node *Parser::parse_iter_expression(Node *left, LocalsHashmap &locals) {
     LocalsHashmap our_locals { locals }; // copy!
     bool curly_brace = current_token().type() == Token::Type::LCurlyBrace;
     bool has_args = false;
-    // FIXME: pass args into parse_iter_args
     SharedPtr<Vector<Node *>> args = new Vector<Node *> {};
     if (left->type() == Node::Type::StabbyProc) {
         advance();
@@ -1833,7 +1832,7 @@ Node *Parser::parse_iter_expression(Node *left, LocalsHashmap &locals) {
         } else if (current_token().is_block_arg_delimiter()) {
             has_args = true;
             advance();
-            args = parse_iter_args(our_locals);
+            parse_iter_args(args, our_locals);
             expect(Token::Type::BitwiseOr, "end of block args");
             advance();
         }
@@ -1847,8 +1846,7 @@ Node *Parser::parse_iter_expression(Node *left, LocalsHashmap &locals) {
     return new IterNode { token, left, has_args, *args, body };
 }
 
-SharedPtr<Vector<Node *>> Parser::parse_iter_args(LocalsHashmap &locals) {
-    SharedPtr<Vector<Node *>> args = new Vector<Node *> {};
+void Parser::parse_iter_args(SharedPtr<Vector<Node *>> args, LocalsHashmap &locals) {
     args->push(parse_def_single_arg(locals));
     while (current_token().is_comma()) {
         advance();
@@ -1859,7 +1857,6 @@ SharedPtr<Vector<Node *>> Parser::parse_iter_args(LocalsHashmap &locals) {
         }
         args->push(parse_def_single_arg(locals));
     }
-    return args;
 }
 
 Node *Parser::parse_call_expression_with_parens(Node *left, LocalsHashmap &locals) {
