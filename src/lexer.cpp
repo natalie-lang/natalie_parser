@@ -643,7 +643,9 @@ Token Lexer::build_next_token() {
             auto string = consume_single_quoted_string('\'');
             return Token { Token::Type::Symbol, string.literal(), m_file, m_token_line, m_token_column };
         } else if (isspace(c)) {
-            return Token { Token::Type::TernaryColon, m_file, m_token_line, m_token_column };
+            auto token = Token { Token::Type::TernaryColon, m_file, m_token_line, m_token_column };
+            token.set_whitespace_precedes(m_whitespace_precedes);
+            return token;
         } else {
             return consume_symbol();
         }
@@ -983,6 +985,7 @@ Token Lexer::consume_symbol() {
             c = gobble(c);
             if (c == '=') gobble(c);
         } else {
+            // FIXME: is this right????????????????????????????????????
             return Token { Token::Type::TernaryColon, m_file, m_token_line, m_token_column };
         }
         break;

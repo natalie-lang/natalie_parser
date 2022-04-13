@@ -689,6 +689,7 @@ require_relative './test_helper'
         expect(parse('return x < 1 ? x : y')).must_equal s(:block, s(:return, s(:if, s(:call, s(:call, nil, :x), :<, s(:lit, 1)), s(:call, nil, :x), s(:call, nil, :y))))
         expect(parse('foo ? bar = 1 : 2')).must_equal s(:block, s(:if, s(:call, nil, :foo), s(:lasgn, :bar, s(:lit, 1)), s(:lit, 2)))
         expect(parse('foo ? 1 : bar = 2')).must_equal s(:block, s(:if, s(:call, nil, :foo), s(:lit, 1), s(:lasgn, :bar, s(:lit, 2))))
+        expect(parse("foo ? 'bar' : 'baz'")).must_equal s(:block, s(:if, s(:call, nil, :foo), s(:str, "bar"), s(:str, "baz")))
       end
 
       it 'parses if/elsif/else' do
