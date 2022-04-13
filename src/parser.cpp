@@ -11,8 +11,8 @@ enum class Parser::Precedence {
     EXPR_MODIFIER, // if/unless/while/until
     CASE, // case/when/else
     COMPOSITION, // and/or
-    ASSIGNMENT_RHS, // a = (_)
     TERNARY_FALSE, // _ ? _ : (_)
+    ASSIGNMENT_RHS, // a = (_)
     ITER_BLOCK, // do |n| ... end
     BARE_CALL_ARG, // foo (_), b
     OP_ASSIGNMENT, // += -= *= **= /= %= |= &= ^= >>= <<= ||= &&=
@@ -204,7 +204,10 @@ Node *Parser::parse_expression(Parser::Precedence precedence, LocalsHashmap &loc
         if (!higher_precedence(token, left, precedence))
             break;
         auto left_fn = left_denotation(token, left, precedence);
-        assert(left_fn);
+        if (!left_fn) {
+            printf("left_denotation returned nullptr (token type = %d, node type = %d, precedence = %d)\n", (int)token.type(), (int)left->type(), (int)precedence);
+            TM_UNREACHABLE();
+        }
         left = (this->*left_fn)(left, locals);
         m_precedence_stack.pop();
         m_precedence_stack.push(precedence);
@@ -2438,6 +2441,8 @@ Parser::parse_left_fn Parser::left_denotation(Token &token, Node *left, Preceden
         }
     case Type::TernaryQuestion:
         return &Parser::parse_ternary_expression;
+    case Type::TernaryColon:
+        TM_UNREACHABLE();
     default:
         break;
     }
