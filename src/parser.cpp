@@ -17,10 +17,10 @@ enum class Parser::Precedence {
     BARE_CALL_ARG, // foo (_), b
     OP_ASSIGNMENT, // += -= *= **= /= %= |= &= ^= >>= <<= ||= &&=
     TERNARY_TRUE, // _ ? (_) : _
+    CALL_ARG, // foo( (_), b )
     LOGICAL_OR, // ||
     LOGICAL_AND, // &&
     ASSIGNMENT_LHS, // (_) = 1
-    CALL_ARG, // foo( (_), b )
     TERNARY_QUESTION, // (_) ? _ : _
     SPLAT, // *args, **kwargs
     RANGE, // ..
@@ -1874,12 +1874,7 @@ Node *Parser::parse_call_expression_with_parens(Node *left, LocalsHashmap &local
 }
 
 Node *Parser::parse_call_arg(LocalsHashmap &locals, bool bare) {
-    auto arg = parse_expression(bare ? Precedence::BARE_CALL_ARG : Precedence::CALL_ARG, locals);
-    if (current_token().type() == Token::Type::Equal) {
-        return parse_assignment_expression(arg, locals, false);
-    } else {
-        return arg;
-    }
+    return parse_expression(bare ? Precedence::BARE_CALL_ARG : Precedence::CALL_ARG, locals);
 }
 
 void Parser::parse_call_args(NodeWithArgs *node, LocalsHashmap &locals, bool bare) {
@@ -2365,7 +2360,7 @@ Parser::parse_left_fn Parser::left_denotation(Token &token, Node *left, Preceden
     using Type = Token::Type;
     switch (token.type()) {
     case Type::Equal:
-        if (precedence == Precedence::ARRAY || precedence == Precedence::BARE_CALL_ARG)
+        if (precedence == Precedence::ARRAY || precedence == Precedence::BARE_CALL_ARG || precedence == Precedence::CALL_ARG)
             return &Parser::parse_assignment_expression_without_multiple_values;
         else
             return &Parser::parse_assignment_expression;

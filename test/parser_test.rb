@@ -560,6 +560,7 @@ require_relative './test_helper'
         expect(parse('foo(:a, :b)')).must_equal s(:block, s(:call, nil, :foo, s(:lit, :a), s(:lit, :b)))
         expect(parse('foo(a: 1)')).must_equal s(:block, s(:call, nil, :foo, s(:hash, s(:lit, :a), s(:lit, 1))))
         expect(parse("foo(0, a: 1, b: 'two')")).must_equal s(:block, s(:call, nil, :foo, s(:lit, 0), s(:hash, s(:lit, :a), s(:lit, 1), s(:lit, :b), s(:str, 'two'))))
+        expect(parse("foo(bar: 1 && 2)")).must_equal s(:block, s(:call, nil, :foo, s(:hash, s(:lit, :bar), s(:and, s(:lit, 1), s(:lit, 2)))))
         expect(parse("foo(0, 1 => 2, 3 => 4)")).must_equal s(:block, s(:call, nil, :foo, s(:lit, 0), s(:hash, s(:lit, 1), s(:lit, 2), s(:lit, 3), s(:lit, 4))))
         expect(parse('foo(a, *b, c)')).must_equal s(:block, s(:call, nil, :foo, s(:call, nil, :a), s(:splat, s(:call, nil, :b)), s(:call, nil, :c)))
         expect(parse('b=1; foo(a, *b, c)')).must_equal s(:block, s(:lasgn, :b, s(:lit, 1)), s(:call, nil, :foo, s(:call, nil, :a), s(:splat, s(:lvar, :b)), s(:call, nil, :c)))
