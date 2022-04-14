@@ -59,7 +59,7 @@ private:
 
     Node *parse_expression(Precedence, LocalsHashmap &);
 
-    BlockNode *parse_body(LocalsHashmap &, Precedence, Token::Type = Token::Type::EndKeyword);
+    BlockNode *parse_body(LocalsHashmap &, Precedence, Token::Type = Token::Type::EndKeyword, bool = false);
     BlockNode *parse_body(LocalsHashmap &, Precedence, Vector<Token::Type> &, const char *);
     BlockNode *parse_case_in_body(LocalsHashmap &);
     BlockNode *parse_case_when_body(LocalsHashmap &);

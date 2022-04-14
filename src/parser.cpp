@@ -240,11 +240,17 @@ Node *Parser::tree() {
     return tree;
 }
 
-BlockNode *Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Token::Type end_token_type) {
+BlockNode *Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Token::Type end_token_type, bool allow_rescue) {
     auto body = new BlockNode { current_token() };
     current_token().validate();
     skip_newlines();
     while (!current_token().is_eof() && current_token().type() != end_token_type) {
+        if (allow_rescue && current_token().type() == Token::Type::RescueKeyword) {
+            auto begin_node = new BeginNode { body->token(), body };
+            parse_rest_of_begin(begin_node, locals);
+            rewind(); // so the 'end' keyword can be consumed by our caller
+            return new BlockNode { body->token(), begin_node };
+        }
         auto exp = parse_expression(precedence, locals);
         body->add_node(exp);
         next_expression();
@@ -739,7 +745,7 @@ Node *Parser::parse_class(LocalsHashmap &locals) {
     } else {
         superclass = new NilNode { token };
     }
-    auto body = parse_body(our_locals, Precedence::LOWEST);
+    auto body = parse_body(our_locals, Precedence::LOWEST, Token::Type::EndKeyword, true);
     expect(Token::Type::EndKeyword, "class end");
     advance();
     return new ClassNode { token, name, superclass, body };
@@ -1348,7 +1354,7 @@ Node *Parser::parse_module(LocalsHashmap &) {
     advance();
     LocalsHashmap our_locals { TM::HashType::TMString };
     auto name = parse_class_or_module_name(our_locals);
-    auto body = parse_body(our_locals, Precedence::LOWEST);
+    auto body = parse_body(our_locals, Precedence::LOWEST, Token::Type::EndKeyword, true);
     expect(Token::Type::EndKeyword, "module end");
     advance();
     return new ModuleNode { token, name, body };
@@ -1881,22 +1887,8 @@ void Parser::parse_iter_args(SharedPtr<Vector<Node *>> args, LocalsHashmap &loca
 }
 
 BlockNode *Parser::parse_iter_body(LocalsHashmap &locals, bool curly_brace) {
-    auto token = current_token();
     auto end_token_type = curly_brace ? Token::Type::RCurlyBrace : Token::Type::EndKeyword;
-    auto body = new BlockNode { token };
-    skip_newlines();
-    while (!current_token().is_eof() && current_token().type() != end_token_type) {
-        if (!curly_brace && current_token().type() == Token::Type::RescueKeyword) {
-            auto begin_node = new BeginNode { token, body };
-            parse_rest_of_begin(begin_node, locals);
-            rewind(); // so the 'end' keyword can be consumed by parse_iter_expression
-            return new BlockNode { token, begin_node };
-        }
-        auto exp = parse_expression(Precedence::LOWEST, locals);
-        body->add_node(exp);
-        next_expression();
-    }
-    return body;
+    return parse_body(locals, Precedence::LOWEST, end_token_type, true);
 }
 
 Node *Parser::parse_call_expression_with_parens(Node *left, LocalsHashmap &locals) {
