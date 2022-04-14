@@ -254,6 +254,7 @@ Token Lexer::build_next_token() {
         case Token::Type::LCurlyBrace:
         case Token::Type::LParen:
         case Token::Type::Match:
+        case Token::Type::Eol:
             return consume_regexp('/');
         case Token::Type::DefKeyword:
             return Token { Token::Type::Divide, m_file, m_token_line, m_token_column };

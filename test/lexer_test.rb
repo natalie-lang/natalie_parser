@@ -116,6 +116,7 @@ describe 'NatalieParser' do
         ]
       end
       expect(tokenize('/foo/')).must_equal [{ type: :dregx }, { type: :string, literal: 'foo' }, { type: :dregxend }]
+      expect(tokenize("# foo\n/bar/")).must_equal [{ type: :"\n" }, { type: :dregx }, { type: :string, literal: 'bar' }, { type: :dregxend }]
       expect(tokenize('/\/\*\/\n/')).must_equal [
         { type: :dregx },
         { type: :string, literal: "/\\*/\\n" }, # eliminates unneeded \\
