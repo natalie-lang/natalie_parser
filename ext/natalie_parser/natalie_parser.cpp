@@ -54,7 +54,7 @@ VALUE parse(int argc, VALUE *argv, VALUE self) {
     return parse_on_instance(parser);
 }
 
-VALUE token_to_ruby(NatalieParser::Token token) {
+VALUE token_to_ruby(NatalieParser::Token token, bool include_location_info) {
     if (token.is_eof())
         return Qnil;
     try {
@@ -100,10 +100,14 @@ VALUE token_to_ruby(NatalieParser::Token token) {
     default:
         void();
     }
+    if (include_location_info) {
+        rb_hash_aset(hash, ID2SYM(rb_intern("line")), rb_int_new(token.line()));
+        rb_hash_aset(hash, ID2SYM(rb_intern("column")), rb_int_new(token.column()));
+    }
     return hash;
 }
 
-VALUE tokens_on_instance(VALUE self) {
+VALUE tokens_on_instance(VALUE self, VALUE include_location_info = Qfalse) {
     VALUE code = rb_ivar_get(self, rb_intern("@code"));
     VALUE path = rb_ivar_get(self, rb_intern("@path"));
     auto code_string = new TM::String { StringValueCStr(code) };
@@ -112,7 +116,7 @@ VALUE tokens_on_instance(VALUE self) {
     auto array = rb_ary_new();
     auto the_tokens = lexer.tokens();
     for (auto token : *the_tokens) {
-        auto token_value = token_to_ruby(token);
+        auto token_value = token_to_ruby(token, RTEST(include_location_info));
         if (token_value != Qnil && token_value != Qfalse)
             rb_ary_push(array, token_value);
     }
@@ -120,8 +124,9 @@ VALUE tokens_on_instance(VALUE self) {
 }
 
 VALUE tokens(int argc, VALUE *argv, VALUE self) {
-    VALUE parser = rb_class_new_instance(argc, argv, Parser);
-    return tokens_on_instance(parser);
+    VALUE parser = rb_class_new_instance(1, argv, Parser);
+    VALUE include_location_info = argc > 1 ? argv[1] : Qfalse;
+    return tokens_on_instance(parser, include_location_info);
 }
 
 void Init_natalie_parser() {
@@ -130,7 +135,7 @@ void Init_natalie_parser() {
     Parser = rb_define_class("NatalieParser", rb_cObject);
     rb_define_method(Parser, "initialize", initialize, -1);
     rb_define_method(Parser, "parse", parse_on_instance, 0);
-    rb_define_method(Parser, "tokens", tokens_on_instance, 0);
+    rb_define_method(Parser, "tokens", tokens_on_instance, 1);
     rb_define_singleton_method(Parser, "parse", parse, -1);
     rb_define_singleton_method(Parser, "tokens", tokens, -1);
 }

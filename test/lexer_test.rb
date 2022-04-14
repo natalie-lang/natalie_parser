@@ -2,8 +2,8 @@
 
 require_relative './test_helper'
 
-def tokenize(code)
-  NatalieParser.tokens(code)
+def tokenize(code, include_location_info = false)
+  NatalieParser.tokens(code, include_location_info)
 end
 
 describe 'NatalieParser' do
@@ -935,20 +935,19 @@ describe 'NatalieParser' do
       ]
     end
 
-    # FIXME
-    # it 'stores line and column numbers with each token' do
-    #   expect(tokenize("foo = 1 + 2 # comment\n# comment\nbar.baz", true)).must_equal [
-    #     { type: :name, literal: :foo, line: 0, column: 0 },
-    #     { type: :'=', line: 0, column: 4 },
-    #     { type: :fixnum, literal: 1, line: 0, column: 6 },
-    #     { type: :'+', line: 0, column: 8 },
-    #     { type: :fixnum, literal: 2, line: 0, column: 10 },
-    #     { type: :"\n", line: 0, column: 21 },
-    #     { type: :"\n", line: 1, column: 9 },
-    #     { type: :name, literal: :bar, line: 2, column: 0 },
-    #     { type: :'.', line: 2, column: 3 },
-    #     { type: :name, literal: :baz, line: 2, column: 4 },
-    #   ]
-    # end
+    it 'stores line and column numbers with each token' do
+      expect(tokenize("foo = 1 + 2 # comment\n# comment\nbar.baz", true)).must_equal [
+        { type: :name, literal: :foo, line: 0, column: 0 },
+        { type: :'=', line: 0, column: 4 },
+        { type: :fixnum, literal: 1, line: 0, column: 6 },
+        { type: :'+', line: 0, column: 8 },
+        { type: :fixnum, literal: 2, line: 0, column: 10 },
+        { type: :"\n", line: 0, column: 21 },
+        { type: :"\n", line: 1, column: 9 },
+        { type: :name, literal: :bar, line: 2, column: 0 },
+        { type: :'.', line: 2, column: 3 },
+        { type: :name, literal: :baz, line: 2, column: 4 },
+      ]
+    end
   end
 end
