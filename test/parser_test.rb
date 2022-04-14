@@ -1080,6 +1080,8 @@ require_relative './test_helper'
         expect(parse('`ls`')).must_equal s(:block, s(:xstr, 'ls'))
         expect(parse('%x(ls)')).must_equal s(:block, s(:xstr, 'ls'))
         expect(parse("%x(ls \#{path})")).must_equal s(:block, s(:dxstr, 'ls ', s(:evstr, s(:call, nil, :path))))
+        expect(parse(%q(`#{1+1} #{2+2}`.foo(1).strip))).must_equal s(:block, s(:call, s(:call, s(:dxstr, "", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), s(:str, " "), s(:evstr, s(:call, s(:lit, 2), :+, s(:lit, 2)))), :foo, s(:lit, 1)), :strip))
+        p parse(%q(expected = `#{NAT_BINARY} -d p1 #{path}`.gsub(/\s+/, "\n").strip))
       end
 
       it 'parses alias' do
