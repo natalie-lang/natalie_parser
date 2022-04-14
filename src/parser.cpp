@@ -2186,18 +2186,13 @@ Node *Parser::parse_safe_send_expression(Node *left, LocalsHashmap &locals) {
     return call_node;
 }
 
-Node *Parser::parse_send_expression(Node *left, LocalsHashmap &locals) {
+Node *Parser::parse_send_expression(Node *left, LocalsHashmap &) {
     auto dot_token = current_token();
     advance();
     auto name_token = current_token();
-    SharedPtr<String> name = new String("");
+    SharedPtr<String> name = new String();
     switch (name_token.type()) {
-    case Token::Type::BareName: {
-        auto identifier = static_cast<IdentifierNode *>(parse_identifier(locals));
-        name = identifier->name();
-        delete identifier;
-        break;
-    }
+    case Token::Type::BareName:
     case Token::Type::Constant:
         name = name_token.literal_string();
         advance();
