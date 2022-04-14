@@ -274,6 +274,7 @@ require_relative './test_helper'
         expect(parse(':foo_bar')).must_equal s(:block, s(:lit, :foo_bar))
         expect(parse(':"foo bar"')).must_equal s(:block, s(:lit, :'foo bar'))
         expect(parse(':"foo #{1+1}"')).must_equal s(:block, s(:dsym, "foo ", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1)))))
+        expect(parse(':"#{1+1}"')).must_equal s(:block, s(:dsym, "", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1)))))
         expect(parse('foo :"bar"')).must_equal s(:block, s(:call, nil, :foo, s(:lit, :bar)))
         expect(parse(':FooBar')).must_equal s(:block, s(:lit, :FooBar))
       end
@@ -300,6 +301,7 @@ require_relative './test_helper'
         end
         expect(parse('/#{1+1}/mixn')).must_equal s(:block, s(:dregx, '', s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), 39))
         expect(parse('/foo #{1+1}/')).must_equal s(:block, s(:dregx, 'foo ', s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1)))))
+        expect(parse('/#{1+1}/')).must_equal s(:block, s(:dregx, "", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1)))))
         expect(parse('/^$(.)[.]{1}.*.+.?\^\$\.\(\)\[\]\{\}\w\W\d\D\h\H\s\S\R\*\+\?/')).must_equal s(:block, s(:lit, /^$(.)[.]{1}.*.+.?\^\$\.\(\)\[\]\{\}\w\W\d\D\h\H\s\S\R\*\+\?/))
         expect(parse("/\\n\\\\n/")).must_equal s(:block, s(:lit, /\n\\n/))
         expect(parse("/\\/\\* foo \\*\\//")).must_equal s(:block, s(:lit, Regexp.new("/\\* foo \\*/")))
@@ -1081,7 +1083,6 @@ require_relative './test_helper'
         expect(parse('%x(ls)')).must_equal s(:block, s(:xstr, 'ls'))
         expect(parse("%x(ls \#{path})")).must_equal s(:block, s(:dxstr, 'ls ', s(:evstr, s(:call, nil, :path))))
         expect(parse(%q(`#{1+1} #{2+2}`.foo(1).strip))).must_equal s(:block, s(:call, s(:call, s(:dxstr, "", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), s(:str, " "), s(:evstr, s(:call, s(:lit, 2), :+, s(:lit, 2)))), :foo, s(:lit, 1)), :strip))
-        p parse(%q(expected = `#{NAT_BINARY} -d p1 #{path}`.gsub(/\s+/, "\n").strip))
       end
 
       it 'parses alias' do
