@@ -18,10 +18,10 @@ enum class Parser::Precedence {
     OP_ASSIGNMENT, // += -= *= **= /= %= |= &= ^= >>= <<= ||= &&=
     TERNARY_TRUE, // _ ? (_) : _
     CALL_ARG, // foo( (_), b )
+    TERNARY_QUESTION, // (_) ? _ : _
     LOGICAL_OR, // ||
     LOGICAL_AND, // &&
     ASSIGNMENT_LHS, // (_) = 1
-    TERNARY_QUESTION, // (_) ? _ : _
     SPLAT, // *args, **kwargs
     RANGE, // ..
     LOGICAL_NOT, // not
@@ -47,7 +47,7 @@ enum class Parser::Precedence {
 bool Parser::higher_precedence(Token &token, Node *left, Precedence current_precedence) {
     auto next_precedence = get_precedence(token, left);
 
-    //printf("token %d, left %d, current_precedence %d, next_precedence %d\n", (int)token.type(), (int)left->type(), (int)current_precedence, (int)next_precedence);
+    // printf("token %d, left %d, current_precedence %d, next_precedence %d\n", (int)token.type(), (int)left->type(), (int)current_precedence, (int)next_precedence);
 
     if (left->is_symbol_key()) {
         // Symbol keys are handled by parse_hash and parse_call_hash_args,
