@@ -17,12 +17,16 @@ public:
         set_stop_char(stop_char);
     }
 
+    // used for lexing a Heredoc
     InterpolatedStringLexer(Lexer &parent_lexer, Token string_token, Token::Type end_type)
         : Lexer { string_token.literal_string(), parent_lexer.file() }
-        , m_end_type { end_type } {
+        , m_end_type { end_type }
+        , m_alters_parent_cursor_position { false } {
         set_nested_lexer(nullptr);
         set_stop_char(0);
     }
+
+    virtual bool alters_parent_cursor_position() override { return m_alters_parent_cursor_position; }
 
 private:
     virtual Token build_next_token() override;
@@ -41,5 +45,6 @@ private:
 
     State m_state { State::InProgress };
     Token::Type m_end_type;
+    bool m_alters_parent_cursor_position { true };
 };
 }

@@ -24,6 +24,8 @@ public:
     void set_start_char(char c) { m_start_char = c; }
     void set_stop_char(char c) { m_stop_char = c; }
 
+    virtual bool alters_parent_cursor_position() { return true; }
+
 protected:
     char current_char() {
         if (m_index >= m_size)

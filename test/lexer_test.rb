@@ -856,6 +856,29 @@ describe 'NatalieParser' do
         { type: :dstrend },
         { type: :"\n" },
       ]
+      doc_with_method_call = <<~END
+        code = <<-BAZ.gsub(/\\n/, '; ')
+        foo
+        bar
+        BAZ
+      END
+      expect(tokenize(doc_with_method_call)).must_equal [
+        { type: :name, literal: :code },
+        { type: :"=" },
+        { type: :dstr },
+        { type: :string, literal: "foo\nbar\n" },
+        { type: :dstrend },
+        { type: :"." },
+        { type: :name, literal: :gsub },
+        { type: :"(" },
+        { type: :dregx },
+        { type: :string, literal: "\\n" },
+        { type: :dregxend },
+        { type: :"," },
+        { type: :string, literal: "; " },
+        { type: :")" },
+        { type: :"\n" }
+      ]
       expect(tokenize("<<'FOO BAR'\n\#{foo}\nFOO BAR")).must_equal [
         { type: :string, literal: "\#{foo}\n" },
         { type: :"\n" },

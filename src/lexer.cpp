@@ -62,9 +62,7 @@ Token Lexer::next_token() {
     if (m_nested_lexer) {
         auto token = m_nested_lexer->next_token();
         if (token.is_eof()) {
-            if (!m_heredoc_stack.is_empty()) {
-                // heredocs work differently
-            } else {
+            if (m_nested_lexer->alters_parent_cursor_position()) {
                 m_index = m_nested_lexer->m_index;
                 m_cursor_line = m_nested_lexer->m_cursor_line;
                 m_cursor_column = m_nested_lexer->m_cursor_column;
