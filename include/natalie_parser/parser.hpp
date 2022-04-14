@@ -22,7 +22,7 @@ public:
             : SyntaxError { message.c_str() } { }
 
         ~SyntaxError() {
-            delete m_message;
+            free(m_message);
         }
 
         SyntaxError(const SyntaxError &) = delete;
@@ -170,7 +170,9 @@ private:
     template <typename T>
     Node *regroup(Token &token, Node *left, Node *right) {
         auto left_node = static_cast<T *>(left);
-        return new T { left_node->token(), left_node->left().clone(), new T { token, left_node->right().clone(), right } };
+        auto new_node = new T { left_node->token(), left_node->left().clone(), new T { token, left_node->right().clone(), right } };
+        delete left_node;
+        return new_node;
     };
 
     Node *append_string_nodes(Node *string1, Node *string2);

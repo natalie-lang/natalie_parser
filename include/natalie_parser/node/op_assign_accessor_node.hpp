@@ -13,7 +13,7 @@ using namespace TM;
 class OpAssignAccessorNode : public NodeWithArgs {
 public:
     OpAssignAccessorNode(const Token &token, SharedPtr<String> op, Node *receiver, SharedPtr<String> message, Node *value, Vector<Node *> &args)
-        : NodeWithArgs { token, args }
+        : NodeWithArgs { token }
         , m_op { op }
         , m_receiver { receiver }
         , m_message { message }
@@ -22,6 +22,8 @@ public:
         assert(m_receiver);
         assert(m_message);
         assert(m_value);
+        for (auto arg : args)
+            add_arg(arg->clone());
     }
 
     virtual Type type() const override { return Type::OpAssignAccessor; }

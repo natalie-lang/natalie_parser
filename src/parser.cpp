@@ -2104,7 +2104,7 @@ Node *Parser::parse_op_attr_assign_expression(Node *left, LocalsHashmap &locals)
     op->chomp();
     SharedPtr<String> message = new String(left_call->message().ref());
     message->append_char('=');
-    return new OpAssignAccessorNode {
+    auto op_assign_node = new OpAssignAccessorNode {
         token,
         op,
         left_call->receiver().clone(),
@@ -2112,6 +2112,8 @@ Node *Parser::parse_op_attr_assign_expression(Node *left, LocalsHashmap &locals)
         parse_expression(Precedence::OP_ASSIGNMENT, locals),
         left_call->args(),
     };
+    delete left;
+    return op_assign_node;
 }
 
 Node *Parser::parse_proc_call_expression(Node *left, LocalsHashmap &locals) {
@@ -2173,15 +2175,16 @@ Node *Parser::parse_rescue_expression(Node *left, LocalsHashmap &locals) {
     return begin_node;
 }
 
-Node *Parser::parse_safe_send_expression(Node *left, LocalsHashmap &locals) {
+Node *Parser::parse_safe_send_expression(Node *left, LocalsHashmap &) {
     auto token = current_token();
     advance();
     expect(Token::Type::BareName, "safe navigator method name");
-    auto name = static_cast<IdentifierNode *>(parse_identifier(locals));
+    auto name_token = current_token();
+    advance();
     auto call_node = new SafeCallNode {
         token,
         left,
-        name->name(),
+        name_token.literal_string(),
     };
     return call_node;
 }
