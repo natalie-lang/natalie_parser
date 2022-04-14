@@ -148,8 +148,13 @@ bool Lexer::skip_whitespace() {
 Token Lexer::build_next_token() {
     if (m_index >= m_size)
         return Token { Token::Type::Eof, m_file, m_cursor_line, m_cursor_column };
-    if (m_stop_char && current_char() == m_stop_char)
-        return Token { Token::Type::Eof, m_file, m_cursor_line, m_cursor_column };
+    if (m_start_char && current_char() == m_start_char) {
+        m_pair_depth++;
+    } else if (m_stop_char && current_char() == m_stop_char) {
+        if (m_pair_depth == 0)
+            return Token { Token::Type::Eof, m_file, m_cursor_line, m_cursor_column };
+        m_pair_depth--;
+    }
     Token token;
     switch (current_char()) {
     case '=': {
@@ -283,20 +288,20 @@ Token Lexer::build_next_token() {
             case '|': {
                 char c = next();
                 advance();
-                return consume_single_quoted_string(c);
+                return consume_single_quoted_string(0, c);
             }
             case '[':
                 advance(2);
-                return consume_single_quoted_string(']');
+                return consume_single_quoted_string('[', ']');
             case '{':
                 advance(2);
-                return consume_single_quoted_string('}');
+                return consume_single_quoted_string('{', '}');
             case '<':
                 advance(2);
-                return consume_single_quoted_string('>');
+                return consume_single_quoted_string('<', '>');
             case '(':
                 advance(2);
-                return consume_single_quoted_string(')');
+                return consume_single_quoted_string('(', ')');
             default:
                 return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
             }
@@ -306,20 +311,20 @@ Token Lexer::build_next_token() {
             case '|': {
                 char c = next();
                 advance();
-                return consume_double_quoted_string(c);
+                return consume_double_quoted_string(0, c);
             }
             case '[':
                 advance(2);
-                return consume_double_quoted_string(']');
+                return consume_double_quoted_string('[', ']');
             case '{':
                 advance(2);
-                return consume_double_quoted_string('}');
+                return consume_double_quoted_string('{', '}');
             case '<':
                 advance(2);
-                return consume_double_quoted_string('>');
+                return consume_double_quoted_string('<', '>');
             case '(':
                 advance(2);
-                return consume_double_quoted_string(')');
+                return consume_double_quoted_string('(', ')');
             default:
                 return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
             }
@@ -347,19 +352,19 @@ Token Lexer::build_next_token() {
             switch (peek()) {
             case '/': {
                 advance(2);
-                return consume_double_quoted_string('/', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
+                return consume_double_quoted_string(0, '/', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
             }
             case '[': {
                 advance(2);
-                return consume_double_quoted_string(']', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
+                return consume_double_quoted_string('[', ']', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
             }
             case '{': {
                 advance(2);
-                return consume_double_quoted_string('}', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
+                return consume_double_quoted_string('{', '}', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
             }
             case '(': {
                 advance(2);
-                return consume_double_quoted_string(')', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
+                return consume_double_quoted_string('(', ')', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
             }
             default:
                 return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
@@ -460,24 +465,24 @@ Token Lexer::build_next_token() {
         case '|': {
             char c = current_char();
             advance();
-            return consume_single_quoted_string(c);
+            return consume_single_quoted_string(0, c);
         }
         case '[':
             advance();
-            return consume_single_quoted_string(']');
+            return consume_single_quoted_string('[', ']');
         case '{':
             advance();
-            return consume_single_quoted_string('}');
+            return consume_single_quoted_string('{', '}');
         case '<':
             advance();
-            return consume_single_quoted_string('>');
+            return consume_single_quoted_string('<', '>');
         case '(':
             if (m_last_token.type() == Token::Type::DefKeyword || m_last_token.type() == Token::Type::Dot) {
                 // It's a trap! This looks like a %(string) but it's a method def/call!
                 break;
             }
             advance();
-            return consume_single_quoted_string(')');
+            return consume_single_quoted_string('(', ')');
         }
         return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
     case '!':
@@ -637,10 +642,10 @@ Token Lexer::build_next_token() {
             return Token { Token::Type::ConstantResolution, m_file, m_token_line, m_token_column };
         } else if (c == '"') {
             advance();
-            return consume_double_quoted_string('"', Token::Type::InterpolatedSymbolBegin, Token::Type::InterpolatedSymbolEnd);
+            return consume_double_quoted_string(0, '"', Token::Type::InterpolatedSymbolBegin, Token::Type::InterpolatedSymbolEnd);
         } else if (c == '\'') {
             advance();
-            auto string = consume_single_quoted_string('\'');
+            auto string = consume_single_quoted_string(0, '\'');
             return Token { Token::Type::Symbol, string.literal(), m_file, m_token_line, m_token_column };
         } else if (isspace(c)) {
             auto token = Token { Token::Type::TernaryColon, m_file, m_token_line, m_token_column };
@@ -740,13 +745,13 @@ Token Lexer::build_next_token() {
         return Token { Token::Type::Comma, m_file, m_token_line, m_token_column };
     case '"':
         advance();
-        return consume_double_quoted_string('"');
+        return consume_double_quoted_string(0, '"');
     case '\'':
         advance();
-        return consume_single_quoted_string('\'');
+        return consume_single_quoted_string(0, '\'');
     case '`': {
         advance();
-        return consume_double_quoted_string('`', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
+        return consume_double_quoted_string(0, '`', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
     }
     case '#':
         if (token_is_first_on_line()) {
@@ -1436,12 +1441,13 @@ bool Lexer::token_is_first_on_line() const {
     return !m_last_token || m_last_token.is_eol();
 }
 
-Token Lexer::consume_double_quoted_string(char delimiter, Token::Type begin_type, Token::Type end_type) {
-    m_nested_lexer = new InterpolatedStringLexer { *this, delimiter, end_type };
+Token Lexer::consume_double_quoted_string(char start_char, char stop_char, Token::Type begin_type, Token::Type end_type) {
+    m_nested_lexer = new InterpolatedStringLexer { *this, start_char, stop_char, end_type };
     return Token { begin_type, m_file, m_token_line, m_token_column };
 }
 
-Token Lexer::consume_single_quoted_string(char delimiter) {
+Token Lexer::consume_single_quoted_string(char start_char, char stop_char) {
+    int pair_depth = 0;
     SharedPtr<String> buf = new String("");
     char c = current_char();
     while (c) {
@@ -1457,9 +1463,17 @@ Token Lexer::consume_single_quoted_string(char delimiter) {
                 buf->append_char(c);
                 break;
             }
-        } else if (c == delimiter) {
-            advance();
-            return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
+        } else if (c == start_char) {
+            pair_depth++;
+            buf->append_char(c);
+        } else if (c == stop_char) {
+            if (pair_depth > 0) {
+                pair_depth--;
+                buf->append_char(c);
+            } else {
+                advance();
+                return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
+            }
         } else {
             buf->append_char(c);
         }

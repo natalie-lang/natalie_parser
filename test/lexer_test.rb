@@ -366,6 +366,16 @@ describe 'NatalieParser' do
         { type: :string, literal: ' bar' },
         { type: :dstrend },
       ]
+      expect(tokenize('"#{foo { 1 }}"')).must_equal [
+        { type: :dstr },
+        { type: :evstr },
+        { type: :name, literal: :foo },
+        { type: :'{' },
+        { type: :fixnum, literal: 1 },
+        { type: :'}' },
+        { type: :evstrend },
+        { type: :dstrend }
+      ]
     end
 
     it 'parses string character escape sequences' do

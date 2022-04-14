@@ -154,10 +154,19 @@ Token InterpolatedStringLexer::consume_string() {
             advance(2);
             m_state = State::EvaluateBegin;
             return token;
+        } else if (c == m_start_char) {
+            m_pair_depth++;
+            advance();
+            buf->append_char(c);
         } else if (c == m_stop_char) {
             advance();
-            m_state = State::EndToken;
-            return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
+            if (m_pair_depth > 0) {
+                m_pair_depth--;
+                buf->append_char(c);
+            } else {
+                m_state = State::EndToken;
+                return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
+            }
         } else {
             buf->append_char(c);
             advance();
@@ -177,6 +186,7 @@ Token InterpolatedStringLexer::consume_string() {
 
 Token InterpolatedStringLexer::start_evaluation() {
     m_nested_lexer = new Lexer { *this };
+    m_nested_lexer->set_start_char('{');
     m_nested_lexer->set_stop_char('}');
     m_state = State::EvaluateEnd;
     return Token { Token::Type::EvaluateToStringBegin, m_file, m_token_line, m_token_column };

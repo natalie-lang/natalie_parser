@@ -9,10 +9,11 @@ namespace NatalieParser {
 
 class InterpolatedStringLexer : public Lexer {
 public:
-    InterpolatedStringLexer(Lexer &parent_lexer, char stop_char, Token::Type end_type)
+    InterpolatedStringLexer(Lexer &parent_lexer, char start_char, char stop_char, Token::Type end_type)
         : Lexer { parent_lexer }
         , m_end_type { end_type } {
         set_nested_lexer(nullptr);
+        set_start_char(start_char);
         set_stop_char(stop_char);
     }
 

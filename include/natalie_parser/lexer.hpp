@@ -21,6 +21,7 @@ public:
     SharedPtr<String> file() const { return m_file; }
 
     void set_nested_lexer(Lexer *lexer) { m_nested_lexer = lexer; }
+    void set_start_char(char c) { m_start_char = c; }
     void set_stop_char(char c) { m_stop_char = c; }
 
 protected:
@@ -60,8 +61,8 @@ protected:
     Token consume_nth_ref();
     long long consume_hex_number(int max_length = 0, bool allow_underscore = false);
     long long consume_octal_number(int max_length = 0, bool allow_underscore = false);
-    Token consume_double_quoted_string(char delimiter, Token::Type begin_type = Token::Type::InterpolatedStringBegin, Token::Type end_type = Token::Type::InterpolatedStringEnd);
-    Token consume_single_quoted_string(char delimiter);
+    Token consume_double_quoted_string(char, char, Token::Type begin_type = Token::Type::InterpolatedStringBegin, Token::Type end_type = Token::Type::InterpolatedStringEnd);
+    Token consume_single_quoted_string(char, char);
     Token consume_quoted_array_without_interpolation(char start_char, char stop_char, Token::Type type);
     Token consume_quoted_array_with_interpolation(char start_char, char stop_char, Token::Type type);
     Token consume_regexp(char delimiter);
@@ -96,5 +97,10 @@ protected:
     Lexer *m_nested_lexer { nullptr };
 
     char m_stop_char { 0 };
+
+    // if we encounter the m_start_char within the string,
+    // then increment m_pair_depth
+    char m_start_char { 0 };
+    int m_pair_depth { 0 };
 };
 }
