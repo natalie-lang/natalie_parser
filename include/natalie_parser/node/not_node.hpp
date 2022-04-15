@@ -18,6 +18,13 @@ public:
         assert(m_expression);
     }
 
+    NotNode(const NotNode &other)
+        : NotNode { other.token(), other.expression().clone() } { }
+
+    virtual Node *clone() const override {
+        return new NotNode(*this);
+    }
+
     virtual Type type() const override { return Type::Not; }
 
     const Node &expression() const { return m_expression.ref(); }
