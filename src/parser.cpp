@@ -1106,6 +1106,7 @@ Node *Parser::parse_hash_inner(LocalsHashmap &locals, Precedence precedence, Tok
 
 Node *Parser::parse_identifier(LocalsHashmap &locals) {
     auto name = current_token().literal();
+    assert(name);
     bool is_lvar = !!locals.get(name);
     auto identifier = new IdentifierNode { current_token(), is_lvar };
     advance();
@@ -2003,19 +2004,24 @@ Node *Parser::parse_constant_resolution_expression(Node *left, LocalsHashmap &lo
     auto token = current_token();
     advance();
     auto name_token = current_token();
-    auto identifier = static_cast<IdentifierNode *>(parse_identifier(locals));
     Node *node;
-    switch (identifier->token_type()) {
-    case Token::Type::BareName: {
-        auto name = identifier->name();
-        node = new CallNode { token, left, name };
-        delete identifier;
+    switch (name_token.type()) {
+    case Token::Type::BareName:
+        advance();
+        node = new CallNode { name_token, left, name_token.literal_string() };
         break;
-    }
-    case Token::Type::Constant: {
-        auto name = identifier->name();
-        node = new Colon2Node { token, left, name };
-        delete identifier;
+    case Token::Type::Constant:
+        advance();
+        node = new Colon2Node { name_token, left, name_token.literal_string() };
+        break;
+    case Token::Type::LParen: {
+        advance();
+        auto call_node = new CallNode { name_token, left, new String("call") };
+        if (!current_token().is_rparen())
+            parse_call_args(call_node, locals, false);
+        expect(Token::Type::RParen, "::() call right paren");
+        advance();
+        node = call_node;
         break;
     }
     default:

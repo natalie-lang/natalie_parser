@@ -314,6 +314,13 @@ require_relative './test_helper'
         expect(parse("1 + 2;'foo'")).must_equal s(:block, s(:call, s(:lit, 1), :+, s(:lit, 2)), s(:str, 'foo'))
       end
 
+      it 'parses colon colon' do
+        expect(parse('foo::bar')).must_equal s(:block, s(:call, s(:call, nil, :foo), :bar))
+        expect(parse('foo::Bar')).must_equal s(:block, s(:colon2, s(:call, nil, :foo), :Bar))
+        expect(parse('foo::()')).must_equal s(:block, s(:call, s(:call, nil, :foo), :call))
+        expect(parse('foo::(1, 2)')).must_equal s(:block, s(:call, s(:call, nil, :foo), :call, s(:lit, 1), s(:lit, 2)))
+      end
+
       it 'parses assignment' do
         expect(parse('x = 1')).must_equal s(:block, s(:lasgn, :x, s(:lit, 1)))
         expect(parse('x = 1 + 2')).must_equal s(:block, s(:lasgn, :x, s(:call, s(:lit, 1), :+, s(:lit, 2))))
