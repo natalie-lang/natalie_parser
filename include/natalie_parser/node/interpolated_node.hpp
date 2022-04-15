@@ -31,6 +31,7 @@ public:
 
     bool is_empty() const { return m_nodes.is_empty(); }
 
+    void prepend_node(Node *node) { m_nodes.push_front(node); };
     void add_node(Node *node) { m_nodes.push(node); };
 
     const Vector<Node *> &nodes() const { return m_nodes; }

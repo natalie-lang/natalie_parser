@@ -190,6 +190,7 @@ require_relative './test_helper'
         expect(parse(%q("#{1+1}foo" "bar"))).must_equal s(:block, s(:dstr, "", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), s(:str, "foo"), s(:str, "bar")))
         expect(parse(%q("foo#{0+0}" 'bar#{1+1}'))).must_equal s(:block, s(:dstr, "foo", s(:evstr, s(:call, s(:lit, 0), :+, s(:lit, 0))), s(:str, "bar\#{1+1}")))
         expect(parse(%q('foo#{0+0}' "bar#{1+1}"))).must_equal s(:block, s(:dstr, "foo\#{0+0}bar", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1)))))
+        expect(parse(%q('foo' "#{1+1}"))).must_equal s(:block, s(:dstr, "foo", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1)))))
         expect(parse(%q("foo#{0+0}" "bar#{1+1}"))).must_equal s(:block, s(:dstr, "foo", s(:evstr, s(:call, s(:lit, 0), :+, s(:lit, 0))), s(:str, "bar"), s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1)))))
         expect(parse(%q("#{0+0}foo" "bar#{1+1}"))).must_equal s(:block, s(:dstr, "", s(:evstr, s(:call, s(:lit, 0), :+, s(:lit, 0))), s(:str, "foo"), s(:str, "bar"), s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1)))))
         expect(parse(%q("#{0+0}foo" "#{1+1}bar"))).must_equal s(:block, s(:dstr, "", s(:evstr, s(:call, s(:lit, 0), :+, s(:lit, 0))), s(:str, "foo"), s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), s(:str, "bar")))

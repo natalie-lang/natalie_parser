@@ -1548,9 +1548,12 @@ Node *Parser::append_string_nodes(Node *string1, Node *string2) {
         case Node::Type::InterpolatedString: {
             auto string2_node = static_cast<InterpolatedStringNode *>(string2);
             assert(!string2_node->is_empty());
-            assert(string2_node->nodes().first()->type() == Node::Type::String);
-            static_cast<StringNode *>(string2_node->nodes().first())->string()->prepend(*string1_node->string());
-            delete string1;
+            if (string2_node->nodes().first()->type() == Node::Type::String) {
+                static_cast<StringNode *>(string2_node->nodes().first())->string()->prepend(*string1_node->string());
+                delete string1;
+            } else {
+                string2_node->prepend_node(string1_node);
+            }
             return string2;
         }
         default:
