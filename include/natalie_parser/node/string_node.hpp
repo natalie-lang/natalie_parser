@@ -2,6 +2,7 @@
 
 #include "natalie_parser/node/node.hpp"
 #include "natalie_parser/node/node_with_args.hpp"
+#include "natalie_parser/node/symbol_node.hpp"
 #include "tm/hashmap.hpp"
 #include "tm/string.hpp"
 
@@ -27,6 +28,10 @@ public:
     virtual Type type() const override { return Type::String; }
 
     SharedPtr<String> string() const { return m_string; }
+
+    SymbolNode *to_symbol_node() const {
+        return new SymbolNode { m_token, m_string };
+    }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("str");

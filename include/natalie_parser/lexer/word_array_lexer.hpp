@@ -43,5 +43,6 @@ private:
     // then increment m_pair_depth
     char m_start_char { 0 };
     int m_pair_depth { 0 };
+    SharedPtr<String> m_buffer;
 };
 }

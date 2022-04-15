@@ -1789,10 +1789,19 @@ Node *Parser::parse_word_symbol_array(LocalsHashmap &locals) {
     advance();
     while (!current_token().is_eof() && current_token().type() != Token::Type::RBracket) {
         auto string = parse_expression(Precedence::WORD_ARRAY, locals);
-        assert(string->type() == Node::Type::String);
-        auto symbol = new SymbolNode { string->token(), static_cast<StringNode *>(string)->string() };
+        Node *symbol_node;
+        switch (string->type()) {
+        case Node::Type::String:
+            symbol_node = static_cast<StringNode *>(string)->to_symbol_node();
+            break;
+        case Node::Type::InterpolatedString:
+            symbol_node = static_cast<InterpolatedStringNode *>(string)->to_symbol_node();
+            break;
+        default:
+            TM_UNREACHABLE();
+        }
         delete string;
-        array->add_node(symbol);
+        array->add_node(symbol_node);
     }
     expect(Token::Type::RBracket, "closing array bracket");
     advance();
@@ -2610,5 +2619,4 @@ String Parser::current_line() {
     }
     return buf;
 }
-
 }

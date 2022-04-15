@@ -512,10 +512,11 @@ describe 'NatalieParser' do
       expect(tokenize("%I<    foo\n 1\t 2  >")).must_equal expected('%I[')
       expect(tokenize("%I/    foo\n 1\t 2  /")).must_equal expected('%I[')
       expect(tokenize("%I|    foo\n 1\t 2  |")).must_equal expected('%I[')
-      expect(tokenize("%W[1 \#{1 + 1} 3]")).must_equal [
+      expect(tokenize('%W[1 foo#{1 + 1} 3]')).must_equal [
         { type: :'%W[' },
         { type: :string, literal: '1' },
         { type: :dstr },
+        { type: :string, literal: 'foo' },
         { type: :evstr },
         { type: :fixnum, literal: 1 },
         { type: :'+' },
@@ -551,6 +552,23 @@ describe 'NatalieParser' do
       expect(tokenize("%W( () )").size).must_equal(3)
       expect(tokenize("%W{ {} }").size).must_equal(3)
       expect(tokenize("%W< <> >").size).must_equal(3)
+      expect(tokenize('%i(foo#{1} bar)')).must_equal [
+        { type: :'%i[' },
+        { type: :string, literal: 'foo#{1}' },
+        { type: :string, literal: 'bar' },
+        { type: :']' },
+      ]
+      expect(tokenize('%I(foo#{1} bar)')).must_equal [
+        { type: :'%I[' },
+        { type: :dstr },
+        { type: :string, literal: 'foo' },
+        { type: :evstr },
+        { type: :fixnum, literal: 1 },
+        { type: :evstrend },
+        { type: :dstrend },
+        { type: :string, literal: 'bar' },
+        { type: :']' },
+      ]
     end
 
     it 'tokenizes hashes' do
