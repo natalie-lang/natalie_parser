@@ -611,6 +611,9 @@ Node *Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         node = new PinNode { token, new IdentifierNode { current_token(), true } };
         advance();
         break;
+    case Token::Type::Constant:
+        node = parse_constant(locals);
+        break;
     case Token::Type::LBracketRBracket:
         advance();
         node = new ArrayPatternNode { token };
@@ -660,6 +663,26 @@ Node *Parser::parse_case_in_pattern(LocalsHashmap &locals) {
     case Token::Type::Float:
         node = parse_lit(locals);
         break;
+    case Token::Type::Multiply: {
+        auto splat_token = current_token();
+        advance();
+        auto array = new ArrayPatternNode { token };
+        switch (current_token().type()) {
+        case Token::Type::BareName:
+        case Token::Type::Constant: {
+            auto name = new IdentifierNode { current_token(), true };
+            name->prepend_to_name('*');
+            array->add_node(name);
+            break;
+        }
+        default:
+            splat_token.set_literal('*');
+            array->add_node(new IdentifierNode { splat_token, true });
+        }
+        advance();
+        node = array;
+        break;
+    }
     case Token::Type::String:
         node = parse_string(locals);
         break;
@@ -688,6 +711,20 @@ Node *Parser::parse_case_in_patterns(LocalsHashmap &locals) {
     while (current_token().type() == Token::Type::BitwiseOr) {
         advance();
         patterns.push(parse_case_in_pattern(locals));
+    }
+    while (current_token().is_comma()) {
+        advance();
+        auto last_pattern = patterns.last();
+        auto next_pattern = parse_case_in_pattern(locals);
+        if (last_pattern->type() == Node::Type::ArrayPattern) {
+            static_cast<ArrayPatternNode *>(last_pattern)->add_node(next_pattern);
+        } else {
+            patterns.pop();
+            auto array_pattern = new ArrayPatternNode { last_pattern->token() };
+            array_pattern->add_node(last_pattern);
+            array_pattern->add_node(next_pattern);
+            patterns.push(array_pattern);
+        }
     }
     assert(patterns.size() > 0);
     if (patterns.size() == 1) {

@@ -1037,7 +1037,13 @@ require_relative './test_helper'
       it 'parses case/in/else' do
         expect(parse("case 1\nin x\n:a\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:in, s(:lvar, :x), s(:lit, :a)), nil))
         expect(parse("case 1\nin x then :a\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:in, s(:lvar, :x), s(:lit, :a)), nil))
+        # FIXME:
+        #expect(parse("case 1\nin *x then :a\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, :"*x"), s(:lit, :a)), nil))
         expect(parse("case 1\nin x | y\n:a\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:in, s(:or, s(:lvar, :x), s(:lvar, :y)), s(:lit, :a)), nil))
+        expect(parse("case 1\nin x, :y\n:a\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:lvar, :x), s(:lit, :y)), s(:lit, :a)), nil))
+        # FIXME:
+        #expect(parse("case 1\nin *x, :y\n:a\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, :"*x", s(:lit, :y)), s(:lit, :a)), nil))
+        expect(parse("case 1\nin X\n:a\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:in, s(:const, :X), s(:lit, :a)), nil))
         expect(parse("case 1\nin []\n:a\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:in, s(:array_pat), s(:lit, :a)), nil))
         expect(parse("case 1\nin [ ]\n:a\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:in, s(:array_pat), s(:lit, :a)), nil))
         expect(parse("case 1\nin [:x, x]\n:a\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:lit, :x), s(:lvar, :x)), s(:lit, :a)), nil))

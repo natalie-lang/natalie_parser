@@ -31,9 +31,17 @@ public:
 
     SharedPtr<String> name() const { return m_token.literal_string(); }
 
+    void prepend_to_name(char c) {
+        auto literal = m_token.literal_string();
+        literal->prepend_char(c);
+        // FIXME: set_literal() unneeded?
+        m_token.set_literal(literal);
+    }
+
     void append_to_name(char c) {
         auto literal = m_token.literal_string();
         literal->append_char(c);
+        // FIXME: set_literal() unneeded?
         m_token.set_literal(literal);
     }
 
