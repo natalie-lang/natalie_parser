@@ -42,6 +42,7 @@ desc 'Run the test suite'
 task test: [:build, 'build/asan_test'] do
   sh 'bundle exec ruby test/all.rb'
   sh 'build/asan_test'
+  sh 'bundle exec ruby test/test_ruby_parser.rb'
 end
 
 desc 'Run test test suite when changes are made (requires entr binary)'
