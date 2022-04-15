@@ -4499,600 +4499,600 @@ module TestPatternMatching
     pp Sexp.from_array Ripper.sexp rb
   end
 
-  def assert_case_in lit, exp_pt
-    rb = "case :a\nin #{lit}\nend"
-
-    if ENV["VERBOSE_TEST"] then
-      puts
-      puts rb
-    end
-
-    pt = s(:case, s(:lit, :a),
-           s(:in, exp_pt, nil).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_09
-    assert_case_in(":b, [:c]",
-                   s(:array_pat, nil,
-                     s(:lit, :b).line(2),
-                     s(:array_pat, nil, s(:lit, :c).line(2)).line(2)).line(2))
-  end
-
-  def test_case_in_10
-    assert_case_in "nil, nil, nil", s(:array_pat,
-                                      nil,
-                                      s(:nil).line(2),
-                                      s(:nil).line(2),
-                                      s(:nil).line(2)).line(2)
-  end
-
-  def test_case_in_21
-    assert_case_in "Symbol()", s(:array_pat, s(:const, :Symbol).line(2)).line(2)
-  end
-
-  def test_case_in_26
-    assert_case_in "(42)", s(:lit, 42).line(2)
-  end
-
-  def test_case_in_27
-    assert_case_in("[A, *, B]",
-                   s(:array_pat, nil,
-                     s(:const, :A).line(2),
-                     :*,
-                     s(:const, :B).line(2)).line(2))
-  end
-
-  def test_case_in_28_2
-    assert_case_in '{ "b": }', s(:hash_pat, nil, s(:lit, :b).line(2), nil).line(2)
-  end
-
-  def test_case_in_28
-    assert_case_in "[]", s(:array_pat).line(2)
-  end
-
-  def test_case_in_29
-    assert_case_in "**nil", s(:hash_pat, nil, s(:kwrest, :"**nil").line(2)).line(2)
-  end
-
-  def test_case_in_30
-    assert_case_in "{}", s(:hash_pat, nil).line(2)
-  end
-
-  def test_case_in_31?
-    rb = "case :a\nin [:b, *c]\n  :d\nend"
-    pt = s(:case, s(:lit, :a),
-           s(:in,
-             s(:array_pat, nil, s(:lit, :b).line(2), :"*c").line(2),
-             s(:lit, :d).line(3)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_32
-    assert_case_in "(1...3)", s(:dot3, s(:lit, 1).line(2), s(:lit, 3).line(2)).line(2)
-  end
-
-  def test_case_in_33
-    assert_case_in "(1...)", s(:dot3, s(:lit, 1).line(2), nil).line(2)
-  end
-
-  def test_case_in_34
-    assert_case_in "(..10)", s(:dot2, nil, s(:lit, 10).line(2)).line(2)
-  end
-
-  def test_case_in_35
-    assert_case_in "(...10)", s(:dot3, nil, s(:lit, 10).line(2)).line(2)
-  end
-
-  def test_case_in_36
-    rb = "[:a, b, c, [:d, *e, nil]]"
-    pt = s(:array_pat,
-           nil,
-           s(:lit, :a).line(2),
-           s(:lvar, :b).line(2),
-           s(:lvar, :c).line(2),
-           s(:array_pat,
-             nil,
-             s(:lit, :d).line(2),
-             :"*e",
-             s(:nil).line(2)).line(2)).line(2)
-
-    assert_case_in rb, pt
-  end
-
-  def test_case_in_37
-    rb = "case :a\nin { b: [Hash, *] }\n  :c\nend"
-    pt = s(:case, s(:lit, :a),
-           s(:in,
-             s(:hash_pat,
-               nil,
-               s(:lit, :b).line(2),
-               s(:array_pat, nil, s(:const, :Hash).line(2), :"*").line(2)
-              ).line(2),
-             s(:lit, :c).line(3)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_42
-    rb = "case :a\nin :b, *_ then nil\nend"
-    pt = s(:case, s(:lit, :a),
-           s(:in,
-             s(:array_pat,
-               nil,
-               s(:lit, :b).line(2),
-               :"*_",
-              ).line(2),
-             s(:nil).line(2)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_42_2
-    rb = "case :a\nin A(*list) then nil\nend"
-    pt = s(:case, s(:lit, :a),
-           s(:in,
-             s(:array_pat,
-               s(:const, :A).line(2),
-               :"*list").line(2),
-             s(:nil).line(2)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_42_3
-    assert_case_in ":b, *_, :c", s(:array_pat, nil,
-                                   s(:lit, :b).line(2),
-                                   :"*_",
-                                   s(:lit, :c).line(2)).line(2)
-  end
-
-
-  def test_case_in_47
-    rb = "case :a\nin [*, :b, :c]\n  :d\nend"
-    pt = s(:case, s(:lit, :a),
-           s(:in,
-             s(:array_pat, nil, :*,
-               s(:lit, :b).line(2), s(:lit, :c).line(2)).line(2),
-             s(:lit, :d).line(3)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_67
-    rb = "case :a\nin 1.. then nil\nend"
-    pt = s(:case,
-           s(:lit, :a),
-           s(:in, s(:dot2, s(:lit, 1).line(2), nil).line(2),
-             s(:nil).line(2)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_76
-    assert_case_in "`echo hi`", s(:xstr, "echo hi").line(2)
-  end
-
-  def test_case_in_77
-    assert_case_in "/regexp/", s(:lit, /regexp/).line(2)
-  end
-
-  def test_case_in_78
-    assert_case_in "%W[a b]", s(:array, s(:str, "a").line(2), s(:str, "b").line(2)).line(2)
-  end
-
-  def test_case_in_79
-    assert_case_in "%w[a b]", s(:array, s(:str, "a").line(2), s(:str, "b").line(2)).line(2)
-  end
-
-  def test_case_in_80
-    assert_case_in "%I[a b]", s(:array, s(:lit, :a).line(2), s(:lit, :b).line(2)).line(2)
-  end
-
-  def test_case_in_81
-    assert_case_in "%i[a b]", s(:array, s(:lit, :a).line(2), s(:lit, :b).line(2)).line(2)
-  end
-
-  def test_case_in_83
-    rb = "[->(b) { true }, c]"
-    pt = s(:array_pat, nil,
-           s(:iter, s(:lambda).line(2), s(:args, :b).line(2),
-             s(:true).line(2)).line(2),
-           s(:lvar, :c).line(2)).line(2)
-
-    assert_case_in rb, pt
-  end
-
-  def test_case_in_85
-    rb = "[[:b, c], [:d, ^e]]"
-    pt = s(:array_pat, nil,
-           s(:array_pat, nil,
-             s(:lit, :b).line(2),
-             s(:lvar, :c).line(2)).line(2),
-           s(:array_pat,
-             nil,
-             s(:lit, :d).line(2),
-             s(:lvar, :e).line(2)).line(2),
-          ).line(2)
-
-    assert_case_in rb, pt
-  end
-
-  def test_case_in_86
-    rb = "case [:a, :b]\nin ::NilClass, * then nil\nend"
-    pt = s(:case,
-           s(:array, s(:lit, :a), s(:lit, :b)),
-           s(:in,
-             s(:array_pat,
-               nil,
-               s(:colon3, :NilClass).line(2),
-               :*).line(2),
-             s(:nil).line(2)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_86_2
-    rb = "case [:a, :b]\nin *, ::NilClass then nil\nend"
-    pt = s(:case,
-           s(:array, s(:lit, :a), s(:lit, :b)),
-           s(:in,
-             s(:array_pat,
-               nil,
-               :*,
-               s(:colon3, :NilClass).line(2)).line(2),
-             s(:nil).line(2)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_array_pat_const
-    rb = "case :a\nin B[c]\n  :d\nend"
-    pt = s(:case, s(:lit, :a),
-           s(:in,
-             s(:array_pat,
-               s(:const, :B).line(2),
-               s(:lvar, :c).line(2)).line(2),
-             s(:lit, :d).line(3)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_array_pat_const2
-    rb = "case :a\nin B::C[d]\n  :e\nend"
-    pt = s(:case, s(:lit, :a),
-           s(:in,
-             s(:array_pat,
-               s(:const, s(:colon2, s(:const, :B).line(2), :C).line(2)).line(2),
-               s(:lvar, :d).line(2)).line(2),
-             s(:lit, :e).line(3)).line(2),
-          nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_array_pat_paren_assign
-    rb = "case :a\nin B(C => d)\n  :d\nend"
-    pt = s(:case, s(:lit, :a),
-           s(:in,
-             s(:array_pat,
-               s(:const, :B).line(2),
-               s(:lasgn, :d, s(:const, :C).line(2)).line(2)).line(2),
-             s(:lit, :d).line(3)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_const
-    rb = "case Array\nin Class\n  :b\nend"
-    pt = s(:case, s(:const, :Array),
-           s(:in, s(:const, :Class).line(2),
-             s(:lit, :b).line(3)).line(2),
-           nil).line 1
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_else
-    rb = "case Array\nin Class\n  :b\nelse\n  :c\nend\n"
-    pt = s(:case, s(:const, :Array),
-           s(:in, s(:const, :Class).line(2),
-             s(:lit, :b).line(3)).line(2),
-          s(:lit, :c).line(5)).line 1
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_hash_pat
-    rb = "case :a\nin { b: 'c', d: \"e\" } then\n  :f\nend\n"
-    pt = s(:case, s(:lit, :a),
-           s(:in,
-             s(:hash_pat,
-               nil,
-               s(:lit, :b).line(2), s(:str, "c").line(2),
-               s(:lit, :d).line(2), s(:str, "e").line(2)).line(2),
-             s(:lit, :f).line(3)
-             ).line(2),
-          nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_hash_pat_assign
-    rb = "case :a\nin { b: Integer => x, d: \"e\", f: } then\n  :g\nend"
-    pt = s(:case, s(:lit, :a),
-           s(:in,
-             s(:hash_pat,
-               nil,
-               s(:lit, :b).line(2), # =>
-               s(:lasgn, :x, s(:const, :Integer).line(2)).line(2),
-               s(:lit, :d).line(2), s(:str, "e").line(2),
-               s(:lit, :f).line(2), nil).line(2),
-             s(:lit, :g).line(3)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_hash_pat_paren_assign
-    rb = "case :a\nin B(a: 42)\n  :d\nend"
-    pt = s(:case, s(:lit, :a),
-           s(:in,
-             s(:hash_pat,
-               s(:const, :B).line(2),
-               s(:lit, :a).line(2), s(:lit, 42).line(2)).line(2),
-             s(:lit, :d).line(3)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_hash_pat_paren_true
-    rb = "case :a\nin b: true then\n  :c\nend\n"
-    pt = s(:case, s(:lit, :a),
-           s(:in,
-             s(:hash_pat,
-               nil,
-               s(:lit, :b).line(2), s(:true).line(2)).line(2),
-             s(:lit, :c).line(3)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_hash_pat_rest
-    rb = "case :a\nin b: c, **rest then :d\nend"
-    pt = s(:case,
-           s(:lit, :a),
-           s(:in,
-             s(:hash_pat,
-               nil,
-               s(:lit, :b).line(2),
-               s(:lvar, :c).line(2),
-               s(:kwrest, :"**rest").line(2)).line(2),
-             s(:lit, :d).line(2)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_hash_pat_rest_solo
-    rb = "case :a\nin **rest then :d\nend"
-    pt = s(:case,
-           s(:lit, :a),
-           s(:in,
-             s(:hash_pat,
-               nil,
-               s(:kwrest, :"**rest").line(2)).line(2),
-             s(:lit, :d).line(2)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_if_unless_post_mod
-    rb = "case :a\nin A if true\n  :C\nin D unless false\n  :E\nend"
-    pt = s(:case,
-           s(:lit, :a),
-           s(:in,
-             s(:if, s(:true).line(2), s(:const, :A).line(2), nil).line(2),
-             s(:lit, :C).line(3)).line(2),
-           s(:in,
-             s(:if, s(:false).line(4), nil, s(:const, :D).line(4)).line(4),
-             s(:lit, :E).line(5)).line(4),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_multiple
-    rb = "case :a\nin A::B\n  :C\nin D::E\n  :F\nend"
-    pt = s(:case,
-           s(:lit, :a),
-           s(:in,
-             s(:const, s(:colon2, s(:const, :A).line(2), :B).line(2)).line(2),
-             s(:lit, :C).line(3)).line(2),
-           s(:in,
-             s(:const, s(:colon2, s(:const, :D).line(4), :E).line(4)).line(4),
-             s(:lit, :F).line(5)).line(4),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_case_in_or
-    rb = "case :a\nin B | C\n  :d\nend\n"
-    pt = s(:case, s(:lit, :a),
-           s(:in,
-             s(:or,
-               s(:const, :B).line(2),
-               s(:const, :C).line(2)).line(2),
-             s(:lit, :d).line(3)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_in_expr_no_case
-    rb = "'woot' in String"
-    pt = s(:case, s(:str, "woot"),
-           s(:in, s(:const, :String),
-             nil),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_parse_pattern_019
-    rb = <<~RUBY
-        case 0
-        in -1..1
-          true
-        end
-      RUBY
-
-    pt = s(:case,
-           s(:lit, 0),
-           s(:in, s(:dot2, s(:lit, -1).line(2), s(:lit, 1).line(2)).line(2),
-             s(:true).line(3)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_parse_pattern_044
-      rb = <<~RUBY
-        case obj
-        in Object[]
-          true
-        end
-      RUBY
-    pt = s(:case,
-           s(:call, nil, :obj),
-           s(:in, s(:array_pat, s(:const, :Object).line(2)).line(2),
-             s(:true).line(3)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_parse_pattern_051
-    rb = <<~RUBY
-        case [0, 1, 2]
-        in [0, 1,]
-          true
-        end
-      RUBY
-    pt = s(:case,
-           s(:array,
-             s(:lit, 0),
-             s(:lit, 1),
-             s(:lit, 2)),
-           s(:in,
-             s(:array_pat,
-               nil,
-               s(:lit, 0).line(2),
-               s(:lit, 1).line(2),
-               :*).line(666),
-             s(:true).line(3)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_parse_pattern_058
-    rb = <<~RUBY
-        case {a: 0}
-        in {a:, **rest}
-          [a, rest]
-        end
-      RUBY
-    pt = s(:case,
-           s(:hash,
-             s(:lit, :a),
-             s(:lit, 0)),
-           s(:in,
-             s(:hash_pat, nil, s(:lit, :a).line(2), nil,
-               s(:kwrest, :"**rest").line(2)).line(2),
-             s(:array,
-               s(:lvar, :a).line(3),
-               s(:lvar, :rest).line(3)).line(3)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_parse_pattern_058_2
-    rb = <<~RUBY
-        case {a: 0}
-        in {a:, **}
-          [a]
-        end
-      RUBY
-    pt = s(:case,
-           s(:hash,
-             s(:lit, :a),
-             s(:lit, 0)),
-           s(:in,
-             s(:hash_pat, nil, s(:lit, :a).line(2), nil,
-               s(:kwrest, :"**").line(2)).line(2),
-             s(:array,
-               s(:lvar, :a).line(3)).line(3)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
-
-  def test_parse_pattern_069
-    rb = <<~RUBY
-        case :a
-        in Object[b: 1]
-          1
-        end
-      RUBY
-    pt = s(:case,
-           s(:lit, :a),
-           s(:in,
-             s(:hash_pat, s(:const, :Object).line(2),
-               s(:lit, :b).line(2), s(:lit, 1).line(2)).line(2),
-             s(:lit, 1).line(3)).line(2),
-           nil)
-
-
-    assert_parse rb, pt
-  end
-
-  def test_parse_pattern_076
-    rb = <<~RUBY
-        case {a: 1}
-        in {a: 1, **nil}
-          true
-        end
-      RUBY
-    pt = s(:case,
-           s(:hash, s(:lit, :a), s(:lit, 1)),
-           s(:in,
-             s(:hash_pat, nil,
-               s(:lit, :a).line(2), s(:lit, 1).line(2),
-               s(:kwrest, :"**nil").line(2)).line(2),
-             s(:true).line(3)).line(2),
-           nil)
-
-    assert_parse rb, pt
-  end
+  #def assert_case_in lit, exp_pt
+    #rb = "case :a\nin #{lit}\nend"
+
+    #if ENV["VERBOSE_TEST"] then
+      #puts
+      #puts rb
+    #end
+
+    #pt = s(:case, s(:lit, :a),
+           #s(:in, exp_pt, nil).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_09
+    #assert_case_in(":b, [:c]",
+                   #s(:array_pat, nil,
+                     #s(:lit, :b).line(2),
+                     #s(:array_pat, nil, s(:lit, :c).line(2)).line(2)).line(2))
+  #end
+
+  #def test_case_in_10
+    #assert_case_in "nil, nil, nil", s(:array_pat,
+                                      #nil,
+                                      #s(:nil).line(2),
+                                      #s(:nil).line(2),
+                                      #s(:nil).line(2)).line(2)
+  #end
+
+  #def test_case_in_21
+    #assert_case_in "Symbol()", s(:array_pat, s(:const, :Symbol).line(2)).line(2)
+  #end
+
+  #def test_case_in_26
+    #assert_case_in "(42)", s(:lit, 42).line(2)
+  #end
+
+  #def test_case_in_27
+    #assert_case_in("[A, *, B]",
+                   #s(:array_pat, nil,
+                     #s(:const, :A).line(2),
+                     #:*,
+                     #s(:const, :B).line(2)).line(2))
+  #end
+
+  #def test_case_in_28_2
+    #assert_case_in '{ "b": }', s(:hash_pat, nil, s(:lit, :b).line(2), nil).line(2)
+  #end
+
+  #def test_case_in_28
+    #assert_case_in "[]", s(:array_pat).line(2)
+  #end
+
+  #def test_case_in_29
+    #assert_case_in "**nil", s(:hash_pat, nil, s(:kwrest, :"**nil").line(2)).line(2)
+  #end
+
+  #def test_case_in_30
+    #assert_case_in "{}", s(:hash_pat, nil).line(2)
+  #end
+
+  #def test_case_in_31?
+    #rb = "case :a\nin [:b, *c]\n  :d\nend"
+    #pt = s(:case, s(:lit, :a),
+           #s(:in,
+             #s(:array_pat, nil, s(:lit, :b).line(2), :"*c").line(2),
+             #s(:lit, :d).line(3)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_32
+    #assert_case_in "(1...3)", s(:dot3, s(:lit, 1).line(2), s(:lit, 3).line(2)).line(2)
+  #end
+
+  #def test_case_in_33
+    #assert_case_in "(1...)", s(:dot3, s(:lit, 1).line(2), nil).line(2)
+  #end
+
+  #def test_case_in_34
+    #assert_case_in "(..10)", s(:dot2, nil, s(:lit, 10).line(2)).line(2)
+  #end
+
+  #def test_case_in_35
+    #assert_case_in "(...10)", s(:dot3, nil, s(:lit, 10).line(2)).line(2)
+  #end
+
+  #def test_case_in_36
+    #rb = "[:a, b, c, [:d, *e, nil]]"
+    #pt = s(:array_pat,
+           #nil,
+           #s(:lit, :a).line(2),
+           #s(:lvar, :b).line(2),
+           #s(:lvar, :c).line(2),
+           #s(:array_pat,
+             #nil,
+             #s(:lit, :d).line(2),
+             #:"*e",
+             #s(:nil).line(2)).line(2)).line(2)
+
+    #assert_case_in rb, pt
+  #end
+
+  #def test_case_in_37
+    #rb = "case :a\nin { b: [Hash, *] }\n  :c\nend"
+    #pt = s(:case, s(:lit, :a),
+           #s(:in,
+             #s(:hash_pat,
+               #nil,
+               #s(:lit, :b).line(2),
+               #s(:array_pat, nil, s(:const, :Hash).line(2), :"*").line(2)
+              #).line(2),
+             #s(:lit, :c).line(3)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_42
+    #rb = "case :a\nin :b, *_ then nil\nend"
+    #pt = s(:case, s(:lit, :a),
+           #s(:in,
+             #s(:array_pat,
+               #nil,
+               #s(:lit, :b).line(2),
+               #:"*_",
+              #).line(2),
+             #s(:nil).line(2)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_42_2
+    #rb = "case :a\nin A(*list) then nil\nend"
+    #pt = s(:case, s(:lit, :a),
+           #s(:in,
+             #s(:array_pat,
+               #s(:const, :A).line(2),
+               #:"*list").line(2),
+             #s(:nil).line(2)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_42_3
+    #assert_case_in ":b, *_, :c", s(:array_pat, nil,
+                                   #s(:lit, :b).line(2),
+                                   #:"*_",
+                                   #s(:lit, :c).line(2)).line(2)
+  #end
+
+
+  #def test_case_in_47
+    #rb = "case :a\nin [*, :b, :c]\n  :d\nend"
+    #pt = s(:case, s(:lit, :a),
+           #s(:in,
+             #s(:array_pat, nil, :*,
+               #s(:lit, :b).line(2), s(:lit, :c).line(2)).line(2),
+             #s(:lit, :d).line(3)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_67
+    #rb = "case :a\nin 1.. then nil\nend"
+    #pt = s(:case,
+           #s(:lit, :a),
+           #s(:in, s(:dot2, s(:lit, 1).line(2), nil).line(2),
+             #s(:nil).line(2)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_76
+    #assert_case_in "`echo hi`", s(:xstr, "echo hi").line(2)
+  #end
+
+  #def test_case_in_77
+    #assert_case_in "/regexp/", s(:lit, /regexp/).line(2)
+  #end
+
+  #def test_case_in_78
+    #assert_case_in "%W[a b]", s(:array, s(:str, "a").line(2), s(:str, "b").line(2)).line(2)
+  #end
+
+  #def test_case_in_79
+    #assert_case_in "%w[a b]", s(:array, s(:str, "a").line(2), s(:str, "b").line(2)).line(2)
+  #end
+
+  #def test_case_in_80
+    #assert_case_in "%I[a b]", s(:array, s(:lit, :a).line(2), s(:lit, :b).line(2)).line(2)
+  #end
+
+  #def test_case_in_81
+    #assert_case_in "%i[a b]", s(:array, s(:lit, :a).line(2), s(:lit, :b).line(2)).line(2)
+  #end
+
+  #def test_case_in_83
+    #rb = "[->(b) { true }, c]"
+    #pt = s(:array_pat, nil,
+           #s(:iter, s(:lambda).line(2), s(:args, :b).line(2),
+             #s(:true).line(2)).line(2),
+           #s(:lvar, :c).line(2)).line(2)
+
+    #assert_case_in rb, pt
+  #end
+
+  #def test_case_in_85
+    #rb = "[[:b, c], [:d, ^e]]"
+    #pt = s(:array_pat, nil,
+           #s(:array_pat, nil,
+             #s(:lit, :b).line(2),
+             #s(:lvar, :c).line(2)).line(2),
+           #s(:array_pat,
+             #nil,
+             #s(:lit, :d).line(2),
+             #s(:lvar, :e).line(2)).line(2),
+          #).line(2)
+
+    #assert_case_in rb, pt
+  #end
+
+  #def test_case_in_86
+    #rb = "case [:a, :b]\nin ::NilClass, * then nil\nend"
+    #pt = s(:case,
+           #s(:array, s(:lit, :a), s(:lit, :b)),
+           #s(:in,
+             #s(:array_pat,
+               #nil,
+               #s(:colon3, :NilClass).line(2),
+               #:*).line(2),
+             #s(:nil).line(2)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_86_2
+    #rb = "case [:a, :b]\nin *, ::NilClass then nil\nend"
+    #pt = s(:case,
+           #s(:array, s(:lit, :a), s(:lit, :b)),
+           #s(:in,
+             #s(:array_pat,
+               #nil,
+               #:*,
+               #s(:colon3, :NilClass).line(2)).line(2),
+             #s(:nil).line(2)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_array_pat_const
+    #rb = "case :a\nin B[c]\n  :d\nend"
+    #pt = s(:case, s(:lit, :a),
+           #s(:in,
+             #s(:array_pat,
+               #s(:const, :B).line(2),
+               #s(:lvar, :c).line(2)).line(2),
+             #s(:lit, :d).line(3)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_array_pat_const2
+    #rb = "case :a\nin B::C[d]\n  :e\nend"
+    #pt = s(:case, s(:lit, :a),
+           #s(:in,
+             #s(:array_pat,
+               #s(:const, s(:colon2, s(:const, :B).line(2), :C).line(2)).line(2),
+               #s(:lvar, :d).line(2)).line(2),
+             #s(:lit, :e).line(3)).line(2),
+          #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_array_pat_paren_assign
+    #rb = "case :a\nin B(C => d)\n  :d\nend"
+    #pt = s(:case, s(:lit, :a),
+           #s(:in,
+             #s(:array_pat,
+               #s(:const, :B).line(2),
+               #s(:lasgn, :d, s(:const, :C).line(2)).line(2)).line(2),
+             #s(:lit, :d).line(3)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_const
+    #rb = "case Array\nin Class\n  :b\nend"
+    #pt = s(:case, s(:const, :Array),
+           #s(:in, s(:const, :Class).line(2),
+             #s(:lit, :b).line(3)).line(2),
+           #nil).line 1
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_else
+    #rb = "case Array\nin Class\n  :b\nelse\n  :c\nend\n"
+    #pt = s(:case, s(:const, :Array),
+           #s(:in, s(:const, :Class).line(2),
+             #s(:lit, :b).line(3)).line(2),
+          #s(:lit, :c).line(5)).line 1
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_hash_pat
+    #rb = "case :a\nin { b: 'c', d: \"e\" } then\n  :f\nend\n"
+    #pt = s(:case, s(:lit, :a),
+           #s(:in,
+             #s(:hash_pat,
+               #nil,
+               #s(:lit, :b).line(2), s(:str, "c").line(2),
+               #s(:lit, :d).line(2), s(:str, "e").line(2)).line(2),
+             #s(:lit, :f).line(3)
+             #).line(2),
+          #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_hash_pat_assign
+    #rb = "case :a\nin { b: Integer => x, d: \"e\", f: } then\n  :g\nend"
+    #pt = s(:case, s(:lit, :a),
+           #s(:in,
+             #s(:hash_pat,
+               #nil,
+               #s(:lit, :b).line(2), # =>
+               #s(:lasgn, :x, s(:const, :Integer).line(2)).line(2),
+               #s(:lit, :d).line(2), s(:str, "e").line(2),
+               #s(:lit, :f).line(2), nil).line(2),
+             #s(:lit, :g).line(3)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_hash_pat_paren_assign
+    #rb = "case :a\nin B(a: 42)\n  :d\nend"
+    #pt = s(:case, s(:lit, :a),
+           #s(:in,
+             #s(:hash_pat,
+               #s(:const, :B).line(2),
+               #s(:lit, :a).line(2), s(:lit, 42).line(2)).line(2),
+             #s(:lit, :d).line(3)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_hash_pat_paren_true
+    #rb = "case :a\nin b: true then\n  :c\nend\n"
+    #pt = s(:case, s(:lit, :a),
+           #s(:in,
+             #s(:hash_pat,
+               #nil,
+               #s(:lit, :b).line(2), s(:true).line(2)).line(2),
+             #s(:lit, :c).line(3)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_hash_pat_rest
+    #rb = "case :a\nin b: c, **rest then :d\nend"
+    #pt = s(:case,
+           #s(:lit, :a),
+           #s(:in,
+             #s(:hash_pat,
+               #nil,
+               #s(:lit, :b).line(2),
+               #s(:lvar, :c).line(2),
+               #s(:kwrest, :"**rest").line(2)).line(2),
+             #s(:lit, :d).line(2)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_hash_pat_rest_solo
+    #rb = "case :a\nin **rest then :d\nend"
+    #pt = s(:case,
+           #s(:lit, :a),
+           #s(:in,
+             #s(:hash_pat,
+               #nil,
+               #s(:kwrest, :"**rest").line(2)).line(2),
+             #s(:lit, :d).line(2)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_if_unless_post_mod
+    #rb = "case :a\nin A if true\n  :C\nin D unless false\n  :E\nend"
+    #pt = s(:case,
+           #s(:lit, :a),
+           #s(:in,
+             #s(:if, s(:true).line(2), s(:const, :A).line(2), nil).line(2),
+             #s(:lit, :C).line(3)).line(2),
+           #s(:in,
+             #s(:if, s(:false).line(4), nil, s(:const, :D).line(4)).line(4),
+             #s(:lit, :E).line(5)).line(4),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_multiple
+    #rb = "case :a\nin A::B\n  :C\nin D::E\n  :F\nend"
+    #pt = s(:case,
+           #s(:lit, :a),
+           #s(:in,
+             #s(:const, s(:colon2, s(:const, :A).line(2), :B).line(2)).line(2),
+             #s(:lit, :C).line(3)).line(2),
+           #s(:in,
+             #s(:const, s(:colon2, s(:const, :D).line(4), :E).line(4)).line(4),
+             #s(:lit, :F).line(5)).line(4),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_case_in_or
+    #rb = "case :a\nin B | C\n  :d\nend\n"
+    #pt = s(:case, s(:lit, :a),
+           #s(:in,
+             #s(:or,
+               #s(:const, :B).line(2),
+               #s(:const, :C).line(2)).line(2),
+             #s(:lit, :d).line(3)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_in_expr_no_case
+    #rb = "'woot' in String"
+    #pt = s(:case, s(:str, "woot"),
+           #s(:in, s(:const, :String),
+             #nil),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_parse_pattern_019
+    #rb = <<~RUBY
+        #case 0
+        #in -1..1
+          #true
+        #end
+      #RUBY
+
+    #pt = s(:case,
+           #s(:lit, 0),
+           #s(:in, s(:dot2, s(:lit, -1).line(2), s(:lit, 1).line(2)).line(2),
+             #s(:true).line(3)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_parse_pattern_044
+      #rb = <<~RUBY
+        #case obj
+        #in Object[]
+          #true
+        #end
+      #RUBY
+    #pt = s(:case,
+           #s(:call, nil, :obj),
+           #s(:in, s(:array_pat, s(:const, :Object).line(2)).line(2),
+             #s(:true).line(3)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_parse_pattern_051
+    #rb = <<~RUBY
+        #case [0, 1, 2]
+        #in [0, 1,]
+          #true
+        #end
+      #RUBY
+    #pt = s(:case,
+           #s(:array,
+             #s(:lit, 0),
+             #s(:lit, 1),
+             #s(:lit, 2)),
+           #s(:in,
+             #s(:array_pat,
+               #nil,
+               #s(:lit, 0).line(2),
+               #s(:lit, 1).line(2),
+               #:*).line(666),
+             #s(:true).line(3)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_parse_pattern_058
+    #rb = <<~RUBY
+        #case {a: 0}
+        #in {a:, **rest}
+          #[a, rest]
+        #end
+      #RUBY
+    #pt = s(:case,
+           #s(:hash,
+             #s(:lit, :a),
+             #s(:lit, 0)),
+           #s(:in,
+             #s(:hash_pat, nil, s(:lit, :a).line(2), nil,
+               #s(:kwrest, :"**rest").line(2)).line(2),
+             #s(:array,
+               #s(:lvar, :a).line(3),
+               #s(:lvar, :rest).line(3)).line(3)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_parse_pattern_058_2
+    #rb = <<~RUBY
+        #case {a: 0}
+        #in {a:, **}
+          #[a]
+        #end
+      #RUBY
+    #pt = s(:case,
+           #s(:hash,
+             #s(:lit, :a),
+             #s(:lit, 0)),
+           #s(:in,
+             #s(:hash_pat, nil, s(:lit, :a).line(2), nil,
+               #s(:kwrest, :"**").line(2)).line(2),
+             #s(:array,
+               #s(:lvar, :a).line(3)).line(3)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_parse_pattern_069
+    #rb = <<~RUBY
+        #case :a
+        #in Object[b: 1]
+          #1
+        #end
+      #RUBY
+    #pt = s(:case,
+           #s(:lit, :a),
+           #s(:in,
+             #s(:hash_pat, s(:const, :Object).line(2),
+               #s(:lit, :b).line(2), s(:lit, 1).line(2)).line(2),
+             #s(:lit, 1).line(3)).line(2),
+           #nil)
+
+
+    #assert_parse rb, pt
+  #end
+
+  #def test_parse_pattern_076
+    #rb = <<~RUBY
+        #case {a: 1}
+        #in {a: 1, **nil}
+          #true
+        #end
+      #RUBY
+    #pt = s(:case,
+           #s(:hash, s(:lit, :a), s(:lit, 1)),
+           #s(:in,
+             #s(:hash_pat, nil,
+               #s(:lit, :a).line(2), s(:lit, 1).line(2),
+               #s(:kwrest, :"**nil").line(2)).line(2),
+             #s(:true).line(3)).line(2),
+           #nil)
+
+    #assert_parse rb, pt
+  #end
 
   # def test_case_in_TEMPLATE
   #   rb = "case :a\nin XXX then\n  YYY\nend\n"
@@ -5107,22 +5107,22 @@ module TestPatternMatching
 end
 
 module TestPatternMatching30
-  def test_case_in_20
-    assert_case_in("Symbol(*lhs, x, *rhs)",
-                   s(:find_pat,
-                     s(:const, :Symbol).line(2),
-                     :"*lhs",
-                     s(:array_pat, s(:lvar, :x).line(2)).line(2),
-                     :"*rhs").line(2))
-  end
+  #def test_case_in_20
+    #assert_case_in("Symbol(*lhs, x, *rhs)",
+                   #s(:find_pat,
+                     #s(:const, :Symbol).line(2),
+                     #:"*lhs",
+                     #s(:array_pat, s(:lvar, :x).line(2)).line(2),
+                     #:"*rhs").line(2))
+  #end
 
-  def test_case_in_22
-    assert_case_in("Symbol[*lhs, x, *rhs]",
-                   s(:find_pat, s(:const, :Symbol).line(2),
-                     :"*lhs",
-                     s(:array_pat, s(:lvar, :x).line(2)).line(2),
-                     :"*rhs").line(2))
-  end
+  #def test_case_in_22
+    #assert_case_in("Symbol[*lhs, x, *rhs]",
+                   #s(:find_pat, s(:const, :Symbol).line(2),
+                     #:"*lhs",
+                     #s(:array_pat, s(:lvar, :x).line(2)).line(2),
+                     #:"*rhs").line(2))
+  #end
 end
 
 module TestRubyParserShared27Plus
@@ -5241,35 +5241,35 @@ module TestRubyParserShared30Plus
     assert_parse rb, pt
   end
 
-  def test_case_in_find
-    rb = "case :a\n  in *a, :+, *b\nend"
-    pt = s(:case,
-           s(:lit, :a),
-           s(:in,
-             s(:find_pat, nil,
-               :"*a",
-               s(:array_pat, s(:lit, :+).line(2)).line(2),
-               :"*b").line(2),
-             nil).line(2),
-           nil)
+  #def test_case_in_find
+    #rb = "case :a\n  in *a, :+, *b\nend"
+    #pt = s(:case,
+           #s(:lit, :a),
+           #s(:in,
+             #s(:find_pat, nil,
+               #:"*a",
+               #s(:array_pat, s(:lit, :+).line(2)).line(2),
+               #:"*b").line(2),
+             #nil).line(2),
+           #nil)
 
-    assert_parse rb, pt
-  end
+    #assert_parse rb, pt
+  #end
 
-  def test_case_in_find_array
-    rb = "case :a\nin [*, :b, c, *]\nend"
-    pt = s(:case,
-           s(:lit, :a),
-           s(:in,
-             s(:find_pat, nil,
-               :*,
-               s(:array_pat, s(:lit, :b).line(2), s(:lvar, :c).line(2)).line(2),
-               :*).line(2),
-             nil).line(2),
-           nil)
+  #def test_case_in_find_array
+    #rb = "case :a\nin [*, :b, c, *]\nend"
+    #pt = s(:case,
+           #s(:lit, :a),
+           #s(:in,
+             #s(:find_pat, nil,
+               #:*,
+               #s(:array_pat, s(:lit, :b).line(2), s(:lvar, :c).line(2)).line(2),
+               #:*).line(2),
+             #nil).line(2),
+           #nil)
 
-    assert_parse rb, pt
-  end
+    #assert_parse rb, pt
+  #end
 
   def test_defn_oneliner
     rb = "def exec(cmd) = system(cmd)"
@@ -5412,35 +5412,35 @@ module TestRubyParserShared31Plus
     assert_parse rb, pt
   end
 
-  def test_case_in_carat_parens
-    processor.env[:a] = :lvar
+  #def test_case_in_carat_parens
+    #processor.env[:a] = :lvar
 
-    rb = "[^(a)]"
-    pt = s(:array_pat, nil,
-           s(:lvar, :a).line(2)).line(2)
+    #rb = "[^(a)]"
+    #pt = s(:array_pat, nil,
+           #s(:lvar, :a).line(2)).line(2)
 
-    assert_case_in rb, pt
-  end
+    #assert_case_in rb, pt
+  #end
 
-  def test_case_in_carat_nonlocal_vars
-    processor.env[:a] = :lvar
+  #def test_case_in_carat_nonlocal_vars
+    #processor.env[:a] = :lvar
 
-    rb = "[^@a, ^$b, ^@@c]"
-    pt = s(:array_pat,
-           nil,
-           s(:ivar, :@a).line(2),
-           s(:gvar, :$b).line(2),
-           s(:cvar, :@@c).line(2)).line(2)
+    #rb = "[^@a, ^$b, ^@@c]"
+    #pt = s(:array_pat,
+           #nil,
+           #s(:ivar, :@a).line(2),
+           #s(:gvar, :$b).line(2),
+           #s(:cvar, :@@c).line(2)).line(2)
 
-    assert_case_in rb, pt
-  end
+    #assert_case_in rb, pt
+  #end
 
-  def test_case_in_quoted_label
-    rb = " \"b\": "
-    pt = s(:hash_pat, nil, s(:lit, :b).line(2), nil).line(2)
+  #def test_case_in_quoted_label
+    #rb = " \"b\": "
+    #pt = s(:hash_pat, nil, s(:lit, :b).line(2), nil).line(2)
 
-    assert_case_in rb, pt
-  end
+    #assert_case_in rb, pt
+  #end
 
   def test_call_block_arg_named
     processor.env[:blk] = :lvar
