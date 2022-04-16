@@ -1,6 +1,9 @@
 require 'fileutils'
 require 'minitest/reporters'
 
+$LOAD_PATH << File.expand_path('../lib', __dir__)
+$LOAD_PATH << File.expand_path('../ext', __dir__)
+
 case ENV['REPORTER']
 when 'spec'
   Minitest::Reporters.use!(Minitest::Reporters::SpecReporter.new)

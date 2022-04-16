@@ -175,8 +175,12 @@ file "ext/natalie_parser/natalie_parser.#{so_ext}" => [
   SH
 end
 
-file 'build/asan_test' => ['test/asan_test.cpp', :library] do |t|
-  sh "#{cxx} #{cxx_flags.join(' ')} -std=#{STANDARD} -o #{t.name} #{t.source} -L build -lnatalie_parser"
+  file 'build/fragments.hpp' => ['test/parser_test.rb', 'test/support/extract_parser_test_fragments.rb'] do
+  sh 'ruby -I lib:ext test/support/extract_parser_test_fragments.rb'
+end
+
+file 'build/asan_test' => ['test/asan_test.cpp', 'build/fragments.hpp', :library] do |t|
+  sh "#{cxx} #{cxx_flags.join(' ')} -std=#{STANDARD} -I build -I include -o #{t.name} #{t.source} -L build -lnatalie_parser"
 end
 
 task :bundle_install do
