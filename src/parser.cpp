@@ -310,9 +310,10 @@ Node *Parser::parse_alias(LocalsHashmap &locals) {
 SymbolNode *Parser::parse_alias_arg(LocalsHashmap &locals, const char *expected_message, bool reinsert_collapsed_newline) {
     auto token = current_token();
     switch (token.type()) {
+        // TODO: handle Constant too
     case Token::Type::BareName: {
-        auto identifier = static_cast<IdentifierNode *>(parse_identifier(locals));
-        return new SymbolNode { token, identifier->name() };
+        advance();
+        return new SymbolNode { token, token.literal_string() };
     }
     case Token::Type::Symbol:
         return static_cast<SymbolNode *>(parse_symbol(locals));
@@ -1668,16 +1669,16 @@ Node *Parser::parse_symbol_key(LocalsHashmap &) {
     return symbol;
 };
 
-Node *Parser::parse_top_level_constant(LocalsHashmap &locals) {
+Node *Parser::parse_top_level_constant(LocalsHashmap &) {
     auto token = current_token();
     advance();
-    SharedPtr<String> name = new String("");
     auto name_token = current_token();
-    auto identifier = static_cast<IdentifierNode *>(parse_identifier(locals));
-    switch (identifier->token_type()) {
+    SharedPtr<String> name;
+    switch (name_token.type()) {
     case Token::Type::BareName:
     case Token::Type::Constant:
-        name = identifier->name();
+        advance();
+        name = name_token.literal_string();
         break;
     default:
         throw_unexpected(name_token, ":: identifier name");

@@ -22,12 +22,12 @@ Node *BeginRescueNode::name_to_node() const {
 
 void BeginRescueNode::transform(Creator *creator) const {
     creator->set_type("resbody");
-    auto array = new ArrayNode { token() };
+    auto array = ArrayNode { token() };
     for (auto exception_node : m_exceptions) {
-        array->add_node(exception_node);
+        array.add_node(exception_node->clone());
     }
     if (m_name)
-        array->add_node(name_to_node());
+        array.add_node(name_to_node());
     creator->append(array);
     for (auto node : m_body->nodes())
         creator->append(node);
