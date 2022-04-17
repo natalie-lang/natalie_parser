@@ -26,8 +26,8 @@ VALUE initialize(int argc, VALUE *argv, VALUE self) {
     return self;
 }
 
-VALUE node_to_ruby(NatalieParser::Node *node) {
-    NatalieParser::MRICreator creator { node };
+VALUE node_to_ruby(TM::SharedPtr<NatalieParser::Node> node) {
+    NatalieParser::MRICreator creator { &node.ref() };
     node->transform(&creator);
     return creator.sexp();
 }
@@ -38,15 +38,13 @@ VALUE parse_on_instance(VALUE self) {
     auto code_string = new TM::String { StringValueCStr(code) };
     auto path_string = new TM::String { StringValueCStr(path) };
     auto parser = NatalieParser::Parser { code_string, path_string };
-    NatalieParser::Node *tree;
     try {
-        tree = parser.tree();
+        auto tree = parser.tree();
+        VALUE ast = node_to_ruby(tree);
+        return ast;
     } catch (NatalieParser::Parser::SyntaxError &error) {
         rb_raise(rb_eSyntaxError, "%s", error.message());
     }
-    VALUE ast = node_to_ruby(tree);
-    delete tree;
-    return ast;
 }
 
 VALUE parse(int argc, VALUE *argv, VALUE self) {

@@ -7,6 +7,8 @@ namespace NatalieParser {
 
 class NodeWithArgs;
 
+class BlockNode;
+
 class Node {
 public:
     enum class Type {
@@ -109,6 +111,8 @@ public:
     virtual bool is_symbol_key() const { return false; }
     virtual bool can_accept_a_block() const { return false; }
 
+    BlockNode *as_block_node();
+
     virtual Node *clone() const {
         if (type() == Type::Invalid)
             printf("Trying to clone() an invalid Node\n");
@@ -139,8 +143,6 @@ public:
     operator bool() const {
         return type() != Type::Invalid;
     }
-
-    NodeWithArgs *to_node_with_args();
 
 protected:
     static inline Node *s_invalid { nullptr };

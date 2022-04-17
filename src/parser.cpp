@@ -205,18 +205,27 @@ Node *Parser::parse_expression(Parser::Precedence precedence, LocalsHashmap &loc
     if (!null_fn)
         throw_unexpected("expression");
 
-    Node *left = (this->*null_fn)(locals);
+    Node *left = nullptr;
+    try {
+        left = (this->*null_fn)(locals);
+    } catch (SyntaxError &) {
+        delete left;
+        throw;
+    }
 
     while (current_token().is_valid()) {
         auto token = current_token();
         if (!higher_precedence(token, left, precedence))
             break;
         auto left_fn = left_denotation(token, left, precedence);
-        if (!left_fn) {
-            printf("left_denotation returned nullptr (token type = %d, node type = %d, precedence = %d)\n", (int)token.type(), (int)left->type(), (int)precedence);
-            TM_UNREACHABLE();
+        if (!left_fn)
+            throw_unexpected(token, "expression");
+        try {
+            (this->*left_fn)(left, locals);
+        } catch (SyntaxError &) {
+            delete left;
+            throw;
         }
-        left = (this->*left_fn)(left, locals);
         m_precedence_stack.pop();
         m_precedence_stack.push(precedence);
     }
@@ -226,14 +235,14 @@ Node *Parser::parse_expression(Parser::Precedence precedence, LocalsHashmap &loc
     return left;
 }
 
-Node *Parser::tree() {
-    auto tree = new BlockNode { current_token() };
+SharedPtr<Node> Parser::tree() {
+    SharedPtr<Node> tree = new BlockNode { current_token() };
     current_token().validate();
     LocalsHashmap locals { TM::HashType::TMString };
     skip_newlines();
     while (!current_token().is_eof()) {
         auto exp = parse_expression(Precedence::LOWEST, locals);
-        tree->add_node(exp);
+        tree->as_block_node()->add_node(exp);
         current_token().validate();
         next_expression();
     }
@@ -789,7 +798,7 @@ Node *Parser::parse_class(LocalsHashmap &locals) {
     return new ClassNode { token, name, superclass, body };
 };
 
-Node *Parser::parse_multiple_assignment_expression(Node *left, LocalsHashmap &locals) {
+void Parser::parse_multiple_assignment_expression(Node *&left, LocalsHashmap &locals) {
     auto list = new MultipleAssignmentNode { left->token() };
     list->add_node(left);
     while (current_token().is_comma()) {
@@ -821,7 +830,7 @@ Node *Parser::parse_multiple_assignment_expression(Node *left, LocalsHashmap &lo
             expect(Token::Type::BareName, "assignment identifier");
         }
     }
-    return list;
+    left = list;
 }
 
 Node *Parser::parse_constant(LocalsHashmap &) {
@@ -990,18 +999,20 @@ Node *Parser::parse_def_single_arg(LocalsHashmap &locals) {
     }
 }
 
-Node *Parser::parse_modifier_expression(Node *left, LocalsHashmap &locals) {
+void Parser::parse_modifier_expression(Node *&left, LocalsHashmap &locals) {
     auto token = current_token();
     switch (token.type()) {
     case Token::Type::IfKeyword: {
         advance();
         auto condition = parse_expression(Precedence::LOWEST, locals);
-        return new IfNode { token, condition, left, new NilNode { token } };
+        left = new IfNode { token, condition, left, new NilNode { token } };
+        return;
     }
     case Token::Type::UnlessKeyword: {
         advance();
         auto condition = parse_expression(Precedence::LOWEST, locals);
-        return new IfNode { token, condition, new NilNode { token }, left };
+        left = new IfNode { token, condition, new NilNode { token }, left };
+        return;
     }
     case Token::Type::UntilKeyword: {
         advance();
@@ -1015,7 +1026,8 @@ Node *Parser::parse_modifier_expression(Node *left, LocalsHashmap &locals) {
             if (left->type() == Node::Type::Begin) pre = false;
             body = new BlockNode { token, left };
         }
-        return new UntilNode { token, condition, body, pre };
+        left = new UntilNode { token, condition, body, pre };
+        return;
     }
     case Token::Type::WhileKeyword: {
         advance();
@@ -1029,7 +1041,8 @@ Node *Parser::parse_modifier_expression(Node *left, LocalsHashmap &locals) {
             if (left->type() == Node::Type::Begin) pre = false;
             body = new BlockNode { token, left };
         }
-        return new WhileNode { token, condition, body, pre };
+        left = new WhileNode { token, condition, body, pre };
+        return;
     }
     default:
         TM_NOT_YET_IMPLEMENTED();
@@ -1529,8 +1542,9 @@ Node *Parser::parse_stabby_proc(LocalsHashmap &locals) {
     }
     if (current_token().type() != Token::Type::DoKeyword && current_token().type() != Token::Type::LCurlyBrace)
         throw_unexpected("block");
-    auto left = new StabbyProcNode { token, has_args, *args };
-    return parse_iter_expression(left, locals);
+    Node *left = new StabbyProcNode { token, has_args, *args };
+    parse_iter_expression(left, locals);
+    return left;
 };
 
 Node *Parser::parse_string(LocalsHashmap &locals) {
@@ -1816,18 +1830,19 @@ Node *Parser::parse_yield(LocalsHashmap &) {
     return new YieldNode { token };
 };
 
-Node *Parser::parse_assignment_expression(Node *left, LocalsHashmap &locals) {
+void Parser::parse_assignment_expression(Node *&left, LocalsHashmap &locals) {
     return parse_assignment_expression(left, locals, true);
 }
 
-Node *Parser::parse_assignment_expression_without_multiple_values(Node *left, LocalsHashmap &locals) {
+void Parser::parse_assignment_expression_without_multiple_values(Node *&left, LocalsHashmap &locals) {
     return parse_assignment_expression(left, locals, false);
 }
 
-Node *Parser::parse_assignment_expression(Node *left, LocalsHashmap &locals, bool allow_multiple) {
+void Parser::parse_assignment_expression(Node *&left, LocalsHashmap &locals, bool allow_multiple) {
     auto token = current_token();
     if (left->type() == Node::Type::Splat) {
-        left = parse_multiple_assignment_expression(left, locals);
+        parse_multiple_assignment_expression(left, locals);
+        return;
     }
     switch (left->type()) {
     case Node::Type::Identifier: {
@@ -1835,20 +1850,23 @@ Node *Parser::parse_assignment_expression(Node *left, LocalsHashmap &locals, boo
         left_identifier->add_to_locals(locals);
         advance();
         auto value = parse_assignment_expression_value(false, locals, allow_multiple);
-        return new AssignmentNode { token, left, value };
+        left = new AssignmentNode { token, left, value };
+        return;
     }
     case Node::Type::Call:
     case Node::Type::Colon2:
     case Node::Type::Colon3: {
         advance();
         auto value = parse_assignment_expression_value(false, locals, allow_multiple);
-        return new AssignmentNode { token, left, value };
+        left = new AssignmentNode { token, left, value };
+        return;
     }
     case Node::Type::MultipleAssignment: {
         static_cast<MultipleAssignmentNode *>(left)->add_locals(locals);
         advance();
         auto value = parse_assignment_expression_value(true, locals, allow_multiple);
-        return new AssignmentNode { token, left, value };
+        left = new AssignmentNode { token, left, value };
+        return;
     }
     default:
         throw_unexpected(left->token(), "left side of assignment");
@@ -1890,7 +1908,7 @@ Node *Parser::parse_assignment_expression_value(bool to_array, LocalsHashmap &lo
     }
 }
 
-Node *Parser::parse_iter_expression(Node *left, LocalsHashmap &locals) {
+void Parser::parse_iter_expression(Node *&left, LocalsHashmap &locals) {
     auto token = current_token();
     LocalsHashmap our_locals { locals }; // copy!
     bool curly_brace = current_token().type() == Token::Type::LCurlyBrace;
@@ -1921,7 +1939,7 @@ Node *Parser::parse_iter_expression(Node *left, LocalsHashmap &locals) {
     auto end_token_type = curly_brace ? Token::Type::RCurlyBrace : Token::Type::EndKeyword;
     expect(end_token_type, curly_brace ? "}" : "end");
     advance();
-    return new IterNode { token, left, has_args, *args, body };
+    left = new IterNode { token, left, has_args, *args, body };
 }
 
 void Parser::parse_iter_args(SharedPtr<Vector<Node *>> args, LocalsHashmap &locals) {
@@ -1942,15 +1960,39 @@ BlockNode *Parser::parse_iter_body(LocalsHashmap &locals, bool curly_brace) {
     return parse_body(locals, Precedence::LOWEST, end_token_type, true);
 }
 
-Node *Parser::parse_call_expression_with_parens(Node *left, LocalsHashmap &locals) {
+void Parser::parse_call_expression_with_parens(Node *&left, LocalsHashmap &locals) {
     auto token = current_token();
-    NodeWithArgs *call_node = left->to_node_with_args();
+    NodeWithArgs *call_node = to_node_with_args(left);
     advance();
     if (!current_token().is_rparen())
         parse_call_args(call_node, locals, false);
     expect(Token::Type::RParen, "call rparen");
     advance();
-    return call_node;
+    left = call_node;
+}
+
+NodeWithArgs *Parser::to_node_with_args(Node *&node) {
+    switch (node->type()) {
+    case Node::Type::Identifier: {
+        auto identifier = static_cast<IdentifierNode *>(node);
+        auto call_node = new CallNode {
+            identifier->token(),
+            new NilNode { identifier->token() },
+            identifier->name(),
+        };
+        delete identifier;
+        node = call_node;
+        return call_node;
+    }
+    case Node::Type::Call:
+    case Node::Type::SafeCall:
+    case Node::Type::Super:
+    case Node::Type::Undef:
+    case Node::Type::Yield:
+        return static_cast<NodeWithArgs *>(node);
+    default:
+        TM_UNREACHABLE();
+    }
 }
 
 void Parser::parse_call_args(NodeWithArgs *node, LocalsHashmap &locals, bool bare) {
@@ -1984,9 +2026,9 @@ Node *Parser::parse_call_hash_args(LocalsHashmap &locals, bool bare, Node *first
         return parse_hash_inner(locals, Precedence::CALL_ARG, Token::Type::RParen, first_arg);
 }
 
-Node *Parser::parse_call_expression_without_parens(Node *left, LocalsHashmap &locals) {
+void Parser::parse_call_expression_without_parens(Node *&left, LocalsHashmap &locals) {
     auto token = current_token();
-    auto call_node = left->to_node_with_args();
+    auto call_node = to_node_with_args(left);
     switch (token.type()) {
     case Token::Type::Comma:
     case Token::Type::Eof:
@@ -1998,10 +2040,10 @@ Node *Parser::parse_call_expression_without_parens(Node *left, LocalsHashmap &lo
     default:
         parse_call_args(call_node, locals, true);
     }
-    return call_node;
+    left = call_node;
 }
 
-Node *Parser::parse_constant_resolution_expression(Node *left, LocalsHashmap &locals) {
+void Parser::parse_constant_resolution_expression(Node *&left, LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     auto name_token = current_token();
@@ -2028,10 +2070,10 @@ Node *Parser::parse_constant_resolution_expression(Node *left, LocalsHashmap &lo
     default:
         throw_unexpected(name_token, ":: identifier name");
     }
-    return node;
+    left = node;
 }
 
-Node *Parser::parse_infix_expression(Node *left, LocalsHashmap &locals) {
+void Parser::parse_infix_expression(Node *&left, LocalsHashmap &locals) {
     auto token = current_token();
     auto op = current_token();
     auto precedence = get_precedence(token, left);
@@ -2043,61 +2085,65 @@ Node *Parser::parse_infix_expression(Node *left, LocalsHashmap &locals) {
         new String(op.type_value()),
         right,
     };
-    return node;
+    left = node;
 };
 
-Node *Parser::parse_logical_expression(Node *left, LocalsHashmap &locals) {
+void Parser::parse_logical_expression(Node *&left, LocalsHashmap &locals) {
     auto token = current_token();
     switch (token.type()) {
     case Token::Type::And: {
         advance();
         auto right = parse_expression(Precedence::LOGICAL_AND, locals);
         if (left->type() == Node::Type::LogicalAnd) {
-            return regroup<LogicalAndNode>(token, left, right);
+            left = regroup<LogicalAndNode>(token, left, right);
         } else {
-            return new LogicalAndNode { token, left, right };
+            left = new LogicalAndNode { token, left, right };
         }
+        return;
     }
     case Token::Type::AndKeyword: {
         advance();
         auto right = parse_expression(Precedence::COMPOSITION, locals);
         if (left->type() == Node::Type::LogicalAnd) {
-            return regroup<LogicalAndNode>(token, left, right);
+            left = regroup<LogicalAndNode>(token, left, right);
         } else {
-            return new LogicalAndNode { token, left, right };
+            left = new LogicalAndNode { token, left, right };
         }
+        return;
     }
     case Token::Type::Or: {
         advance();
         auto right = parse_expression(Precedence::LOGICAL_OR, locals);
         if (left->type() == Node::Type::LogicalOr) {
-            return regroup<LogicalOrNode>(token, left, right);
+            left = regroup<LogicalOrNode>(token, left, right);
         } else {
-            return new LogicalOrNode { token, left, right };
+            left = new LogicalOrNode { token, left, right };
         }
+        return;
     }
     case Token::Type::OrKeyword: {
         advance();
         auto right = parse_expression(Precedence::COMPOSITION, locals);
         if (left->type() == Node::Type::LogicalOr) {
-            return regroup<LogicalOrNode>(token, left, right);
+            left = regroup<LogicalOrNode>(token, left, right);
         } else {
-            return new LogicalOrNode { token, left, right };
+            left = new LogicalOrNode { token, left, right };
         }
+        return;
     }
     default:
         TM_UNREACHABLE();
     }
 }
 
-Node *Parser::parse_match_expression(Node *left, LocalsHashmap &locals) {
+void Parser::parse_match_expression(Node *&left, LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     auto arg = parse_expression(Precedence::EQUALITY, locals);
     if (left->type() == Node::Type::Regexp) {
-        return new MatchNode { token, static_cast<RegexpNode *>(left), arg, true };
+        left = new MatchNode { token, static_cast<RegexpNode *>(left), arg, true };
     } else if (arg->type() == Node::Type::Regexp) {
-        return new MatchNode { token, static_cast<RegexpNode *>(arg), left, false };
+        left = new MatchNode { token, static_cast<RegexpNode *>(arg), left, false };
     } else {
         auto *node = new CallNode {
             token,
@@ -2105,17 +2151,17 @@ Node *Parser::parse_match_expression(Node *left, LocalsHashmap &locals) {
             new String("=~"),
         };
         node->add_arg(arg);
-        return node;
+        left = node;
     }
 }
 
-Node *Parser::parse_not_match_expression(Node *left, LocalsHashmap &locals) {
+void Parser::parse_not_match_expression(Node *&left, LocalsHashmap &locals) {
     auto token = current_token();
-    auto match = parse_match_expression(left, locals);
-    return new NotMatchNode { token, match };
+    parse_match_expression(left, locals);
+    left = new NotMatchNode { token, left };
 }
 
-Node *Parser::parse_op_assign_expression(Node *left, LocalsHashmap &locals) {
+void Parser::parse_op_assign_expression(Node *&left, LocalsHashmap &locals) {
     if (left->type() == Node::Type::Call)
         return parse_op_attr_assign_expression(left, locals);
     if (left->type() != Node::Type::Identifier)
@@ -2127,7 +2173,8 @@ Node *Parser::parse_op_assign_expression(Node *left, LocalsHashmap &locals) {
     advance();
     switch (token.type()) {
     case Token::Type::AndEqual:
-        return new OpAssignAndNode { token, left_identifier, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
+        left = new OpAssignAndNode { token, left_identifier, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
+        return;
     case Token::Type::BitwiseAndEqual:
     case Token::Type::BitwiseOrEqual:
     case Token::Type::BitwiseXorEqual:
@@ -2141,16 +2188,18 @@ Node *Parser::parse_op_assign_expression(Node *left, LocalsHashmap &locals) {
     case Token::Type::RightShiftEqual: {
         auto op = new String(token.type_value());
         op->chomp();
-        return new OpAssignNode { token, op, left_identifier, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
+        left = new OpAssignNode { token, op, left_identifier, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
+        return;
     }
     case Token::Type::OrEqual:
-        return new OpAssignOrNode { token, left_identifier, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
+        left = new OpAssignOrNode { token, left_identifier, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
+        return;
     default:
         TM_UNREACHABLE();
     }
 }
 
-Node *Parser::parse_op_attr_assign_expression(Node *left, LocalsHashmap &locals) {
+void Parser::parse_op_attr_assign_expression(Node *&left, LocalsHashmap &locals) {
     if (left->type() != Node::Type::Call)
         throw_unexpected(left->token(), "call");
     auto left_call = static_cast<CallNode *>(left);
@@ -2169,10 +2218,10 @@ Node *Parser::parse_op_attr_assign_expression(Node *left, LocalsHashmap &locals)
         left_call->args(),
     };
     delete left;
-    return op_assign_node;
+    left = op_assign_node;
 }
 
-Node *Parser::parse_proc_call_expression(Node *left, LocalsHashmap &locals) {
+void Parser::parse_proc_call_expression(Node *&left, LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     advance();
@@ -2185,10 +2234,10 @@ Node *Parser::parse_proc_call_expression(Node *left, LocalsHashmap &locals) {
         parse_call_args(call_node, locals, false);
     expect(Token::Type::RParen, "proc call right paren");
     advance();
-    return call_node;
+    left = call_node;
 }
 
-Node *Parser::parse_range_expression(Node *left, LocalsHashmap &locals) {
+void Parser::parse_range_expression(Node *&left, LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     Node *right;
@@ -2199,10 +2248,10 @@ Node *Parser::parse_range_expression(Node *left, LocalsHashmap &locals) {
         // but it seems to be effective for the tests I threw at it. ¯\_(ツ)_/¯
         right = new NilNode { token };
     }
-    return new RangeNode { token, left, right, token.type() == Token::Type::DotDotDot };
+    left = new RangeNode { token, left, right, token.type() == Token::Type::DotDotDot };
 }
 
-Node *Parser::parse_ref_expression(Node *left, LocalsHashmap &locals) {
+void Parser::parse_ref_expression(Node *&left, LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     auto call_node = new CallNode {
@@ -2210,16 +2259,18 @@ Node *Parser::parse_ref_expression(Node *left, LocalsHashmap &locals) {
         left,
         new String("[]"),
     };
-    if (token.type() == Token::Type::LBracketRBracket)
-        return call_node;
+    if (token.type() == Token::Type::LBracketRBracket) {
+        left = call_node;
+        return;
+    }
     if (current_token().type() != Token::Type::RBracket)
         parse_call_args(call_node, locals, false);
     expect(Token::Type::RBracket, "element reference right bracket");
     advance();
-    return call_node;
+    left = call_node;
 }
 
-Node *Parser::parse_rescue_expression(Node *left, LocalsHashmap &locals) {
+void Parser::parse_rescue_expression(Node *&left, LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     auto value = parse_expression(Precedence::LOWEST, locals);
@@ -2228,10 +2279,10 @@ Node *Parser::parse_rescue_expression(Node *left, LocalsHashmap &locals) {
     auto rescue_node = new BeginRescueNode { token };
     rescue_node->set_body(new BlockNode { value->token(), value });
     begin_node->add_rescue_node(rescue_node);
-    return begin_node;
+    left = begin_node;
 }
 
-Node *Parser::parse_safe_send_expression(Node *left, LocalsHashmap &) {
+void Parser::parse_safe_send_expression(Node *&left, LocalsHashmap &) {
     auto token = current_token();
     advance();
     expect(Token::Type::BareName, "safe navigator method name");
@@ -2242,10 +2293,10 @@ Node *Parser::parse_safe_send_expression(Node *left, LocalsHashmap &) {
         left,
         name_token.literal_string(),
     };
-    return call_node;
+    left = call_node;
 }
 
-Node *Parser::parse_send_expression(Node *left, LocalsHashmap &) {
+void Parser::parse_send_expression(Node *&left, LocalsHashmap &) {
     auto dot_token = current_token();
     advance();
     auto name_token = current_token();
@@ -2270,14 +2321,14 @@ Node *Parser::parse_send_expression(Node *left, LocalsHashmap &) {
             throw_unexpected("send method name");
         }
     };
-    return new CallNode {
+    left = new CallNode {
         dot_token,
         left,
         name,
     };
 }
 
-Node *Parser::parse_ternary_expression(Node *left, LocalsHashmap &locals) {
+void Parser::parse_ternary_expression(Node *&left, LocalsHashmap &locals) {
     auto token = current_token();
     expect(Token::Type::TernaryQuestion, "ternary question");
     advance();
@@ -2285,7 +2336,7 @@ Node *Parser::parse_ternary_expression(Node *left, LocalsHashmap &locals) {
     expect(Token::Type::TernaryColon, "ternary colon");
     advance();
     auto false_expr = parse_expression(Precedence::TERNARY_FALSE, locals);
-    return new IfNode { token, left, true_expr, false_expr };
+    left = new IfNode { token, left, true_expr, false_expr };
 }
 
 Node *Parser::parse_unless(LocalsHashmap &locals) {

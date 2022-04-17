@@ -48,7 +48,7 @@ public:
 
     enum class Precedence;
 
-    Node *tree();
+    SharedPtr<Node> tree();
 
 private:
     bool higher_precedence(Token &token, Node *left, Precedence current_precedence);
@@ -128,36 +128,36 @@ private:
     Node *parse_word_symbol_array(LocalsHashmap &);
     Node *parse_yield(LocalsHashmap &);
 
-    Node *parse_assignment_expression(Node *, LocalsHashmap &);
-    Node *parse_assignment_expression_without_multiple_values(Node *, LocalsHashmap &);
-    Node *parse_assignment_expression(Node *, LocalsHashmap &, bool);
+    void parse_assignment_expression(Node *&, LocalsHashmap &);
+    void parse_assignment_expression_without_multiple_values(Node *&, LocalsHashmap &);
+    void parse_assignment_expression(Node *&, LocalsHashmap &, bool);
     Node *parse_assignment_expression_value(bool, LocalsHashmap &, bool);
-    Node *parse_call_expression_without_parens(Node *, LocalsHashmap &);
-    Node *parse_call_expression_with_parens(Node *, LocalsHashmap &);
+    void parse_call_expression_without_parens(Node *&, LocalsHashmap &);
+    void parse_call_expression_with_parens(Node *&, LocalsHashmap &);
     void parse_call_args(NodeWithArgs *, LocalsHashmap &, bool = false);
     Node *parse_call_hash_args(LocalsHashmap &, bool, Node *);
-    Node *parse_constant_resolution_expression(Node *, LocalsHashmap &);
-    Node *parse_infix_expression(Node *, LocalsHashmap &);
-    Node *parse_proc_call_expression(Node *, LocalsHashmap &);
-    Node *parse_iter_expression(Node *, LocalsHashmap &);
+    void parse_constant_resolution_expression(Node *&, LocalsHashmap &);
+    void parse_infix_expression(Node *&, LocalsHashmap &);
+    void parse_proc_call_expression(Node *&, LocalsHashmap &);
+    void parse_iter_expression(Node *&, LocalsHashmap &);
     void parse_iter_args(SharedPtr<Vector<Node *>>, LocalsHashmap &);
     BlockNode *parse_iter_body(LocalsHashmap &, bool);
-    Node *parse_logical_expression(Node *, LocalsHashmap &);
-    Node *parse_match_expression(Node *, LocalsHashmap &);
-    Node *parse_modifier_expression(Node *, LocalsHashmap &);
-    Node *parse_multiple_assignment_expression(Node *, LocalsHashmap &);
-    Node *parse_not_match_expression(Node *, LocalsHashmap &);
-    Node *parse_op_assign_expression(Node *, LocalsHashmap &);
-    Node *parse_op_attr_assign_expression(Node *, LocalsHashmap &);
-    Node *parse_range_expression(Node *, LocalsHashmap &);
-    Node *parse_ref_expression(Node *, LocalsHashmap &);
-    Node *parse_rescue_expression(Node *, LocalsHashmap &);
-    Node *parse_safe_send_expression(Node *, LocalsHashmap &);
-    Node *parse_send_expression(Node *, LocalsHashmap &);
-    Node *parse_ternary_expression(Node *, LocalsHashmap &);
+    void parse_logical_expression(Node *&, LocalsHashmap &);
+    void parse_match_expression(Node *&, LocalsHashmap &);
+    void parse_modifier_expression(Node *&, LocalsHashmap &);
+    void parse_multiple_assignment_expression(Node *&, LocalsHashmap &);
+    void parse_not_match_expression(Node *&, LocalsHashmap &);
+    void parse_op_assign_expression(Node *&, LocalsHashmap &);
+    void parse_op_attr_assign_expression(Node *&, LocalsHashmap &);
+    void parse_range_expression(Node *&, LocalsHashmap &);
+    void parse_ref_expression(Node *&, LocalsHashmap &);
+    void parse_rescue_expression(Node *&, LocalsHashmap &);
+    void parse_safe_send_expression(Node *&, LocalsHashmap &);
+    void parse_send_expression(Node *&, LocalsHashmap &);
+    void parse_ternary_expression(Node *&, LocalsHashmap &);
 
     using parse_null_fn = Node *(Parser::*)(LocalsHashmap &);
-    using parse_left_fn = Node *(Parser::*)(Node *, LocalsHashmap &);
+    using parse_left_fn = void (Parser::*)(Node *&, LocalsHashmap &);
 
     parse_null_fn null_denotation(Token::Type);
     parse_left_fn left_denotation(Token &, Node *, Precedence);
@@ -177,6 +177,8 @@ private:
 
     Node *append_string_nodes(Node *string1, Node *string2);
     Node *concat_adjacent_strings(Node *string, LocalsHashmap &locals, bool &strings_were_appended);
+
+    NodeWithArgs *to_node_with_args(Node *&node);
 
     // FIXME: return a Token&
     Token current_token() const;

@@ -229,6 +229,21 @@ public:
     }
 
     /**
+     * Appends two Strings together and returns the result.
+     *
+     * ```
+     * auto str1 = String { "foo" };
+     * auto str2 = String { "bar" };
+     * assert_str_eq("foobar", str1 + str2);
+     * ```
+     */
+    String operator+(const String &other) const {
+        auto new_string = String(*this);
+        new_string.append(other);
+        return new_string;
+    }
+
+    /**
      * Replaces the String data by copying from an a C string.
      *
      * ```
