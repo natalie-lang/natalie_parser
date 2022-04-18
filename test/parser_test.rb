@@ -24,7 +24,11 @@ require_relative './test_helper'
 
     def expect_raise_with_message(callable, error, message)
       actual_error = expect(callable).must_raise(error)
-      expect(actual_error.message.split(/\n/).first).must_equal(message)
+      if message.include?("\n")
+        expect(actual_error.message).must_equal(message)
+      else
+        expect(actual_error.message.split(/\n/).first).must_equal(message)
+      end
     end
 
     describe '#parse' do
@@ -267,6 +271,28 @@ require_relative './test_helper'
         }.each do |escape, value|
         ord = parse(%("#{escape}"))[1][1].bytes.first.ord
           expect(ord).must_equal value
+        end
+      end
+
+      it 'throws a SyntaxError for unterminated strings, regexpes, shellouts' do
+        if parser == 'NatalieParser'
+          expect_raise_with_message(-> { parse('"') }, SyntaxError, "(string)#1: syntax error, unterminated string meets end of file (expected: '\"')")
+          expect_raise_with_message(-> { parse('%Q(') }, SyntaxError, "(string)#1: syntax error, unterminated string meets end of file (expected: ')')")
+          expect_raise_with_message(-> { parse('%Q[') }, SyntaxError, "(string)#1: syntax error, unterminated string meets end of file (expected: ']')")
+          expect_raise_with_message(-> { parse('%Q|') }, SyntaxError, "(string)#1: syntax error, unterminated string meets end of file (expected: '|')")
+          expect_raise_with_message(-> { parse('%(') }, SyntaxError, "(string)#1: syntax error, unterminated string meets end of file (expected: ')')")
+          expect_raise_with_message(-> { parse('%|') }, SyntaxError, "(string)#1: syntax error, unterminated string meets end of file (expected: '|')")
+          expect_raise_with_message(
+            -> { parse(%(  "foo\nbaz)) },
+            SyntaxError,
+            "(string)#1: syntax error, unterminated string meets end of file (expected: '\"')\n" \
+            "  \"foo\n" \
+            "  ^ starts here, expected closing '\"' somewhere after"
+          )
+        else
+          expect_raise_with_message(-> { parse('"') }, SyntaxError, "unterminated string meets end of file. near line 1: \"\"")
+          expect_raise_with_message(-> { parse('%Q(') }, SyntaxError, "unterminated quoted string meets end of file. near line 1: \"\"")
+          expect_raise_with_message(-> { parse('%(') }, SyntaxError, "unterminated quoted string meets end of file. near line 1: \"\"")
         end
       end
 
@@ -588,11 +614,13 @@ require_relative './test_helper'
         expect(parse('foo.()')).must_equal s(:block, s(:call, s(:call, nil, :foo), :call))
         expect(parse('foo.(1, 2)')).must_equal s(:block, s(:call, s(:call, nil, :foo), :call, s(:lit, 1), s(:lit, 2)))
         expect(parse('foo(a = b, c)')).must_equal s(:block, s(:call, nil, :foo, s(:lasgn, :a, s(:call, nil, :b)), s(:call, nil, :c)))
-        #if parser == 'NatalieParser'
-          #expect_raise_with_message(-> { parse('foo(') }, SyntaxError, "(string)#1: syntax error, unexpected end-of-input (expected: 'expression')")
-        #else
-          #expect_raise_with_message(-> { parse('foo(') }, SyntaxError, '(string):1 :: parse error on value "$" ($end)')
-        #end
+        if parser == 'NatalieParser'
+          expect_raise_with_message(-> { parse('foo(') }, SyntaxError, "(string)#1: syntax error, unexpected end-of-input (expected: 'expression')")
+          expect_raise_with_message(-> { parse('123(') }, SyntaxError, "(string)#1: syntax error, unexpected '(' (error: 'left-hand-side is not callable')")
+        else
+          expect_raise_with_message(-> { parse('foo(') }, SyntaxError, '(string):1 :: parse error on value "$" ($end)')
+          expect_raise_with_message(-> { parse('123(') }, SyntaxError, "(string):1 :: parse error on value \"(\" (tLPAREN2)")
+        end
       end
 
       it 'parses method calls without parentheses' do
@@ -946,14 +974,14 @@ require_relative './test_helper'
         expect(parse("foo 1 < 2 do\n3\nend")).must_equal s(:block, s(:iter, s(:call, nil, :foo, s(:call, s(:lit, 1), :<, s(:lit, 2))), 0, s(:lit, 3)))
         expect(parse("-> *a, b { 1 }")).must_equal s(:block, s(:iter, s(:lambda), s(:args, :"*a", :b), s(:lit, 1)))
         expect(parse("!foo { 1 }")).must_equal s(:block, s(:call, s(:iter, s(:call, nil, :foo), 0, s(:lit, 1)), :!))
-        #expect(-> { parse("foo 1 < 2 { 3 }") }).must_raise SyntaxError
-        #expect(-> { parse("foo 1 | 2 { 3 }") }).must_raise SyntaxError
-        #expect(-> { parse("foo 1 & 2 { 3 }") }).must_raise SyntaxError
-        #expect(-> { parse("foo 1 << 2 { 3 }") }).must_raise SyntaxError
-        #expect(-> { parse("foo 1 + 2 { 3 }") }).must_raise SyntaxError
-        #expect(-> { parse("foo 1 * 2 { 3 }") }).must_raise SyntaxError
-        #expect(-> { parse("foo 1 ** 2 { 3 }") }).must_raise SyntaxError
-        #expect(-> { parse("foo ~1 { 3 }") }).must_raise SyntaxError
+        expect(-> { parse("foo 1 < 2 { 3 }") }).must_raise SyntaxError
+        expect(-> { parse("foo 1 | 2 { 3 }") }).must_raise SyntaxError
+        expect(-> { parse("foo 1 & 2 { 3 }") }).must_raise SyntaxError
+        expect(-> { parse("foo 1 << 2 { 3 }") }).must_raise SyntaxError
+        expect(-> { parse("foo 1 + 2 { 3 }") }).must_raise SyntaxError
+        expect(-> { parse("foo 1 * 2 { 3 }") }).must_raise SyntaxError
+        expect(-> { parse("foo 1 ** 2 { 3 }") }).must_raise SyntaxError
+        expect(-> { parse("foo ~1 { 3 }") }).must_raise SyntaxError
       end
 
       it 'parses block pass (ampersand operator)' do

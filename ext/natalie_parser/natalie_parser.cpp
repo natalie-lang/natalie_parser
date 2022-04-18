@@ -61,6 +61,7 @@ VALUE token_to_ruby(NatalieParser::Token token, bool include_location_info) {
         rb_raise(rb_eSyntaxError, "%s", error.message());
     }
     const char *type = token.type_value();
+    if (!type) abort(); // FIXME: assert no workie?
     auto hash = rb_hash_new();
     rb_hash_aset(hash, ID2SYM(rb_intern("type")), ID2SYM(rb_intern(type)));
     auto lit = token.literal_or_blank();

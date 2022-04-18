@@ -235,6 +235,8 @@ public:
      * auto str1 = String { "foo" };
      * auto str2 = String { "bar" };
      * assert_str_eq("foobar", str1 + str2);
+     *
+     * assert_str_eq("12", String("1") + "2");
      * ```
      */
     String operator+(const String &other) const {
@@ -591,9 +593,10 @@ public:
      *
      * ```
      * auto str = String { "xyz" };
-     * str.insert(1, '-');
-     * str.insert(3, '-');
-     * assert_str_eq("x-y-z", str);
+     * str.insert(0, '-');
+     * str.insert(2, '-');
+     * str.insert(4, '-');
+     * assert_str_eq("-x-y-z", str);
      * ```
      *
      * This method aborts if the index is past the end.
@@ -606,10 +609,10 @@ public:
     void insert(size_t index, char c) {
         assert(index < m_length);
         grow_at_least(m_length + 1);
-        m_length++;
         size_t nbytes = m_length - index + 1; // 1 extra for null terminator
         memmove(m_str + index + 1, m_str + index, nbytes);
         m_str[index] = c;
+        m_length++;
     }
 
     /**

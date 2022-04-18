@@ -287,7 +287,7 @@ Token Lexer::build_next_token() {
             case '|': {
                 char c = next();
                 advance();
-                return consume_single_quoted_string(0, c);
+                return consume_single_quoted_string(c, c);
             }
             case '[':
                 advance(2);
@@ -310,7 +310,7 @@ Token Lexer::build_next_token() {
             case '|': {
                 char c = next();
                 advance();
-                return consume_double_quoted_string(0, c);
+                return consume_double_quoted_string(c, c);
             }
             case '[':
                 advance(2);
@@ -351,7 +351,7 @@ Token Lexer::build_next_token() {
             switch (peek()) {
             case '/': {
                 advance(2);
-                return consume_double_quoted_string(0, '/', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
+                return consume_double_quoted_string('/', '/', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
             }
             case '[': {
                 advance(2);
@@ -464,7 +464,7 @@ Token Lexer::build_next_token() {
         case '|': {
             char c = current_char();
             advance();
-            return consume_single_quoted_string(0, c);
+            return consume_single_quoted_string(c, c);
         }
         case '[':
             advance();
@@ -641,10 +641,10 @@ Token Lexer::build_next_token() {
             return Token { Token::Type::ConstantResolution, m_file, m_token_line, m_token_column };
         } else if (c == '"') {
             advance();
-            return consume_double_quoted_string(0, '"', Token::Type::InterpolatedSymbolBegin, Token::Type::InterpolatedSymbolEnd);
+            return consume_double_quoted_string('"', '"', Token::Type::InterpolatedSymbolBegin, Token::Type::InterpolatedSymbolEnd);
         } else if (c == '\'') {
             advance();
-            auto string = consume_single_quoted_string(0, '\'');
+            auto string = consume_single_quoted_string('\'', '\'');
             return Token { Token::Type::Symbol, string.literal(), m_file, m_token_line, m_token_column };
         } else if (isspace(c)) {
             auto token = Token { Token::Type::TernaryColon, m_file, m_token_line, m_token_column };
@@ -744,13 +744,13 @@ Token Lexer::build_next_token() {
         return Token { Token::Type::Comma, m_file, m_token_line, m_token_column };
     case '"':
         advance();
-        return consume_double_quoted_string(0, '"');
+        return consume_double_quoted_string('"', '"');
     case '\'':
         advance();
-        return consume_single_quoted_string(0, '\'');
+        return consume_single_quoted_string('\'', '\'');
     case '`': {
         advance();
-        return consume_double_quoted_string(0, '`', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
+        return consume_double_quoted_string('`', '`', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
     }
     case '#':
         if (token_is_first_on_line()) {
@@ -1442,7 +1442,7 @@ bool Lexer::token_is_first_on_line() const {
 
 Token Lexer::consume_double_quoted_string(char start_char, char stop_char, Token::Type begin_type, Token::Type end_type) {
     m_nested_lexer = new InterpolatedStringLexer { *this, start_char, stop_char, end_type };
-    return Token { begin_type, m_file, m_token_line, m_token_column };
+    return Token { begin_type, start_char, m_file, m_token_line, m_token_column };
 }
 
 Token Lexer::consume_single_quoted_string(char start_char, char stop_char) {
@@ -1462,7 +1462,7 @@ Token Lexer::consume_single_quoted_string(char start_char, char stop_char) {
                 buf->append_char(c);
                 break;
             }
-        } else if (c == start_char) {
+        } else if (c == start_char && start_char != stop_char) {
             pair_depth++;
             buf->append_char(c);
         } else if (c == stop_char) {
@@ -1478,7 +1478,7 @@ Token Lexer::consume_single_quoted_string(char start_char, char stop_char) {
         }
         c = next();
     }
-    return Token { Token::Type::UnterminatedString, buf, m_file, m_token_line, m_token_column };
+    return Token { Token::Type::UnterminatedString, start_char, m_file, m_token_line, m_token_column };
 }
 
 Token Lexer::consume_quoted_array_without_interpolation(char start_char, char stop_char, Token::Type type) {
@@ -1493,7 +1493,7 @@ Token Lexer::consume_quoted_array_with_interpolation(char start_char, char stop_
 
 Token Lexer::consume_regexp(char delimiter) {
     m_nested_lexer = new RegexpLexer { *this, delimiter };
-    return Token { Token::Type::InterpolatedRegexpBegin, m_file, m_token_line, m_token_column };
+    return Token { Token::Type::InterpolatedRegexpBegin, delimiter, m_file, m_token_line, m_token_column };
 }
 
 SharedPtr<String> Lexer::consume_non_whitespace() {

@@ -631,16 +631,7 @@ public:
     bool is_when_keyword() const { return m_type == Type::WhenKeyword; }
 
     bool is_valid() const {
-        switch (m_type) {
-        case Type::Invalid:
-        case Type::InvalidCharacterEscape:
-        case Type::InvalidUnicodeEscape:
-        case Type::UnterminatedRegexp:
-        case Type::UnterminatedString:
-            return false;
-        default:
-            return true;
-        }
+        return !!type_value();
     }
 
     bool can_follow_collapsible_newline() {

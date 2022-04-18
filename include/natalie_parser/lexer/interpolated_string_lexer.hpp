@@ -13,7 +13,7 @@ public:
         : Lexer { parent_lexer }
         , m_end_type { end_type } {
         set_nested_lexer(nullptr);
-        set_start_char(start_char);
+        set_start_char(start_char == stop_char ? 0 : start_char);
         set_stop_char(stop_char);
     }
 
