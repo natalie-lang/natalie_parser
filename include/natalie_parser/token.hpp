@@ -145,6 +145,7 @@ public:
         UnlessKeyword,
         UnterminatedRegexp,
         UnterminatedString,
+        UnterminatedWordArray,
         UntilKeyword,
         WhenKeyword,
         WhileKeyword,
@@ -497,8 +498,8 @@ public:
         case Type::UnlessKeyword:
             return "unless";
         case Type::UnterminatedRegexp:
-            return nullptr;
         case Type::UnterminatedString:
+        case Type::UnterminatedWordArray:
             return nullptr;
         case Type::UntilKeyword:
             return "until";
@@ -631,16 +632,7 @@ public:
     bool is_when_keyword() const { return m_type == Type::WhenKeyword; }
 
     bool is_valid() const {
-        switch (m_type) {
-        case Type::Invalid:
-        case Type::InvalidCharacterEscape:
-        case Type::InvalidUnicodeEscape:
-        case Type::UnterminatedRegexp:
-        case Type::UnterminatedString:
-            return false;
-        default:
-            return true;
-        }
+        return !!type_value();
     }
 
     bool can_follow_collapsible_newline() {

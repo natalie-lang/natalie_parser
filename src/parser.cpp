@@ -237,13 +237,13 @@ Node *Parser::parse_expression(Parser::Precedence precedence, LocalsHashmap &loc
 
 SharedPtr<Node> Parser::tree() {
     SharedPtr<Node> tree = new BlockNode { current_token() };
-    current_token().validate();
+    validate_current_token();
     LocalsHashmap locals { TM::HashType::TMString };
     skip_newlines();
     while (!current_token().is_eof()) {
         auto exp = parse_expression(Precedence::LOWEST, locals);
         tree->as_block_node()->add_node(exp);
-        current_token().validate();
+        validate_current_token();
         next_expression();
     }
     return tree;
@@ -251,7 +251,7 @@ SharedPtr<Node> Parser::tree() {
 
 BlockNode *Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Token::Type end_token_type, bool allow_rescue) {
     auto body = new BlockNode { current_token() };
-    current_token().validate();
+    validate_current_token();
     skip_newlines();
     while (!current_token().is_eof() && current_token().type() != end_token_type) {
         if (allow_rescue && current_token().type() == Token::Type::RescueKeyword) {
@@ -270,7 +270,7 @@ BlockNode *Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Toke
 // FIXME: Maybe pass a lambda in that can just compare the two types? (No vector needed.)
 BlockNode *Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Vector<Token::Type> &end_tokens, const char *expected_message) {
     auto body = new BlockNode { current_token() };
-    current_token().validate();
+    validate_current_token();
     skip_newlines();
     auto finished = [this, end_tokens] {
         for (auto end_token : end_tokens) {
@@ -282,7 +282,7 @@ BlockNode *Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Vect
     while (!current_token().is_eof() && !finished()) {
         auto exp = parse_expression(precedence, locals);
         body->add_node(exp);
-        current_token().validate();
+        validate_current_token();
         next_expression();
     }
     if (!finished())
@@ -753,12 +753,12 @@ Node *Parser::parse_case_in_patterns(LocalsHashmap &locals) {
 
 BlockNode *Parser::parse_case_when_body(LocalsHashmap &locals) {
     auto body = new BlockNode { current_token() };
-    current_token().validate();
+    validate_current_token();
     skip_newlines();
     while (!current_token().is_eof() && !current_token().is_when_keyword() && !current_token().is_else_keyword() && !current_token().is_end_keyword()) {
         auto exp = parse_expression(Precedence::LOWEST, locals);
         body->add_node(exp);
-        current_token().validate();
+        validate_current_token();
         next_expression();
     }
     if (!current_token().is_when_keyword() && !current_token().is_else_keyword() && !current_token().is_end_keyword())
@@ -1152,12 +1152,12 @@ Node *Parser::parse_if(LocalsHashmap &locals) {
 
 Node *Parser::parse_if_body(LocalsHashmap &locals) {
     auto body = new BlockNode { current_token() };
-    current_token().validate();
+    validate_current_token();
     skip_newlines();
     while (!current_token().is_eof() && !current_token().is_elsif_keyword() && !current_token().is_else_keyword() && !current_token().is_end_keyword()) {
         auto exp = parse_expression(Precedence::LOWEST, locals);
         body->add_node(exp);
-        current_token().validate();
+        validate_current_token();
         next_expression();
     }
     if (!current_token().is_elsif_keyword() && !current_token().is_else_keyword() && !current_token().is_end_keyword()) {
@@ -1204,8 +1204,17 @@ void Parser::parse_interpolated_body(LocalsHashmap &locals, InterpolatedNode *no
             TM_UNREACHABLE();
         }
     }
-    if (current_token().type() != end_token)
-        TM_UNREACHABLE() // this shouldn't happen -- if it does, there is a bug in the Lexer
+    if (current_token().type() != end_token) {
+        switch (current_token().type()) {
+        case Token::Type::UnterminatedRegexp:
+        case Token::Type::UnterminatedString:
+        case Token::Type::UnterminatedWordArray:
+            throw_unterminated_thing(node->token());
+        default:
+            // this shouldn't happen -- if it does, there is a bug in the Lexer
+            TM_UNREACHABLE()
+        }
+    }
 };
 
 Node *Parser::parse_interpolated_regexp(LocalsHashmap &locals) {
@@ -1792,8 +1801,11 @@ Node *Parser::parse_word_array(LocalsHashmap &locals) {
     auto token = current_token();
     auto array = new ArrayNode { token };
     advance();
-    while (!current_token().is_eof() && current_token().type() != Token::Type::RBracket)
+    while (!current_token().is_eof() && current_token().type() != Token::Type::RBracket) {
+        if (current_token().type() == Token::Type::UnterminatedWordArray)
+            throw_unterminated_thing(current_token(), token);
         array->add_node(parse_expression(Precedence::WORD_ARRAY, locals));
+    }
     expect(Token::Type::RBracket, "closing array bracket");
     advance();
     return array;
@@ -1991,7 +2003,7 @@ NodeWithArgs *Parser::to_node_with_args(Node *&node) {
     case Node::Type::Yield:
         return static_cast<NodeWithArgs *>(node);
     default:
-        TM_UNREACHABLE();
+        throw_unexpected(current_token(), nullptr, "left-hand-side is not callable");
     }
 }
 
@@ -2623,37 +2635,48 @@ void Parser::expect(Token::Type type, const char *expected) {
         throw_unexpected(expected);
 }
 
-void Parser::throw_unexpected(const Token &token, const char *expected) {
+void Parser::throw_unexpected(const Token &token, const char *expected, const char *error) {
     auto file = token.file() ? String(*token.file()) : String("(unknown)");
     auto line = token.line() + 1;
     auto type = token.type_value();
     auto literal = token.literal();
+    const char *help = nullptr;
+    const char *help_description = nullptr;
+    if (error) {
+        assert(!expected);
+        help = error;
+        help_description = "error";
+    } else {
+        assert(expected);
+        help = expected;
+        help_description = "expected";
+    }
     String message;
     if (token.type() == Token::Type::Invalid) {
-        message = String::format("{}#{}: syntax error, unexpected '{}' (expected: '{}')", file, line, token.literal(), expected);
+        message = String::format("{}#{}: syntax error, unexpected '{}' ({}: '{}')", file, line, token.literal(), help_description, help);
     } else if (!type) {
-        message = String::format("{}#{}: syntax error, expected '{}' (token type: {})", file, line, expected, (long long)token.type());
+        message = String::format("{}#{}: syntax error, {} '{}' (token type: {})", file, line, help_description, help, (long long)token.type());
     } else if (token.type() == Token::Type::Eof) {
         auto indent = String { token.column(), ' ' };
         message = String::format(
-            "{}#{}: syntax error, unexpected end-of-input (expected: '{}')\n"
+            "{}#{}: syntax error, unexpected end-of-input ({}: '{}')\n"
             "{}\n"
-            "{}^ here, expected '{}'",
-            file, line, expected, current_line(), indent, expected);
+            "{}^ here, {} '{}'",
+            file, line, help_description, help, current_line(), indent, help_description, help);
     } else if (literal) {
         auto indent = String { token.column(), ' ' };
         message = String::format(
-            "{}#{}: syntax error, unexpected {} '{}' (expected: '{}')\n"
+            "{}#{}: syntax error, unexpected {} '{}' ({}: '{}')\n"
             "{}\n"
-            "{}^ here, expected '{}'",
-            file, line, type, literal, expected, current_line(), indent, expected);
+            "{}^ here, {} '{}'",
+            file, line, type, literal, help_description, help, current_line(), indent, help_description, help);
     } else {
         auto indent = String { token.column(), ' ' };
         message = String::format(
-            "{}#{}: syntax error, unexpected '{}' (expected: '{}')\n"
+            "{}#{}: syntax error, unexpected '{}' ({}: '{}')\n"
             "{}\n"
-            "{}^ here, expected '{}'",
-            file, line, type, expected, current_line(), indent, expected);
+            "{}^ here, {} '{}'",
+            file, line, type, help_description, help, current_line(), indent, help_description, help);
     }
     throw SyntaxError { message };
 }
@@ -2662,19 +2685,96 @@ void Parser::throw_unexpected(const char *expected) {
     throw_unexpected(current_token(), expected);
 }
 
-String Parser::current_line() {
+void Parser::throw_unterminated_thing(Token token, Token start_token) {
+    if (!start_token) start_token = token;
+    auto indent = String { start_token.column(), ' ' };
+    String expected;
+    const char *lit = start_token.literal();
+    assert(lit);
+    if (strcmp(lit, "(") == 0)
+        expected = "')'";
+    else if (strcmp(lit, "[") == 0)
+        expected = "']'";
+    else if (strcmp(lit, "{") == 0)
+        expected = "'}'";
+    else if (strcmp(lit, "<") == 0)
+        expected = "'>'";
+    else if (strcmp(lit, "'") == 0)
+        expected = "\"'\"";
+    else
+        expected = String::format("'{}'", lit);
+    if (expected.is_empty()) {
+        printf("lit = '' from token type %d\n", (int)token.type());
+    }
+    const char *thing = nullptr;
+    switch (token.type()) {
+    case Token::Type::InterpolatedStringBegin:
+    case Token::Type::String:
+    case Token::Type::UnterminatedString:
+        thing = "string";
+        break;
+    case Token::Type::InterpolatedShellBegin:
+        thing = "shell";
+        break;
+    case Token::Type::InterpolatedRegexpBegin:
+    case Token::Type::UnterminatedRegexp:
+        thing = "regexp";
+        break;
+    case Token::Type::UnterminatedWordArray:
+        thing = "word array";
+        break;
+    default:
+        printf("unhandled unterminated thing (token type = %d)\n", (int)token.type());
+        TM_UNREACHABLE();
+    }
+    auto file = start_token.file() ? String(*start_token.file()) : String("(unknown)");
+    auto line = start_token.line() + 1;
+    auto code = code_line(start_token.line());
+    auto message = String::format(
+        "{}#{}: syntax error, unterminated {} meets end of file (expected: {})\n"
+        "{}\n"
+        "{}^ starts here, expected closing {} somewhere after",
+        file, line, thing, expected, code, indent, expected);
+    throw SyntaxError { message };
+}
+
+String Parser::code_line(size_t number) {
     size_t line = 0;
-    size_t current_line = current_token().line();
     String buf;
     for (size_t i = 0; i < m_code->size(); ++i) {
         char c = (*m_code)[i];
-        if (line == current_line && c != '\n')
+        if (line == number && c != '\n')
             buf.append_char(c);
-        else if (line > current_line)
+        else if (line > number)
             break;
         if (c == '\n')
             line++;
     }
     return buf;
 }
+
+String Parser::current_line() {
+    return code_line(current_token().line());
+}
+
+void Parser::validate_current_token() {
+    auto token = current_token();
+    switch (token.type()) {
+    case Token::Type::Invalid:
+        throw Parser::SyntaxError { String::format("{}: syntax error, unexpected '{}'", token.line() + 1, token.literal_or_blank()) };
+    case Token::Type::InvalidUnicodeEscape:
+        throw Parser::SyntaxError { String::format("{}: invalid Unicode escape", token.line() + 1) };
+    case Token::Type::InvalidCharacterEscape:
+        throw Parser::SyntaxError { String::format("{}: invalid character escape", token.line() + 1) };
+    case Token::Type::UnterminatedRegexp:
+    case Token::Type::UnterminatedString:
+    case Token::Type::UnterminatedWordArray: {
+        throw_unterminated_thing(current_token());
+    }
+    default:
+        assert(token.type_value()); // all other types should return a string for type_value()
+        return;
+    }
+}
+
 }

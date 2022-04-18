@@ -188,13 +188,17 @@ private:
     void skip_newlines();
 
     void expect(Token::Type, const char *);
-    [[noreturn]] void throw_unexpected(const Token &, const char *);
+    [[noreturn]] void throw_unexpected(const Token &, const char *, const char * = nullptr);
     [[noreturn]] void throw_unexpected(const char *);
+    [[noreturn]] void throw_unterminated_thing(Token, Token = {});
 
     void advance() { m_index++; }
     void rewind() { m_index--; }
 
+    String code_line(size_t number);
     String current_line();
+
+    void validate_current_token();
 
     SharedPtr<String> m_code;
     SharedPtr<String> m_file;

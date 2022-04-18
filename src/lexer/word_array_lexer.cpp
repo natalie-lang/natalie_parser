@@ -72,7 +72,7 @@ Token WordArrayLexer::consume_array() {
             advance(2);
             m_state = State::DynamicStringBegin;
             return Token { Token::Type::InterpolatedStringBegin, m_file, m_token_line, m_token_column };
-        } else if (c == m_start_char) {
+        } else if (c == m_start_char && m_start_char != m_stop_char) {
             m_pair_depth++;
             advance();
             m_buffer->append_char(c);
@@ -94,7 +94,7 @@ Token WordArrayLexer::consume_array() {
         }
     }
 
-    return Token { Token::Type::UnterminatedString, m_buffer, m_file, m_token_line, m_token_column };
+    return Token { Token::Type::UnterminatedWordArray, m_buffer, m_file, m_token_line, m_token_column };
 }
 
 Token WordArrayLexer::start_evaluation() {
