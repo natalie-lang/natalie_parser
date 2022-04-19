@@ -132,6 +132,7 @@ private:
     void parse_assignment_expression_without_multiple_values(Node *&, LocalsHashmap &);
     void parse_assignment_expression(Node *&, LocalsHashmap &, bool);
     Node *parse_assignment_expression_value(bool, LocalsHashmap &, bool);
+    Node *parse_assignment_identifier(bool, LocalsHashmap &);
     void parse_call_expression_without_parens(Node *&, LocalsHashmap &);
     void parse_call_expression_with_parens(Node *&, LocalsHashmap &);
     void parse_call_args(NodeWithArgs *, LocalsHashmap &, bool = false);

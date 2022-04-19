@@ -404,6 +404,11 @@ require_relative './test_helper'
         expect(parse('true and false and x = 1')).must_equal s(:block, s(:and, s(:true), s(:and, s(:false), s(:lasgn, :x, s(:lit, 1)))))
         expect(parse('x = 1 && 2 && 3')).must_equal s(:block, s(:lasgn, :x, s(:and, s(:lit, 1), s(:and, s(:lit, 2), s(:lit, 3)))))
         expect(parse('x = 1 and 2 and 3')).must_equal s(:block, s(:and, s(:lasgn, :x, s(:lit, 1)), s(:and, s(:lit, 2), s(:lit, 3))))
+        if parser == 'NatalieParser'
+          expect_raise_with_message(-> { parse('x, y+z = 1, 2') }, SyntaxError, "(string)#1: syntax error, unexpected '+' (expected: 'assignment =')")
+        else
+          expect_raise_with_message(-> { parse('x, y+z = 1, 2') }, SyntaxError, '(string):1 :: parse error on value "+" (tPLUS)')
+        end
       end
 
       it 'parses attr assignment' do

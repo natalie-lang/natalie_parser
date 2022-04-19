@@ -803,34 +803,59 @@ void Parser::parse_multiple_assignment_expression(Node *&left, LocalsHashmap &lo
     list->add_node(left);
     while (current_token().is_comma()) {
         advance();
-        switch (current_token().type()) {
-        case Token::Type::BareName:
-        case Token::Type::ClassVariable:
-        case Token::Type::Constant:
-        case Token::Type::ConstantResolution:
-        case Token::Type::GlobalVariable:
-        case Token::Type::InstanceVariable:
-            list->add_node(parse_expression(Precedence::ASSIGNMENT_LHS, locals));
-            break;
-        case Token::Type::LParen:
-            list->add_node(parse_group(locals));
-            break;
-        case Token::Type::Multiply: {
-            auto splat_token = current_token();
-            advance();
-            if (current_token().is_assignable()) {
-                auto node = parse_expression(Precedence::ASSIGNMENT_LHS, locals);
-                list->add_node(new SplatNode { splat_token, node });
-            } else {
-                list->add_node(new SplatNode { splat_token });
-            }
-            break;
-        }
-        default:
-            expect(Token::Type::BareName, "assignment identifier");
-        }
+        auto node = parse_assignment_identifier(true, locals);
+        list->add_node(node);
     }
+    if (!current_token().is_rparen())
+        expect(Token::Type::Equal, "assignment =");
     left = list;
+}
+
+Node *Parser::parse_assignment_identifier(bool allow_splat, LocalsHashmap &locals) {
+    auto token = current_token();
+    Node *node;
+    switch (current_token().type()) {
+    case Token::Type::BareName:
+    case Token::Type::ClassVariable:
+    case Token::Type::Constant:
+    case Token::Type::GlobalVariable:
+    case Token::Type::InstanceVariable:
+        node = parse_identifier(locals);
+        break;
+    case Token::Type::ConstantResolution:
+        node = parse_top_level_constant(locals);
+        break;
+    case Token::Type::LParen:
+        // FIXME:
+        node = parse_group(locals);
+        break;
+    case Token::Type::Multiply: {
+        if (!allow_splat)
+            expect(Token::Type::BareName, "assignment identifier");
+        auto splat_token = current_token();
+        advance();
+        if (current_token().is_assignable()) {
+            auto id = parse_assignment_identifier(false, locals);
+            node = new SplatNode { splat_token, id };
+        } else {
+            node = new SplatNode { splat_token };
+        }
+        break;
+    }
+    default:
+        expect(Token::Type::BareName, "assignment identifier");
+    }
+    switch (current_token().type()) {
+    case Token::Type::ConstantResolution:
+        parse_constant_resolution_expression(node, locals);
+        break;
+    case Token::Type::Dot:
+        parse_send_expression(node, locals);
+        break;
+    default:
+        break;
+    }
+    return node;
 }
 
 Node *Parser::parse_constant(LocalsHashmap &) {

@@ -28,6 +28,7 @@ void MultipleAssignmentNode::add_locals(TM::Hashmap<TM::String> &locals) {
             static_cast<MultipleAssignmentNode *>(node)->add_locals(locals);
             break;
         default:
+            printf("unknown node type %d\n", (int)node->type());
             TM_UNREACHABLE();
         }
     }
