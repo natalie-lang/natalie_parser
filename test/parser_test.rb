@@ -299,10 +299,10 @@ require_relative './test_helper'
             "  'foo\n" \
             "  ^ starts here, expected closing \"'\" somewhere after"
           )
-          expect_raise_with_message(-> { parse("%[foo\nbaz") }, SyntaxError, /expected closing ']' somewhere after/)
+          expect_raise_with_message(-> { parse("%[foo\nbaz") }, SyntaxError, /expected closing '\]' somewhere after/)
           expect_raise_with_message(-> { parse("%q(foo\nbaz") }, SyntaxError, /expected closing '\)' somewhere after/)
           expect_raise_with_message(-> { parse("%Q(foo\nbaz") }, SyntaxError, /expected closing '\)' somewhere after/)
-          expect_raise_with_message(-> { parse("%Q[foo\nbaz") }, SyntaxError, /expected closing ']' somewhere after/)
+          expect_raise_with_message(-> { parse("%Q[foo\nbaz") }, SyntaxError, /expected closing '\]' somewhere after/)
           expect_raise_with_message(-> { parse("%Q/foo\nbaz") }, SyntaxError, /expected closing '\/' somewhere after/)
         end
       end
@@ -316,7 +316,7 @@ require_relative './test_helper'
             "  /foo\n" \
             "  ^ starts here, expected closing '/' somewhere after"
           )
-          expect_raise_with_message(-> { parse("%r[foo\nbaz") }, SyntaxError, /expected closing ']' somewhere after/)
+          expect_raise_with_message(-> { parse("%r[foo\nbaz") }, SyntaxError, /expected closing '\]' somewhere after/)
           expect_raise_with_message(-> { parse("%r(foo\nbaz") }, SyntaxError, /expected closing '\)' somewhere after/)
           expect_raise_with_message(-> { parse("%r/foo\nbaz") }, SyntaxError, /expected closing '\/' somewhere after/)
         end
@@ -331,7 +331,7 @@ require_relative './test_helper'
             "  `foo\n" \
             "  ^ starts here, expected closing '`' somewhere after"
           )
-          expect_raise_with_message(-> { parse("%x[foo\nbaz") }, SyntaxError, /expected closing ']' somewhere after/)
+          expect_raise_with_message(-> { parse("%x[foo\nbaz") }, SyntaxError, /expected closing '\]' somewhere after/)
           expect_raise_with_message(-> { parse("%x(foo\nbaz") }, SyntaxError, /expected closing '\)' somewhere after/)
           expect_raise_with_message(-> { parse("%x/foo\nbaz") }, SyntaxError, /expected closing '\/' somewhere after/)
         end
