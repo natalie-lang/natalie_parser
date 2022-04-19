@@ -31,8 +31,7 @@ File.open(File.join(build_path, 'fragments.hpp'), 'w') do |file|
   file.puts 'TM::Vector<TM::String> *build_fragments() {'
   file.puts '  auto vec = new TM::Vector<TM::String> {};'
   fragments.each do |node|
-    line = "# line #{node.line}\n#{node[1]}"
-    file.puts "  vec->push(#{line.inspect.gsub(/\\#/, '#')});"
+    file.puts "  vec->push(#{node[1].inspect.gsub(/\\#/, '#')});"
   end
   file.puts '  return vec;'
   file.puts '}'
