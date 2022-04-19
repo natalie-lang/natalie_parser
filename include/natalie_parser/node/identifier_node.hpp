@@ -25,6 +25,7 @@ public:
 
     virtual Type type() const override { return Type::Identifier; }
 
+    virtual bool is_assignable() const override { return true; }
     virtual bool can_accept_a_block() const override { return true; }
 
     Token::Type token_type() const { return m_token.type(); }

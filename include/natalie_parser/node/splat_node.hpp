@@ -23,6 +23,8 @@ public:
 
     virtual Type type() const override { return Type::Splat; }
 
+    virtual bool is_assignable() const override { return true; }
+
     const Node &node() const {
         if (m_node)
             return m_node.ref();

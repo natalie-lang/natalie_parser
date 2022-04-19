@@ -799,6 +799,8 @@ Node *Parser::parse_class(LocalsHashmap &locals) {
 };
 
 void Parser::parse_multiple_assignment_expression(Node *&left, LocalsHashmap &locals) {
+    if (!left->is_assignable())
+        throw_unexpected("assignment =");
     auto list = new MultipleAssignmentNode { left->token() };
     list->add_node(left);
     while (current_token().is_comma()) {
@@ -825,10 +827,15 @@ Node *Parser::parse_assignment_identifier(bool allow_splat, LocalsHashmap &local
     case Token::Type::ConstantResolution:
         node = parse_top_level_constant(locals);
         break;
-    case Token::Type::LParen:
-        // FIXME:
-        node = parse_group(locals);
+    case Token::Type::LParen: {
+        advance(); // (
+        auto left = parse_assignment_identifier(true, locals);
+        parse_multiple_assignment_expression(left, locals);
+        expect(Token::Type::RParen, "closing paren for multiple assignment");
+        advance(); // )
+        node = left;
         break;
+    }
     case Token::Type::Multiply: {
         if (!allow_splat)
             expect(Token::Type::BareName, "assignment identifier");
@@ -845,16 +852,28 @@ Node *Parser::parse_assignment_identifier(bool allow_splat, LocalsHashmap &local
     default:
         expect(Token::Type::BareName, "assignment identifier");
     }
-    switch (current_token().type()) {
-    case Token::Type::ConstantResolution:
-        parse_constant_resolution_expression(node, locals);
-        break;
-    case Token::Type::Dot:
-        parse_send_expression(node, locals);
-        break;
-    default:
-        break;
-    }
+    token = current_token();
+    bool consumed = false;
+    do {
+        token = current_token();
+        switch (token.type()) {
+        case Token::Type::ConstantResolution:
+            parse_constant_resolution_expression(node, locals);
+            break;
+        case Token::Type::Dot:
+            parse_send_expression(node, locals);
+            break;
+        case Token::Type::LBracket:
+            if (treat_left_bracket_as_element_reference(node, token))
+                parse_ref_expression(node, locals);
+            else
+                consumed = true;
+            break;
+        default:
+            consumed = true;
+            break;
+        }
+    } while (!consumed);
     return node;
 }
 

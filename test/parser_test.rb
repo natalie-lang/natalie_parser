@@ -450,9 +450,12 @@ require_relative './test_helper'
         end
         expect(parse('a.b, c = 1, 2')).must_equal s(:block, s(:masgn, s(:array, s(:attrasgn, s(:call, nil, :a), :b=), s(:lasgn, :c)), s(:array, s(:lit, 1), s(:lit, 2))))
         expect(parse('a, b.c = 1, 2')).must_equal s(:block, s(:masgn, s(:array, s(:lasgn, :a), s(:attrasgn, s(:call, nil, :b), :c=)), s(:array, s(:lit, 1), s(:lit, 2))))
+        expect(parse('a, b.c.d = 1, 2')).must_equal s(:block, s(:masgn, s(:array, s(:lasgn, :a), s(:attrasgn, s(:call, s(:call, nil, :b), :c), :d=)), s(:array, s(:lit, 1), s(:lit, 2))))
         expect(parse('*a, b = 1, 2')).must_equal s(:block, s(:masgn, s(:array, s(:splat, s(:lasgn, :a)), s(:lasgn, :b)), s(:array, s(:lit, 1), s(:lit, 2))))
         expect(parse('*a.b, c = 1, 2')).must_equal s(:block, s(:masgn, s(:array, s(:splat, s(:attrasgn, s(:call, nil, :a), :b=)), s(:lasgn, :c)), s(:array, s(:lit, 1), s(:lit, 2))))
         expect(parse('a, *b.c = 1, 2')).must_equal s(:block, s(:masgn, s(:array, s(:lasgn, :a), s(:splat, s(:attrasgn, s(:call, nil, :b), :c=))), s(:array, s(:lit, 1), s(:lit, 2))))
+        expect(parse('a, b[c] = 1, 2')).must_equal s(:block, s(:masgn, s(:array, s(:lasgn, :a), s(:attrasgn, s(:call, nil, :b), :[]=, s(:call, nil, :c))), s(:array, s(:lit, 1), s(:lit, 2))))
+        expect(parse('a, b[c][d] = 1, 2')).must_equal s(:block, s(:masgn, s(:array, s(:lasgn, :a), s(:attrasgn, s(:call, s(:call, nil, :b), :[], s(:call, nil, :c)), :[]=, s(:call, nil, :d))), s(:array, s(:lit, 1), s(:lit, 2))))
         expect(parse('*a = 1, 2')).must_equal s(:block, s(:masgn, s(:array, s(:splat, s(:lasgn, :a))), s(:array, s(:lit, 1), s(:lit, 2))))
         expect(parse('x = 1 && 2 && 3')).must_equal s(:block, s(:lasgn, :x, s(:and, s(:lit, 1), s(:and, s(:lit, 2), s(:lit, 3)))))
         expect(parse('true && false && x = 1')).must_equal s(:block, s(:and, s(:true), s(:and, s(:false), s(:lasgn, :x, s(:lit, 1)))))
@@ -461,8 +464,12 @@ require_relative './test_helper'
         expect(parse('x = 1 and 2 and 3')).must_equal s(:block, s(:and, s(:lasgn, :x, s(:lit, 1)), s(:and, s(:lit, 2), s(:lit, 3))))
         if parser == 'NatalieParser'
           expect_raise_with_message(-> { parse('x, y+z = 1, 2') }, SyntaxError, "(string)#1: syntax error, unexpected '+' (expected: 'assignment =')")
+          expect_raise_with_message(-> { parse('-x, y = 1, 2') }, SyntaxError, "(string)#1: syntax error, unexpected ',' (expected: 'assignment =')")
+          #expect_raise_with_message(-> { parse('foo, (bar=1, baz) = buz') }, SyntaxError, "(string):1 :: parse error on value \"=\" (tEQL)")
         else
           expect_raise_with_message(-> { parse('x, y+z = 1, 2') }, SyntaxError, '(string):1 :: parse error on value "+" (tPLUS)')
+          expect_raise_with_message(-> { parse('-x, y = 1, 2') }, SyntaxError, "(string):1 :: parse error on value \",\" (tCOMMA)")
+          expect_raise_with_message(-> { parse('foo, (bar=1, baz) = buz') }, SyntaxError, "(string):1 :: parse error on value \"=\" (tEQL)")
         end
       end
 

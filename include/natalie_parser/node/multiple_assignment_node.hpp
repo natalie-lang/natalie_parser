@@ -17,6 +17,8 @@ public:
 
     virtual Type type() const override { return Type::MultipleAssignment; }
 
+    virtual bool is_assignable() const override { return true; }
+
     void add_locals(TM::Hashmap<TM::String> &);
 
     virtual void transform(Creator *creator) const override {

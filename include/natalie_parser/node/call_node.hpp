@@ -44,6 +44,10 @@ public:
 
     virtual Type type() const override { return Type::Call; }
 
+    virtual bool is_assignable() const override {
+        return m_args.is_empty();
+    }
+
     virtual bool is_callable() const override { return true; }
     virtual bool can_accept_a_block() const override { return true; }
 
