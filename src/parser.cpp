@@ -700,8 +700,7 @@ Node *Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         node = parse_symbol(locals);
         break;
     default:
-        printf("TODO: implement token type %d in Parser::parse_case_in_pattern()\n", (int)token.type());
-        abort();
+        throw_unexpected("case in pattern");
     }
     token = current_token();
     if (token.is_hash_rocket()) {
