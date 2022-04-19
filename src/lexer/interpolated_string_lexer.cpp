@@ -154,7 +154,7 @@ Token InterpolatedStringLexer::consume_string() {
             advance(2);
             m_state = State::EvaluateBegin;
             return token;
-        } else if (c == m_start_char) {
+        } else if (c == m_start_char && m_start_char != m_stop_char) {
             m_pair_depth++;
             advance();
             buf->append_char(c);

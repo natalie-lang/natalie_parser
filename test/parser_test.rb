@@ -24,7 +24,9 @@ require_relative './test_helper'
 
     def expect_raise_with_message(callable, error, message)
       actual_error = expect(callable).must_raise(error)
-      if message.include?("\n")
+      if message.is_a?(Regexp)
+        expect(actual_error.message).must_match(message)
+      elsif message.include?("\n")
         expect(actual_error.message).must_equal(message)
       else
         expect(actual_error.message.split(/\n/).first).must_equal(message)
@@ -274,25 +276,78 @@ require_relative './test_helper'
         end
       end
 
-      it 'throws a SyntaxError for unterminated strings, regexpes, shellouts' do
+      it 'throws a SyntaxError for unterminated strings' do
         if parser == 'NatalieParser'
-          expect_raise_with_message(-> { parse('"') }, SyntaxError, "(string)#1: syntax error, unterminated string meets end of file (expected: '\"')")
-          expect_raise_with_message(-> { parse('%Q(') }, SyntaxError, "(string)#1: syntax error, unterminated string meets end of file (expected: ')')")
-          expect_raise_with_message(-> { parse('%Q[') }, SyntaxError, "(string)#1: syntax error, unterminated string meets end of file (expected: ']')")
-          expect_raise_with_message(-> { parse('%Q|') }, SyntaxError, "(string)#1: syntax error, unterminated string meets end of file (expected: '|')")
-          expect_raise_with_message(-> { parse('%(') }, SyntaxError, "(string)#1: syntax error, unterminated string meets end of file (expected: ')')")
-          expect_raise_with_message(-> { parse('%|') }, SyntaxError, "(string)#1: syntax error, unterminated string meets end of file (expected: '|')")
           expect_raise_with_message(
-            -> { parse(%(  "foo\nbaz)) },
+            -> { parse("  \"foo\nbaz") },
             SyntaxError,
             "(string)#1: syntax error, unterminated string meets end of file (expected: '\"')\n" \
             "  \"foo\n" \
             "  ^ starts here, expected closing '\"' somewhere after"
           )
-        else
-          expect_raise_with_message(-> { parse('"') }, SyntaxError, "unterminated string meets end of file. near line 1: \"\"")
-          expect_raise_with_message(-> { parse('%Q(') }, SyntaxError, "unterminated quoted string meets end of file. near line 1: \"\"")
-          expect_raise_with_message(-> { parse('%(') }, SyntaxError, "unterminated quoted string meets end of file. near line 1: \"\"")
+          expect_raise_with_message(
+            -> { parse("  %(foo\nbaz") },
+            SyntaxError,
+            "(string)#1: syntax error, unterminated string meets end of file (expected: ')')\n" \
+            "  %(foo\n" \
+            "  ^ starts here, expected closing ')' somewhere after"
+          )
+          expect_raise_with_message(
+            -> { parse("  'foo\nbaz") },
+            SyntaxError,
+            "(string)#1: syntax error, unterminated string meets end of file (expected: \"'\")\n" \
+            "  'foo\n" \
+            "  ^ starts here, expected closing \"'\" somewhere after"
+          )
+          expect_raise_with_message(-> { parse("%[foo\nbaz") }, SyntaxError, /expected closing '\]' somewhere after/)
+          expect_raise_with_message(-> { parse("%q(foo\nbaz") }, SyntaxError, /expected closing '\)' somewhere after/)
+          expect_raise_with_message(-> { parse("%Q(foo\nbaz") }, SyntaxError, /expected closing '\)' somewhere after/)
+          expect_raise_with_message(-> { parse("%Q[foo\nbaz") }, SyntaxError, /expected closing '\]' somewhere after/)
+          expect_raise_with_message(-> { parse("%Q/foo\nbaz") }, SyntaxError, /expected closing '\/' somewhere after/)
+        end
+      end
+
+      it 'throws a SyntaxError for unterminated regexps' do
+        if parser == 'NatalieParser'
+          expect_raise_with_message(
+            -> { parse("  /foo\nbaz") },
+            SyntaxError,
+            "(string)#1: syntax error, unterminated regexp meets end of file (expected: '/')\n" \
+            "  /foo\n" \
+            "  ^ starts here, expected closing '/' somewhere after"
+          )
+          expect_raise_with_message(-> { parse("%r[foo\nbaz") }, SyntaxError, /expected closing '\]' somewhere after/)
+          expect_raise_with_message(-> { parse("%r(foo\nbaz") }, SyntaxError, /expected closing '\)' somewhere after/)
+          expect_raise_with_message(-> { parse("%r/foo\nbaz") }, SyntaxError, /expected closing '\/' somewhere after/)
+        end
+      end
+
+      it 'throws a SyntaxError for unterminated shells' do
+        if parser == 'NatalieParser'
+          expect_raise_with_message(
+            -> { parse("  `foo\nbaz") },
+            SyntaxError,
+            "(string)#1: syntax error, unterminated shell meets end of file (expected: '`')\n" \
+            "  `foo\n" \
+            "  ^ starts here, expected closing '`' somewhere after"
+          )
+          expect_raise_with_message(-> { parse("%x[foo\nbaz") }, SyntaxError, /expected closing '\]' somewhere after/)
+          expect_raise_with_message(-> { parse("%x(foo\nbaz") }, SyntaxError, /expected closing '\)' somewhere after/)
+          expect_raise_with_message(-> { parse("%x/foo\nbaz") }, SyntaxError, /expected closing '\/' somewhere after/)
+        end
+      end
+
+      it 'throws a SyntaxError for unterminated word arrays' do
+        if parser == 'NatalieParser'
+          expect_raise_with_message(
+            -> { parse("  %w[foo\nbaz") },
+            SyntaxError,
+            "(string)#1: syntax error, unterminated word array meets end of file (expected: ']')\n" \
+            "  %w[foo\n" \
+            "  ^ starts here, expected closing ']' somewhere after"
+          )
+          expect_raise_with_message(-> { parse("%w(foo\nbaz") }, SyntaxError, /expected closing '\)' somewhere after/)
+          expect_raise_with_message(-> { parse("%w/foo\nbaz") }, SyntaxError, /expected closing '\/' somewhere after/)
         end
       end
 

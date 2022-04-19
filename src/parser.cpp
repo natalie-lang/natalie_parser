@@ -1231,8 +1231,9 @@ void Parser::parse_interpolated_body(LocalsHashmap &locals, InterpolatedNode *no
     }
     if (current_token().type() != end_token) {
         switch (current_token().type()) {
-        case Token::Type::UnterminatedString:
         case Token::Type::UnterminatedRegexp:
+        case Token::Type::UnterminatedString:
+        case Token::Type::UnterminatedWordArray:
             throw_unterminated_thing(node->token());
         default:
             // this shouldn't happen -- if it does, there is a bug in the Lexer
@@ -1825,8 +1826,11 @@ Node *Parser::parse_word_array(LocalsHashmap &locals) {
     auto token = current_token();
     auto array = new ArrayNode { token };
     advance();
-    while (!current_token().is_eof() && current_token().type() != Token::Type::RBracket)
+    while (!current_token().is_eof() && current_token().type() != Token::Type::RBracket) {
+        if (current_token().type() == Token::Type::UnterminatedWordArray)
+            throw_unterminated_thing(current_token(), token);
         array->add_node(parse_expression(Precedence::WORD_ARRAY, locals));
+    }
     expect(Token::Type::RBracket, "closing array bracket");
     advance();
     return array;
@@ -2706,22 +2710,25 @@ void Parser::throw_unexpected(const char *expected) {
     throw_unexpected(current_token(), expected);
 }
 
-void Parser::throw_unterminated_thing(Token token) {
-    auto indent = String { token.column(), ' ' };
-    const char *expected;
-    const char *lit = token.literal();
+void Parser::throw_unterminated_thing(Token token, Token start_token) {
+    if (!start_token) start_token = token;
+    auto indent = String { start_token.column(), ' ' };
+    String expected;
+    const char *lit = start_token.literal();
     assert(lit);
     if (strcmp(lit, "(") == 0)
-        expected = ")";
+        expected = "')'";
     else if (strcmp(lit, "[") == 0)
-        expected = "]";
+        expected = "']'";
     else if (strcmp(lit, "{") == 0)
-        expected = "}";
+        expected = "'}'";
     else if (strcmp(lit, "<") == 0)
-        expected = ">";
+        expected = "'>'";
+    else if (strcmp(lit, "'") == 0)
+        expected = "\"'\"";
     else
-        expected = lit;
-    if (strlen(expected) == 0) {
+        expected = String::format("'{}'", lit);
+    if (expected.is_empty()) {
         printf("lit = '' from token type %d\n", (int)token.type());
     }
     const char *thing = nullptr;
@@ -2738,17 +2745,20 @@ void Parser::throw_unterminated_thing(Token token) {
     case Token::Type::UnterminatedRegexp:
         thing = "regexp";
         break;
+    case Token::Type::UnterminatedWordArray:
+        thing = "word array";
+        break;
     default:
         printf("unhandled unterminated thing (token type = %d)\n", (int)token.type());
         TM_UNREACHABLE();
     }
-    auto file = token.file() ? String(*token.file()) : String("(unknown)");
-    auto line = token.line() + 1;
-    auto code = code_line(token.line());
+    auto file = start_token.file() ? String(*start_token.file()) : String("(unknown)");
+    auto line = start_token.line() + 1;
+    auto code = code_line(start_token.line());
     auto message = String::format(
-        "{}#{}: syntax error, unterminated {} meets end of file (expected: '{}')\n"
+        "{}#{}: syntax error, unterminated {} meets end of file (expected: {})\n"
         "{}\n"
-        "{}^ starts here, expected closing '{}' somewhere after",
+        "{}^ starts here, expected closing {} somewhere after",
         file, line, thing, expected, code, indent, expected);
     throw SyntaxError { message };
 }
@@ -2782,7 +2792,8 @@ void Parser::validate_current_token() {
     case Token::Type::InvalidCharacterEscape:
         throw Parser::SyntaxError { String::format("{}: invalid character escape", token.line() + 1) };
     case Token::Type::UnterminatedRegexp:
-    case Token::Type::UnterminatedString: {
+    case Token::Type::UnterminatedString:
+    case Token::Type::UnterminatedWordArray: {
         throw_unterminated_thing(current_token());
     }
     default:

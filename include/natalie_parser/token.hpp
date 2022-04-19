@@ -145,6 +145,7 @@ public:
         UnlessKeyword,
         UnterminatedRegexp,
         UnterminatedString,
+        UnterminatedWordArray,
         UntilKeyword,
         WhenKeyword,
         WhileKeyword,
@@ -497,8 +498,8 @@ public:
         case Type::UnlessKeyword:
             return "unless";
         case Type::UnterminatedRegexp:
-            return nullptr;
         case Type::UnterminatedString:
+        case Type::UnterminatedWordArray:
             return nullptr;
         case Type::UntilKeyword:
             return "until";

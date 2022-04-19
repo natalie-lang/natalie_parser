@@ -374,7 +374,7 @@ Token Lexer::build_next_token() {
             case '|': {
                 char c = next();
                 advance();
-                return consume_quoted_array_without_interpolation(0, c, Token::Type::PercentLowerW);
+                return consume_quoted_array_without_interpolation(c, c, Token::Type::PercentLowerW);
             }
             case '[':
                 advance(2);
@@ -420,7 +420,7 @@ Token Lexer::build_next_token() {
             case '/': {
                 char c = next();
                 advance();
-                return consume_quoted_array_without_interpolation(0, c, Token::Type::PercentLowerI);
+                return consume_quoted_array_without_interpolation(c, c, Token::Type::PercentLowerI);
             }
             case '[':
                 advance(2);
@@ -1483,12 +1483,12 @@ Token Lexer::consume_single_quoted_string(char start_char, char stop_char) {
 
 Token Lexer::consume_quoted_array_without_interpolation(char start_char, char stop_char, Token::Type type) {
     m_nested_lexer = new WordArrayLexer { *this, start_char, stop_char, false };
-    return Token { type, m_file, m_token_line, m_token_column };
+    return Token { type, start_char, m_file, m_token_line, m_token_column };
 }
 
 Token Lexer::consume_quoted_array_with_interpolation(char start_char, char stop_char, Token::Type type) {
     m_nested_lexer = new WordArrayLexer { *this, start_char, stop_char, true };
-    return Token { type, m_file, m_token_line, m_token_column };
+    return Token { type, start_char, m_file, m_token_line, m_token_column };
 }
 
 Token Lexer::consume_regexp(char delimiter) {
