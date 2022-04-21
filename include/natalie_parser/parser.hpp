@@ -93,7 +93,7 @@ private:
     Node *parse_hash_inner(LocalsHashmap &, Precedence, Token::Type, Node * = nullptr);
     Node *parse_identifier(LocalsHashmap &);
     Node *parse_if(LocalsHashmap &);
-    void parse_interpolated_body(LocalsHashmap &, InterpolatedNode *, Token::Type);
+    void parse_interpolated_body(LocalsHashmap &, InterpolatedNode &, Token::Type);
     Node *parse_interpolated_regexp(LocalsHashmap &);
     int parse_regexp_options(String &);
     Node *parse_interpolated_shell(LocalsHashmap &);

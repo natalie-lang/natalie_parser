@@ -218,8 +218,10 @@ Node *Parser::parse_expression(Parser::Precedence precedence, LocalsHashmap &loc
         if (!higher_precedence(token, left, precedence))
             break;
         auto left_fn = left_denotation(token, left, precedence);
-        if (!left_fn)
+        if (!left_fn) {
+            delete left;
             throw_unexpected(token, "expression");
+        }
         try {
             (this->*left_fn)(left, locals);
         } catch (SyntaxError &) {
@@ -353,23 +355,23 @@ SymbolNode *Parser::parse_alias_arg(LocalsHashmap &locals, const char *expected_
 }
 
 Node *Parser::parse_array(LocalsHashmap &locals) {
-    auto array = new ArrayNode { current_token() };
+    OwnedPtr<ArrayNode> array = new ArrayNode { current_token() };
     if (current_token().type() == Token::Type::LBracketRBracket) {
         advance();
-        return array;
+        return array.release();
     }
     advance();
     auto add_node = [&]() -> Node * {
         auto token = current_token();
         if (token.type() == Token::Type::RBracket) {
             advance();
-            return array;
+            return array.release();
         }
         if (token.type() == Token::Type::SymbolKey) {
             array->add_node(parse_hash_inner(locals, Precedence::HASH, Token::Type::RBracket));
             expect(Token::Type::RBracket, "array closing bracket");
             advance();
-            return array;
+            return array.release();
         }
         auto value = parse_expression(Precedence::ARRAY, locals);
         token = current_token();
@@ -377,7 +379,7 @@ Node *Parser::parse_array(LocalsHashmap &locals) {
             array->add_node(parse_hash_inner(locals, Precedence::HASH, Token::Type::RBracket, value));
             expect(Token::Type::RBracket, "array closing bracket");
             advance();
-            return array;
+            return array.release();
         }
         array->add_node(value);
         return nullptr;
@@ -391,7 +393,7 @@ Node *Parser::parse_array(LocalsHashmap &locals) {
     }
     expect(Token::Type::RBracket, "array closing bracket");
     advance();
-    return array;
+    return array.release();
 }
 
 void Parser::parse_comma_separated_expressions(ArrayNode *array, LocalsHashmap &locals) {
@@ -1105,20 +1107,20 @@ Node *Parser::parse_group(LocalsHashmap &locals) {
         advance();
         return new NilSexpNode { token };
     }
-    auto exp = parse_expression(Precedence::LOWEST, locals);
+    OwnedPtr<Node> exp = parse_expression(Precedence::LOWEST, locals);
     if (current_token().is_end_of_expression()) {
-        auto block = new BlockNode { token };
-        block->add_node(exp);
+        OwnedPtr<BlockNode> block = new BlockNode { token };
+        block->add_node(exp.release());
         while (current_token().is_end_of_expression()) {
             next_expression();
             auto next_exp = parse_expression(Precedence::LOWEST, locals);
             block->add_node(next_exp);
         }
-        exp = block;
+        exp = block.release();
     }
     expect(Token::Type::RParen, "group closing paren");
     advance();
-    return exp;
+    return exp.release();
 };
 
 Node *Parser::parse_hash(LocalsHashmap &locals) {
@@ -1137,7 +1139,7 @@ Node *Parser::parse_hash(LocalsHashmap &locals) {
 
 Node *Parser::parse_hash_inner(LocalsHashmap &locals, Precedence precedence, Token::Type closing_token, Node *first_key) {
     auto token = current_token();
-    auto hash = new HashNode { token };
+    OwnedPtr<HashNode> hash = new HashNode { token };
     if (!first_key)
         first_key = parse_expression(precedence, locals);
     hash->add_node(first_key);
@@ -1158,7 +1160,7 @@ Node *Parser::parse_hash_inner(LocalsHashmap &locals, Precedence precedence, Tok
         }
         hash->add_node(parse_expression(precedence, locals));
     }
-    return hash;
+    return hash.release();
 }
 
 Node *Parser::parse_identifier(LocalsHashmap &locals) {
@@ -1216,7 +1218,7 @@ Node *Parser::parse_if_body(LocalsHashmap &locals) {
     }
 }
 
-void Parser::parse_interpolated_body(LocalsHashmap &locals, InterpolatedNode *node, Token::Type end_token) {
+void Parser::parse_interpolated_body(LocalsHashmap &locals, InterpolatedNode &node, Token::Type end_token) {
     while (current_token().is_valid() && current_token().type() != end_token) {
         switch (current_token().type()) {
         case Token::Type::EvaluateToStringBegin: {
@@ -1230,17 +1232,17 @@ void Parser::parse_interpolated_body(LocalsHashmap &locals, InterpolatedNode *no
             if (block->has_one_node()) {
                 auto first = block->take_first_node();
                 if (first->type() == Node::Type::String)
-                    node->add_node(first);
+                    node.add_node(first);
                 else
-                    node->add_node(new EvaluateToStringNode { current_token(), first });
+                    node.add_node(new EvaluateToStringNode { current_token(), first });
                 delete block;
             } else {
-                node->add_node(new EvaluateToStringNode { current_token(), block });
+                node.add_node(new EvaluateToStringNode { current_token(), block });
             }
             break;
         }
         case Token::Type::String:
-            node->add_node(new StringNode { current_token(), current_token().literal_string() });
+            node.add_node(new StringNode { current_token(), current_token().literal_string() });
             advance();
             break;
         default:
@@ -1248,11 +1250,12 @@ void Parser::parse_interpolated_body(LocalsHashmap &locals, InterpolatedNode *no
         }
     }
     if (current_token().type() != end_token) {
+        auto token = node.token();
         switch (current_token().type()) {
         case Token::Type::UnterminatedRegexp:
         case Token::Type::UnterminatedString:
         case Token::Type::UnterminatedWordArray:
-            throw_unterminated_thing(node->token());
+            throw_unterminated_thing(token);
         default:
             // this shouldn't happen -- if it does, there is a bug in the Lexer
             TM_UNREACHABLE()
@@ -1283,15 +1286,15 @@ Node *Parser::parse_interpolated_regexp(LocalsHashmap &locals) {
         advance();
         return regexp_node;
     } else {
-        auto interpolated_regexp = new InterpolatedRegexpNode { token };
-        parse_interpolated_body(locals, interpolated_regexp, Token::Type::InterpolatedRegexpEnd);
+        OwnedPtr<InterpolatedRegexpNode> interpolated_regexp = new InterpolatedRegexpNode { token };
+        parse_interpolated_body(locals, interpolated_regexp.ref(), Token::Type::InterpolatedRegexpEnd);
         if (current_token().has_literal()) {
             auto str = current_token().literal_string().ref();
             int options_int = parse_regexp_options(str);
             interpolated_regexp->set_options(options_int);
         }
         advance();
-        return interpolated_regexp;
+        return interpolated_regexp.release();
     }
 };
 
@@ -1336,10 +1339,10 @@ Node *Parser::parse_interpolated_shell(LocalsHashmap &locals) {
         advance();
         return shell;
     } else {
-        auto interpolated_shell = new InterpolatedShellNode { token };
-        parse_interpolated_body(locals, interpolated_shell, Token::Type::InterpolatedShellEnd);
+        OwnedPtr<InterpolatedNode> interpolated_shell = new InterpolatedShellNode { token };
+        parse_interpolated_body(locals, interpolated_shell.ref(), Token::Type::InterpolatedShellEnd);
         advance();
-        return interpolated_shell;
+        return interpolated_shell.release();
     }
 };
 
@@ -1374,10 +1377,10 @@ Node *Parser::parse_interpolated_string(LocalsHashmap &locals) {
         advance();
         advance();
     } else {
-        auto interpolated_string = new InterpolatedStringNode { token };
-        parse_interpolated_body(locals, interpolated_string, Token::Type::InterpolatedStringEnd);
+        OwnedPtr<InterpolatedNode> interpolated_string = new InterpolatedStringNode { token };
+        parse_interpolated_body(locals, interpolated_string.ref(), Token::Type::InterpolatedStringEnd);
         advance();
-        string = interpolated_string;
+        string = interpolated_string.release();
     }
 
     bool adjacent_strings_were_appended = false;
@@ -1406,7 +1409,7 @@ Node *Parser::parse_interpolated_symbol(LocalsHashmap &locals) {
         return symbol;
     } else {
         auto interpolated_symbol = new InterpolatedSymbolNode { token };
-        parse_interpolated_body(locals, interpolated_symbol, Token::Type::InterpolatedSymbolEnd);
+        parse_interpolated_body(locals, *interpolated_symbol, Token::Type::InterpolatedSymbolEnd);
         advance();
         return interpolated_symbol;
     }
@@ -2746,9 +2749,7 @@ void Parser::throw_unterminated_thing(Token token, Token start_token) {
         expected = "\"'\"";
     else
         expected = String::format("'{}'", lit);
-    if (expected.is_empty()) {
-        printf("lit = '' from token type %d\n", (int)token.type());
-    }
+    assert(!expected.is_empty());
     const char *thing = nullptr;
     switch (token.type()) {
     case Token::Type::InterpolatedStringBegin:

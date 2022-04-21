@@ -74,6 +74,10 @@ void test_syntax_errors() {
     test_code_with_syntax_error("1 + ");
     test_code_with_syntax_error("foo(");
     test_code_with_syntax_error("1 2 3");
+    test_code_with_syntax_error("`foo");
+    test_code_with_syntax_error("\"foo");
+    test_code_with_syntax_error("/foo");
+    test_code_with_syntax_error("{1");
 }
 
 void test_fragments_with_syntax_errors() {

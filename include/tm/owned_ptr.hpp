@@ -130,7 +130,7 @@ public:
      * ptr.ref();
      * ```
      */
-    const T &ref() const {
+    T &ref() const {
         assert(m_ptr);
         return *m_ptr;
     }
@@ -155,6 +155,28 @@ public:
     T *operator->() const {
         assert(m_ptr);
         return m_ptr;
+    }
+
+    /**
+     * Returns the underlying raw pointer and
+     * releases ownership. When this OwnedPtr is
+     * destroyed later, the underlying pointer will
+     * not be deleted.
+     *
+     * ```
+     * Thing *ptr;
+     * {
+     *     OwnedPtr<Thing> op = new Thing(1);
+     *     ptr = op.release();
+     * }
+     * assert(ptr);
+     * delete ptr;
+     * ```
+     */
+    T *release() {
+        auto ptr = m_ptr;
+        m_ptr = nullptr;
+        return ptr;
     }
 
 private:

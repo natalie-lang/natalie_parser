@@ -16,7 +16,9 @@ public:
     SharedPtr<Vector<Token>> tokens();
     Token next_token();
 
-    virtual ~Lexer() = default;
+    virtual ~Lexer() {
+        delete m_nested_lexer;
+    }
 
     SharedPtr<String> file() const { return m_file; }
 
