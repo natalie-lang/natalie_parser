@@ -307,6 +307,18 @@ require_relative './test_helper'
         end
       end
 
+      it 'throws a SyntaxError for unterminated symbols' do
+        if parser == 'NatalieParser'
+          expect_raise_with_message(
+            -> { parse("  :\"foo\nbaz") },
+            SyntaxError,
+            "(string)#1: syntax error, unterminated symbol meets end of file (expected: '\"')\n" \
+            "  :\"foo\n" \
+            "  ^ starts here, expected closing '\"' somewhere after"
+          )
+        end
+      end
+
       it 'throws a SyntaxError for unterminated regexps' do
         if parser == 'NatalieParser'
           expect_raise_with_message(

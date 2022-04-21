@@ -1408,10 +1408,10 @@ Node *Parser::parse_interpolated_symbol(LocalsHashmap &locals) {
         advance();
         return symbol;
     } else {
-        auto interpolated_symbol = new InterpolatedSymbolNode { token };
-        parse_interpolated_body(locals, *interpolated_symbol, Token::Type::InterpolatedSymbolEnd);
+        OwnedPtr<InterpolatedNode> interpolated_symbol = new InterpolatedSymbolNode { token };
+        parse_interpolated_body(locals, interpolated_symbol.ref(), Token::Type::InterpolatedSymbolEnd);
         advance();
-        return interpolated_symbol;
+        return interpolated_symbol.release();
     }
 };
 
@@ -2752,17 +2752,20 @@ void Parser::throw_unterminated_thing(Token token, Token start_token) {
     assert(!expected.is_empty());
     const char *thing = nullptr;
     switch (token.type()) {
+    case Token::Type::InterpolatedRegexpBegin:
+    case Token::Type::UnterminatedRegexp:
+        thing = "regexp";
+        break;
+    case Token::Type::InterpolatedShellBegin:
+        thing = "shell";
+        break;
     case Token::Type::InterpolatedStringBegin:
     case Token::Type::String:
     case Token::Type::UnterminatedString:
         thing = "string";
         break;
-    case Token::Type::InterpolatedShellBegin:
-        thing = "shell";
-        break;
-    case Token::Type::InterpolatedRegexpBegin:
-    case Token::Type::UnterminatedRegexp:
-        thing = "regexp";
+    case Token::Type::InterpolatedSymbolBegin:
+        thing = "symbol";
         break;
     case Token::Type::UnterminatedWordArray:
         thing = "word array";
