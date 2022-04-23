@@ -37,6 +37,8 @@ require "natalie_parser"
 require "pt_testcase"
 
 class RubyParser
+  class SyntaxError < StandardError; end
+
   class V30 < RubyParser
     def self.version; 30; end
   end
