@@ -855,7 +855,7 @@ Node *Parser::parse_assignment_identifier(bool allow_splat, LocalsHashmap &local
         break;
     }
     default:
-        expect(Token::Type::BareName, "assignment identifier");
+        throw_unexpected("assignment identifier");
     }
     token = current_token();
     bool consumed = false;
