@@ -120,8 +120,12 @@ public:
     }
 
     SharedPtr<String> file() const { return m_token.file(); }
+
     size_t line() const { return m_token.line(); }
+    void set_line(size_t line) { m_token.set_line(line); }
+
     size_t column() const { return m_token.column(); }
+    void set_column(size_t column) { m_token.set_column(column); }
 
     Optional<SharedPtr<String>> doc() const { return m_token.doc(); }
 

@@ -1,15 +1,27 @@
 require_relative './test_helper'
+require_relative '../lib/natalie_parser/sexp'
 
 %w[RubyParser NatalieParser].each do |parser|
   describe parser do
     if parser == 'NatalieParser'
-      def parse(code, path = '(string)')
-        NatalieParser.parse(code, path)
+      def parse(code, path = '(string)', wrap_in_block: true)
+        node = NatalieParser.parse(code, path)
+        return node unless wrap_in_block
+        if node.nil?
+          s(:block)
+        elsif node.first == :block
+          node
+        else
+          node.new(:block, node).tap do |block|
+            block.column = node.column # FIXME
+          end
+        end
       end
     else
       require 'ruby_parser'
-      def parse(code, path = '(string)')
+      def parse(code, path = '(string)', wrap_in_block: true)
         node = RubyParser.new.parse(code, path)
+        return node unless wrap_in_block
         if node.nil?
           s(:block)
         elsif node.first == :block
@@ -553,13 +565,6 @@ require_relative './test_helper'
         expect(parse('undef :"foo"')).must_equal s(:block, s(:undef, s(:lit, :foo)))
         expect(parse('undef Foo')).must_equal s(:block, s(:undef, s(:lit, :Foo)))
         multiple_args_result = parse('undef foo, :bar')
-        if parser == 'NatalieParser'
-          # Due to a limitation with how our parser builds nodes, the parse_undef function
-          # has to return a BlockNode, which causes this result to have a BlockNode inside
-          # another BlockNode. This shouldn't have any real-world effect on any code that
-          # consumes the generated AST, but it's worth noting. :-)
-          multiple_args_result = multiple_args_result[1]
-        end
         expect(multiple_args_result).must_equal s(:block, s(:undef, s(:lit, :foo)), s(:undef, s(:lit, :bar)))
       end
 
@@ -1317,12 +1322,12 @@ END
       end
 
       it 'tracks file and line/column number' do
-        ast = parse("1 +\n\n    2", 'foo.rb')
+        ast = parse("1 +\n\n    2", 'foo.rb', wrap_in_block: false)
         expect(ast.file).must_equal('foo.rb')
         expect(ast.line).must_equal(1)
         expect(ast.column).must_equal(1) if parser == 'NatalieParser'
 
-        two = ast.last.last
+        two = ast.last
         expect(two).must_equal s(:lit, 2)
         expect(two.file).must_equal('foo.rb')
         expect(two.line).must_equal(3)
@@ -1333,6 +1338,10 @@ END
         if parser == 'NatalieParser'
           expect_raise_with_message(-> { parse('foo sel$f: a') }, SyntaxError, "(string)#1: syntax error, unexpected ':' (expected: 'expression')")
         end
+      end
+
+      it 'does not wrap everything in a block' do
+        expect(parse('1', wrap_in_block: false)).must_equal s(:lit, 1)
       end
     end
   end

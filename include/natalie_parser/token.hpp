@@ -774,8 +774,12 @@ public:
     double get_double() const { return m_double; }
 
     SharedPtr<String> file() const { return m_file; }
+
     size_t line() const { return m_line; }
+    void set_line(size_t line) { m_line = line; }
+
     size_t column() const { return m_column; }
+    void set_column(size_t column) { m_column = column; }
 
     bool whitespace_precedes() const { return m_whitespace_precedes; }
     void set_whitespace_precedes(bool whitespace_precedes) { m_whitespace_precedes = whitespace_precedes; }
