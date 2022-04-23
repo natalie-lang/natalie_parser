@@ -71,7 +71,7 @@ private:
     Node *parse_array(LocalsHashmap &);
     Node *parse_back_ref(LocalsHashmap &);
     Node *parse_begin(LocalsHashmap &);
-    void parse_rest_of_begin(BeginNode *, LocalsHashmap &);
+    void parse_rest_of_begin(BeginNode &, LocalsHashmap &);
     Node *parse_beginless_range(LocalsHashmap &);
     Node *parse_block_pass(LocalsHashmap &);
     Node *parse_bool(LocalsHashmap &);
@@ -85,7 +85,7 @@ private:
     Node *parse_constant(LocalsHashmap &);
     Node *parse_def(LocalsHashmap &);
     Node *parse_defined(LocalsHashmap &);
-    SharedPtr<Vector<Node *>> parse_def_args(LocalsHashmap &);
+    void parse_def_args(OwnedVector<Node *> &, LocalsHashmap &);
     Node *parse_def_single_arg(LocalsHashmap &);
     Node *parse_file_constant(LocalsHashmap &);
     Node *parse_group(LocalsHashmap &);
@@ -135,7 +135,7 @@ private:
     Node *parse_assignment_identifier(bool, LocalsHashmap &);
     void parse_call_expression_without_parens(Node *&, LocalsHashmap &);
     void parse_call_expression_with_parens(Node *&, LocalsHashmap &);
-    void parse_call_args(NodeWithArgs *, LocalsHashmap &, bool = false);
+    void parse_call_args(NodeWithArgs &, LocalsHashmap &, bool = false);
     Node *parse_call_hash_args(LocalsHashmap &, bool, Node *);
     void parse_constant_resolution_expression(Node *&, LocalsHashmap &);
     void parse_infix_expression(Node *&, LocalsHashmap &);
