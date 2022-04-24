@@ -252,21 +252,22 @@ SharedPtr<Node> Parser::tree() {
 }
 
 BlockNode *Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Token::Type end_token_type, bool allow_rescue) {
-    auto body = new BlockNode { current_token() };
+    OwnedPtr<BlockNode> body = new BlockNode { current_token() };
     validate_current_token();
     skip_newlines();
     while (!current_token().is_eof() && current_token().type() != end_token_type) {
         if (allow_rescue && current_token().type() == Token::Type::RescueKeyword) {
-            auto begin_node = new BeginNode { body->token(), body };
-            parse_rest_of_begin(*begin_node, locals);
+            auto token = body->token();
+            OwnedPtr<BeginNode> begin_node = new BeginNode { body->token(), body.release() };
+            parse_rest_of_begin(begin_node.ref(), locals);
             rewind(); // so the 'end' keyword can be consumed by our caller
-            return new BlockNode { body->token(), begin_node };
+            return new BlockNode { token, begin_node.release() };
         }
         auto exp = parse_expression(precedence, locals);
         body->add_node(exp);
         next_expression();
     }
-    return body;
+    return body.release();
 }
 
 // FIXME: Maybe pass a lambda in that can just compare the two types? (No vector needed.)
@@ -417,17 +418,16 @@ Node *Parser::parse_begin(LocalsHashmap &locals) {
     auto begin_ending_tokens = Vector<Token::Type> { { Token::Type::RescueKeyword, Token::Type::ElseKeyword, Token::Type::EnsureKeyword, Token::Type::EndKeyword } };
     auto body = parse_body(locals, Precedence::LOWEST, begin_ending_tokens, "case: rescue, else, ensure, or end");
 
-    auto begin_node = new BeginNode { token, body };
-    parse_rest_of_begin(*begin_node, locals);
+    OwnedPtr<BeginNode> begin_node = new BeginNode { token, body };
+    parse_rest_of_begin(begin_node.ref(), locals);
 
     // a begin/end with nothing else just becomes a BlockNode
     if (!(begin_node->has_rescue_nodes() || begin_node->has_else_body() || begin_node->has_ensure_body())) {
         auto block_node = new BlockNode { begin_node->body() };
-        delete begin_node;
         return block_node;
     }
 
-    return begin_node;
+    return begin_node.release();
 }
 
 void Parser::parse_rest_of_begin(BeginNode &begin_node, LocalsHashmap &locals) {
@@ -785,18 +785,18 @@ Node *Parser::parse_class(LocalsHashmap &locals) {
         return parse_sclass(locals);
     advance();
     LocalsHashmap our_locals { TM::HashType::TMString };
-    auto name = parse_class_or_module_name(our_locals);
-    Node *superclass;
+    OwnedPtr<Node> name = parse_class_or_module_name(our_locals);
+    OwnedPtr<Node> superclass;
     if (current_token().type() == Token::Type::LessThan) {
         advance();
         superclass = parse_expression(Precedence::LOWEST, our_locals);
     } else {
         superclass = new NilNode { token };
     }
-    auto body = parse_body(our_locals, Precedence::LOWEST, Token::Type::EndKeyword, true);
+    OwnedPtr<BlockNode> body = parse_body(our_locals, Precedence::LOWEST, Token::Type::EndKeyword, true);
     expect(Token::Type::EndKeyword, "class end");
     advance();
-    return new ClassNode { token, name, superclass, body };
+    return new ClassNode { token, name.release(), superclass.release(), body.release() };
 };
 
 void Parser::parse_multiple_assignment_expression(Node *&left, LocalsHashmap &locals) {
@@ -1179,13 +1179,13 @@ Node *Parser::parse_identifier(LocalsHashmap &locals) {
 Node *Parser::parse_if(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    auto condition = parse_expression(Precedence::LOWEST, locals);
+    OwnedPtr<Node> condition = parse_expression(Precedence::LOWEST, locals);
     next_expression();
     auto true_expr = parse_if_body(locals);
     Node *false_expr;
     if (current_token().is_elsif_keyword()) {
         false_expr = parse_if(locals);
-        return new IfNode { current_token(), condition, true_expr, false_expr };
+        return new IfNode { current_token(), condition.release(), true_expr, false_expr };
     } else {
         if (current_token().is_else_keyword()) {
             advance();
@@ -1195,12 +1195,12 @@ Node *Parser::parse_if(LocalsHashmap &locals) {
         }
         expect(Token::Type::EndKeyword, "if end");
         advance();
-        return new IfNode { token, condition, true_expr, false_expr };
+        return new IfNode { token, condition.release(), true_expr, false_expr };
     }
 }
 
 Node *Parser::parse_if_body(LocalsHashmap &locals) {
-    auto body = new BlockNode { current_token() };
+    OwnedPtr<BlockNode> body = new BlockNode { current_token() };
     validate_current_token();
     skip_newlines();
     while (!current_token().is_eof() && !current_token().is_elsif_keyword() && !current_token().is_else_keyword() && !current_token().is_end_keyword()) {
@@ -1209,16 +1209,13 @@ Node *Parser::parse_if_body(LocalsHashmap &locals) {
         validate_current_token();
         next_expression();
     }
-    if (!current_token().is_elsif_keyword() && !current_token().is_else_keyword() && !current_token().is_end_keyword()) {
-        delete body;
+    if (!current_token().is_elsif_keyword() && !current_token().is_else_keyword() && !current_token().is_end_keyword())
         throw_unexpected("if end");
-    }
     if (body->has_one_node()) {
         auto node = body->take_first_node();
-        delete body;
         return node;
     } else {
-        return body;
+        return body.release();
     }
 }
 
@@ -1463,11 +1460,11 @@ Node *Parser::parse_module(LocalsHashmap &) {
     auto token = current_token();
     advance();
     LocalsHashmap our_locals { TM::HashType::TMString };
-    auto name = parse_class_or_module_name(our_locals);
-    auto body = parse_body(our_locals, Precedence::LOWEST, Token::Type::EndKeyword, true);
+    OwnedPtr<Node> name = parse_class_or_module_name(our_locals);
+    OwnedPtr<BlockNode> body = parse_body(our_locals, Precedence::LOWEST, Token::Type::EndKeyword, true);
     expect(Token::Type::EndKeyword, "module end");
     advance();
-    return new ModuleNode { token, name, body };
+    return new ModuleNode { token, name.release(), body.release() };
 }
 
 Node *Parser::parse_next(LocalsHashmap &locals) {
@@ -1479,10 +1476,10 @@ Node *Parser::parse_next(LocalsHashmap &locals) {
             advance();
             return new NextNode { token, new NilSexpNode { token } };
         } else {
-            auto arg = parse_expression(Precedence::BARE_CALL_ARG, locals);
+            OwnedPtr<Node> arg = parse_expression(Precedence::BARE_CALL_ARG, locals);
             expect(Token::Type::RParen, "break closing paren");
             advance();
-            return new NextNode { token, arg };
+            return new NextNode { token, arg.release() };
         }
     } else if (current_token().can_be_first_arg_of_implicit_call()) {
         auto value = parse_expression(Precedence::BARE_CALL_ARG, locals);
@@ -1560,11 +1557,11 @@ Node *Parser::parse_sclass(LocalsHashmap &locals) {
     auto token = current_token();
     advance(); // class
     advance(); // <<
-    auto klass = parse_expression(Precedence::BARE_CALL_ARG, locals);
-    auto body = parse_body(locals, Precedence::LOWEST);
+    OwnedPtr<Node> klass = parse_expression(Precedence::BARE_CALL_ARG, locals);
+    OwnedPtr<BlockNode> body = parse_body(locals, Precedence::LOWEST);
     expect(Token::Type::EndKeyword, "sclass end");
     advance();
-    return new SclassNode { token, klass, body };
+    return new SclassNode { token, klass.release(), body.release() };
 }
 
 Node *Parser::parse_self(LocalsHashmap &) {
@@ -1974,13 +1971,13 @@ void Parser::parse_iter_expression(Node *&left, LocalsHashmap &locals) {
     LocalsHashmap our_locals { locals }; // copy!
     bool curly_brace = current_token().type() == Token::Type::LCurlyBrace;
     bool has_args = false;
-    SharedPtr<Vector<Node *>> args = new Vector<Node *> {};
+    auto args = OwnedVector<Node *> {};
     if (left->type() == Node::Type::StabbyProc) {
         advance();
         auto stabby_proc_node = static_cast<StabbyProcNode *>(left);
         has_args = stabby_proc_node->has_args();
         for (auto arg : stabby_proc_node->args())
-            args->push(arg->clone());
+            args.push(arg->clone());
     } else if (left->can_accept_a_block()) {
         advance();
         if (current_token().type() == Token::Type::Or) {
@@ -1996,23 +1993,23 @@ void Parser::parse_iter_expression(Node *&left, LocalsHashmap &locals) {
     } else {
         throw_unexpected(left->token(), "call to accept block");
     }
-    auto body = parse_iter_body(our_locals, curly_brace);
+    OwnedPtr<BlockNode> body = parse_iter_body(our_locals, curly_brace);
     auto end_token_type = curly_brace ? Token::Type::RCurlyBrace : Token::Type::EndKeyword;
     expect(end_token_type, curly_brace ? "}" : "end");
     advance();
-    left = new IterNode { token, left, has_args, *args, body };
+    left = new IterNode { token, left, has_args, *args.release(), body.release() };
 }
 
-void Parser::parse_iter_args(SharedPtr<Vector<Node *>> args, LocalsHashmap &locals) {
-    args->push(parse_def_single_arg(locals));
+void Parser::parse_iter_args(Vector<Node *> &args, LocalsHashmap &locals) {
+    args.push(parse_def_single_arg(locals));
     while (current_token().is_comma()) {
         advance();
         if (current_token().is_block_arg_delimiter()) {
             // trailing comma with no additional arg
-            args->push(new NilNode { current_token() });
+            args.push(new NilNode { current_token() });
             break;
         }
-        args->push(parse_def_single_arg(locals));
+        args.push(parse_def_single_arg(locals));
     }
 }
 
@@ -2110,7 +2107,7 @@ void Parser::parse_constant_resolution_expression(Node *&left, LocalsHashmap &lo
     auto token = current_token();
     advance();
     auto name_token = current_token();
-    Node *node;
+    OwnedPtr<Node> node;
     switch (name_token.type()) {
     case Token::Type::BareName:
         advance();
@@ -2134,7 +2131,7 @@ void Parser::parse_constant_resolution_expression(Node *&left, LocalsHashmap &lo
     default:
         throw_unexpected(name_token, ":: identifier name");
     }
-    left = node;
+    left = node.release();
 }
 
 void Parser::parse_infix_expression(Node *&left, LocalsHashmap &locals) {
@@ -2398,20 +2395,20 @@ void Parser::parse_ternary_expression(Node *&left, LocalsHashmap &locals) {
     auto token = current_token();
     expect(Token::Type::TernaryQuestion, "ternary question");
     advance();
-    auto true_expr = parse_expression(Precedence::TERNARY_TRUE, locals);
+    OwnedPtr<Node> true_expr = parse_expression(Precedence::TERNARY_TRUE, locals);
     expect(Token::Type::TernaryColon, "ternary colon");
     advance();
     auto false_expr = parse_expression(Precedence::TERNARY_FALSE, locals);
-    left = new IfNode { token, left, true_expr, false_expr };
+    left = new IfNode { token, left, true_expr.release(), false_expr };
 }
 
 Node *Parser::parse_unless(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    auto condition = parse_expression(Precedence::LOWEST, locals);
+    OwnedPtr<Node> condition = parse_expression(Precedence::LOWEST, locals);
     next_expression();
-    auto false_expr = parse_if_body(locals);
-    Node *true_expr;
+    OwnedPtr<Node> false_expr = parse_if_body(locals);
+    OwnedPtr<Node> true_expr;
     if (current_token().is_else_keyword()) {
         advance();
         true_expr = parse_if_body(locals);
@@ -2420,22 +2417,22 @@ Node *Parser::parse_unless(LocalsHashmap &locals) {
     }
     expect(Token::Type::EndKeyword, "unless end");
     advance();
-    return new IfNode { token, condition, true_expr, false_expr };
+    return new IfNode { token, condition.release(), true_expr.release(), false_expr.release() };
 }
 
 Node *Parser::parse_while(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    auto condition = parse_expression(Precedence::LOWEST, locals);
+    OwnedPtr<Node> condition = parse_expression(Precedence::LOWEST, locals);
     next_expression();
-    auto body = parse_body(locals, Precedence::LOWEST);
+    OwnedPtr<BlockNode> body = parse_body(locals, Precedence::LOWEST);
     expect(Token::Type::EndKeyword, "while end");
     advance();
     switch (token.type()) {
     case Token::Type::UntilKeyword:
-        return new UntilNode { token, condition, body, true };
+        return new UntilNode { token, condition.release(), body.release(), true };
     case Token::Type::WhileKeyword:
-        return new WhileNode { token, condition, body, true };
+        return new WhileNode { token, condition.release(), body.release(), true };
     default:
         TM_UNREACHABLE();
     }

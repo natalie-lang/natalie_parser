@@ -141,7 +141,7 @@ private:
     void parse_infix_expression(Node *&, LocalsHashmap &);
     void parse_proc_call_expression(Node *&, LocalsHashmap &);
     void parse_iter_expression(Node *&, LocalsHashmap &);
-    void parse_iter_args(SharedPtr<Vector<Node *>>, LocalsHashmap &);
+    void parse_iter_args(Vector<Node *> &, LocalsHashmap &);
     BlockNode *parse_iter_body(LocalsHashmap &, bool);
     void parse_logical_expression(Node *&, LocalsHashmap &);
     void parse_match_expression(Node *&, LocalsHashmap &);
