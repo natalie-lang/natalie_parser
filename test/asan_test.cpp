@@ -70,17 +70,6 @@ void test_fragments() {
     delete fragments;
 }
 
-void test_syntax_errors() {
-    test_code_with_syntax_error("1 + ");
-    test_code_with_syntax_error("foo(");
-    test_code_with_syntax_error("1 2 3");
-    test_code_with_syntax_error("`foo");
-    test_code_with_syntax_error("\"foo");
-    test_code_with_syntax_error(":\"foo");
-    test_code_with_syntax_error("/foo");
-    test_code_with_syntax_error("{1");
-}
-
 void test_fragments_with_syntax_errors() {
     auto fragments = build_fragments();
     for (auto fragment : *fragments) {
@@ -99,7 +88,8 @@ void test_fragments_with_fuzzing() {
         auto index = rand() % fragment.size();
         auto bad_char = bad_chars[rand() % sizeof(bad_chars)];
         fragment.insert(index, bad_char);
-        printf("frag = '%s'\n", fragment.c_str());
+        if (getenv("DEBUG_FUZZ"))
+            printf("frag = '%s'\n", fragment.c_str());
         test_code_ignoring_syntax_errors(fragment);
         printf(".");
     }
@@ -114,10 +104,8 @@ int main() {
         printf("\nSyntaxError: %s\n", e.message());
         abort();
     }
-    test_syntax_errors();
     test_fragments_with_syntax_errors();
-    if (getenv("FUZZ"))
-        test_fragments_with_fuzzing();
+    test_fragments_with_fuzzing();
     printf("\n");
     return 0;
 }
