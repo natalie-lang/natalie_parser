@@ -272,7 +272,7 @@ BlockNode *Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Toke
 
 // FIXME: Maybe pass a lambda in that can just compare the two types? (No vector needed.)
 BlockNode *Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Vector<Token::Type> &end_tokens, const char *expected_message) {
-    auto body = new BlockNode { current_token() };
+    OwnedPtr<BlockNode> body = new BlockNode { current_token() };
     validate_current_token();
     skip_newlines();
     auto finished = [this, end_tokens] {
@@ -290,7 +290,7 @@ BlockNode *Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Vect
     }
     if (!finished())
         throw_unexpected(expected_message);
-    return body;
+    return body.release();
 }
 
 BlockNode *Parser::parse_def_body(LocalsHashmap &locals) {
@@ -314,9 +314,9 @@ BlockNode *Parser::parse_def_body(LocalsHashmap &locals) {
 Node *Parser::parse_alias(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    auto new_name = parse_alias_arg(locals, "alias new name (first argument)", false);
+    OwnedPtr<SymbolNode> new_name = parse_alias_arg(locals, "alias new name (first argument)", false);
     auto existing_name = parse_alias_arg(locals, "alias existing name (second argument)", true);
-    return new AliasNode { token, new_name, existing_name };
+    return new AliasNode { token, new_name.release(), existing_name };
 }
 
 SymbolNode *Parser::parse_alias_arg(LocalsHashmap &locals, const char *expected_message, bool reinsert_collapsed_newline) {
@@ -397,11 +397,11 @@ Node *Parser::parse_array(LocalsHashmap &locals) {
     return array.release();
 }
 
-void Parser::parse_comma_separated_expressions(ArrayNode *array, LocalsHashmap &locals) {
-    array->add_node(parse_expression(Precedence::ARRAY, locals));
+void Parser::parse_comma_separated_expressions(ArrayNode &array, LocalsHashmap &locals) {
+    array.add_node(parse_expression(Precedence::ARRAY, locals));
     while (current_token().type() == Token::Type::Comma) {
         advance();
-        array->add_node(parse_expression(Precedence::ARRAY, locals));
+        array.add_node(parse_expression(Precedence::ARRAY, locals));
     }
 }
 
@@ -422,10 +422,8 @@ Node *Parser::parse_begin(LocalsHashmap &locals) {
     parse_rest_of_begin(begin_node.ref(), locals);
 
     // a begin/end with nothing else just becomes a BlockNode
-    if (!(begin_node->has_rescue_nodes() || begin_node->has_else_body() || begin_node->has_ensure_body())) {
-        auto block_node = new BlockNode { begin_node->body() };
-        return block_node;
-    }
+    if (!(begin_node->has_rescue_nodes() || begin_node->has_else_body() || begin_node->has_ensure_body()))
+        return new BlockNode { begin_node->body() };
 
     return begin_node.release();
 }
@@ -436,7 +434,7 @@ void Parser::parse_rest_of_begin(BeginNode &begin_node, LocalsHashmap &locals) {
     while (!current_token().is_eof() && !current_token().is_end_keyword()) {
         switch (current_token().type()) {
         case Token::Type::RescueKeyword: {
-            auto rescue_node = new BeginRescueNode { current_token() };
+            OwnedPtr<BeginRescueNode> rescue_node = new BeginRescueNode { current_token() };
             advance();
             if (!current_token().is_eol() && current_token().type() != Token::Type::HashRocket) {
                 auto name = parse_expression(Precedence::BARE_CALL_ARG, locals);
@@ -456,7 +454,7 @@ void Parser::parse_rest_of_begin(BeginNode &begin_node, LocalsHashmap &locals) {
             next_expression();
             auto body = parse_body(locals, Precedence::LOWEST, rescue_ending_tokens, "case: rescue, else, ensure, or end");
             rescue_node->set_body(body);
-            begin_node.add_rescue_node(rescue_node);
+            begin_node.add_rescue_node(rescue_node.release());
             break;
         }
         case Token::Type::ElseKeyword: {
@@ -484,10 +482,11 @@ void Parser::parse_rest_of_begin(BeginNode &begin_node, LocalsHashmap &locals) {
 Node *Parser::parse_beginless_range(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
+    auto end_node = parse_expression(Precedence::LOWEST, locals);
     return new RangeNode {
         token,
         new NilNode { token },
-        parse_expression(Precedence::LOWEST, locals),
+        end_node,
         token.type() == Token::Type::DotDotDot
     };
 }
@@ -546,21 +545,21 @@ Node *Parser::parse_break(LocalsHashmap &locals) {
 Node *Parser::parse_case(LocalsHashmap &locals) {
     auto case_token = current_token();
     advance();
-    Node *subject;
+    OwnedPtr<Node> subject;
     if (current_token().type() == Token::Type::WhenKeyword) {
         subject = new NilNode { case_token };
     } else {
         subject = parse_expression(Precedence::CASE, locals);
         next_expression();
     }
-    auto node = new CaseNode { case_token, subject };
+    OwnedPtr<CaseNode> node = new CaseNode { case_token, subject.release() };
     while (!current_token().is_end_keyword()) {
         auto token = current_token();
         switch (token.type()) {
         case Token::Type::WhenKeyword: {
             advance();
-            auto condition_array = new ArrayNode { token };
-            parse_comma_separated_expressions(condition_array, locals);
+            OwnedPtr<ArrayNode> condition_array = new ArrayNode { token };
+            parse_comma_separated_expressions(condition_array.ref(), locals);
             if (current_token().type() == Token::Type::ThenKeyword) {
                 advance();
                 skip_newlines();
@@ -568,13 +567,13 @@ Node *Parser::parse_case(LocalsHashmap &locals) {
                 next_expression();
             }
             auto body = parse_case_when_body(locals);
-            auto when_node = new CaseWhenNode { token, condition_array, body };
+            auto when_node = new CaseWhenNode { token, condition_array.release(), body };
             node->add_node(when_node);
             break;
         }
         case Token::Type::InKeyword: {
             advance();
-            auto pattern = parse_case_in_patterns(locals);
+            OwnedPtr<Node> pattern = parse_case_in_patterns(locals);
             if (current_token().type() == Token::Type::ThenKeyword) {
                 advance();
                 skip_newlines();
@@ -582,7 +581,7 @@ Node *Parser::parse_case(LocalsHashmap &locals) {
                 next_expression();
             }
             auto body = parse_case_in_body(locals);
-            auto in_node = new CaseInNode { token, pattern, body };
+            auto in_node = new CaseInNode { token, pattern.release(), body };
             node->add_node(in_node);
             break;
         }
@@ -602,7 +601,7 @@ Node *Parser::parse_case(LocalsHashmap &locals) {
     }
     expect(Token::Type::EndKeyword, "case end");
     advance();
-    return node;
+    return node.release();
 }
 
 BlockNode *Parser::parse_case_in_body(LocalsHashmap &locals) {
@@ -611,7 +610,7 @@ BlockNode *Parser::parse_case_in_body(LocalsHashmap &locals) {
 
 Node *Parser::parse_case_in_pattern(LocalsHashmap &locals) {
     auto token = current_token();
-    Node *node;
+    OwnedPtr<Node> node;
     switch (token.type()) {
     case Token::Type::BareName:
         advance();
@@ -633,10 +632,10 @@ Node *Parser::parse_case_in_pattern(LocalsHashmap &locals) {
     case Token::Type::LBracket: {
         // TODO: might need to keep track of and pass along precedence value?
         advance();
-        auto array = new ArrayPatternNode { token };
+        OwnedPtr<ArrayPatternNode> array = new ArrayPatternNode { token };
         if (current_token().type() == Token::Type::RBracket) {
             advance();
-            node = array;
+            node = array.release();
             break;
         }
         array->add_node(parse_case_in_pattern(locals));
@@ -646,7 +645,7 @@ Node *Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         }
         expect(Token::Type::RBracket, "array pattern closing bracket");
         advance();
-        node = array;
+        node = array.release();
         break;
     }
     case Token::Type::LCurlyBrace: {
@@ -711,13 +710,13 @@ Node *Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         token = current_token();
         advance();
         auto identifier = new IdentifierNode { token, true };
-        node = new AssignmentNode { token, identifier, node };
+        node = new AssignmentNode { token, identifier, node.release() };
     }
-    return node;
+    return node.release();
 }
 
 Node *Parser::parse_case_in_patterns(LocalsHashmap &locals) {
-    Vector<Node *> patterns;
+    OwnedVector<Node *> patterns;
     patterns.push(parse_case_in_pattern(locals));
     while (current_token().type() == Token::Type::BitwiseOr) {
         advance();
@@ -739,7 +738,7 @@ Node *Parser::parse_case_in_patterns(LocalsHashmap &locals) {
     }
     assert(patterns.size() > 0);
     if (patterns.size() == 1) {
-        return patterns.first();
+        return patterns.pop_front();
     } else {
         auto first = patterns.pop_front();
         auto second = patterns.pop_front();
@@ -753,7 +752,7 @@ Node *Parser::parse_case_in_patterns(LocalsHashmap &locals) {
 }
 
 BlockNode *Parser::parse_case_when_body(LocalsHashmap &locals) {
-    auto body = new BlockNode { current_token() };
+    OwnedPtr<BlockNode> body = new BlockNode { current_token() };
     validate_current_token();
     skip_newlines();
     while (!current_token().is_eof() && !current_token().is_when_keyword() && !current_token().is_else_keyword() && !current_token().is_end_keyword()) {
@@ -764,7 +763,7 @@ BlockNode *Parser::parse_case_when_body(LocalsHashmap &locals) {
     }
     if (!current_token().is_when_keyword() && !current_token().is_else_keyword() && !current_token().is_end_keyword())
         throw_unexpected("case: when, else, or end");
-    return body;
+    return body.release();
 }
 
 Node *Parser::parse_class_or_module_name(LocalsHashmap &locals) {
@@ -1131,14 +1130,14 @@ Node *Parser::parse_hash(LocalsHashmap &locals) {
     expect(Token::Type::LCurlyBrace, "hash opening curly brace");
     auto token = current_token();
     advance();
-    Node *hash;
+    OwnedPtr<Node> hash;
     if (current_token().type() == Token::Type::RCurlyBrace)
         hash = new HashNode { token };
     else
         hash = parse_hash_inner(locals, Precedence::HASH, Token::Type::RCurlyBrace);
     expect(Token::Type::RCurlyBrace, "hash closing curly brace");
     advance();
-    return hash;
+    return hash.release();
 }
 
 Node *Parser::parse_hash_inner(LocalsHashmap &locals, Precedence precedence, Token::Type closing_token, Node *first_key) {
@@ -1597,9 +1596,11 @@ Node *Parser::parse_stabby_proc(LocalsHashmap &locals) {
     }
     if (current_token().type() != Token::Type::DoKeyword && current_token().type() != Token::Type::LCurlyBrace)
         throw_unexpected("block");
-    Node *left = new StabbyProcNode { token, has_args, *args.release() };
-    parse_iter_expression(left, locals);
-    return left;
+    return new StabbyProcNode {
+        token,
+        has_args,
+        *args.release()
+    };
 };
 
 Node *Parser::parse_string(LocalsHashmap &locals) {

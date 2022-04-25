@@ -81,7 +81,7 @@ private:
     Node *parse_case(LocalsHashmap &);
     Node *parse_case_in_pattern(LocalsHashmap &);
     Node *parse_case_in_patterns(LocalsHashmap &);
-    void parse_comma_separated_expressions(ArrayNode *, LocalsHashmap &);
+    void parse_comma_separated_expressions(ArrayNode &, LocalsHashmap &);
     Node *parse_constant(LocalsHashmap &);
     Node *parse_def(LocalsHashmap &);
     Node *parse_defined(LocalsHashmap &);
