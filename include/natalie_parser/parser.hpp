@@ -177,9 +177,9 @@ private:
     };
 
     Node *append_string_nodes(Node *string1, Node *string2);
-    Node *concat_adjacent_strings(Node *string, LocalsHashmap &locals, bool &strings_were_appended);
+    Node *concat_adjacent_strings(OwnedPtr<Node> string, LocalsHashmap &locals, bool &strings_were_appended);
 
-    NodeWithArgs *to_node_with_args(Node *&node);
+    NodeWithArgs *to_node_with_args(Node *node);
 
     // FIXME: return a Token&
     Token current_token() const;

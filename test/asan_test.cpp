@@ -79,10 +79,10 @@ void test_fragments_with_syntax_errors() {
     delete fragments;
 }
 
-void test_fragments_with_fuzzing() {
+void test_fragments_with_fuzzing(int seed) {
     char bad_chars[] = { '`', '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '+', '=', '[', ']', '{', '}', '|', '\\', '7', 'a', '<', '>', ',', '.', '/', '?', ' ', '\n', '\t', '\v' };
     auto fragments = build_fragments();
-    srand(1);
+    srand(seed);
     for (auto fragment : *fragments) {
         if (fragment.size() == 0) continue;
         auto index = rand() % fragment.size();
@@ -105,7 +105,9 @@ int main() {
         abort();
     }
     test_fragments_with_syntax_errors();
-    test_fragments_with_fuzzing();
+    test_fragments_with_fuzzing(1);
+    test_fragments_with_fuzzing(2);
+    test_fragments_with_fuzzing(3);
     printf("\n");
     return 0;
 }

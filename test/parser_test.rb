@@ -1328,6 +1328,12 @@ END
         expect(two.line).must_equal(3)
         expect(two.column).must_equal(5) if parser == 'NatalieParser'
       end
+
+      it 'does not panic on certain errors' do
+        if parser == 'NatalieParser'
+          expect_raise_with_message(-> { parse('foo sel$f: a') }, SyntaxError, "(string)#1: syntax error, unexpected ':' (expected: 'expression')")
+        end
+      end
     end
   end
 end

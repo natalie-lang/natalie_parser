@@ -22,6 +22,18 @@ public:
         assert(m_last);
     }
 
+    RangeNode(const RangeNode &other)
+        : RangeNode {
+            other.token(),
+            other.first().clone(),
+            other.last().clone(),
+            other.exclude_end()
+        } { }
+
+    virtual Node *clone() const override {
+        return new RangeNode(*this);
+    }
+
     virtual Type type() const override { return Type::Range; }
 
     const Node &first() const { return m_first.ref(); }

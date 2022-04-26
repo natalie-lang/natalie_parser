@@ -21,6 +21,16 @@ public:
         assert(m_node);
     }
 
+    SplatNode(const SplatNode &other)
+        : SplatNode {
+            other.token(),
+            other.node().clone(),
+        } { }
+
+    virtual Node *clone() const override {
+        return new SplatNode(*this);
+    }
+
     virtual Type type() const override { return Type::Splat; }
 
     virtual bool is_assignable() const override { return true; }

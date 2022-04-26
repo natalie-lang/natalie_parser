@@ -18,6 +18,16 @@ public:
         assert(m_node);
     }
 
+    BlockPassNode(const BlockPassNode &other)
+        : BlockPassNode {
+            other.token(),
+            other.node().clone(),
+        } { }
+
+    virtual Node *clone() const override {
+        return new BlockPassNode(*this);
+    }
+
     virtual Type type() const override { return Type::BlockPass; }
 
     const Node &node() const { return m_node.ref(); }

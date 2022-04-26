@@ -650,10 +650,10 @@ Node *Parser::parse_case_in_pattern(LocalsHashmap &locals) {
     }
     case Token::Type::LCurlyBrace: {
         advance();
-        auto hash = new HashPatternNode { token };
+        OwnedPtr<HashPatternNode> hash = new HashPatternNode { token };
         if (current_token().type() == Token::Type::RCurlyBrace) {
             advance();
-            node = hash;
+            node = hash.release();
             break;
         }
         expect(Token::Type::SymbolKey, "hash pattern symbol key");
@@ -666,7 +666,7 @@ Node *Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         }
         expect(Token::Type::RCurlyBrace, "hash pattern closing brace");
         advance();
-        node = hash;
+        node = hash.release();
         break;
     }
     case Token::Type::Bignum:
@@ -677,7 +677,7 @@ Node *Parser::parse_case_in_pattern(LocalsHashmap &locals) {
     case Token::Type::Multiply: {
         auto splat_token = current_token();
         advance();
-        auto array = new ArrayPatternNode { token };
+        OwnedPtr<ArrayPatternNode> array = new ArrayPatternNode { token };
         switch (current_token().type()) {
         case Token::Type::BareName:
         case Token::Type::Constant: {
@@ -691,7 +691,7 @@ Node *Parser::parse_case_in_pattern(LocalsHashmap &locals) {
             array->add_node(new IdentifierNode { splat_token, true });
         }
         advance();
-        node = array;
+        node = array.release();
         break;
     }
     case Token::Type::String:
@@ -1180,11 +1180,11 @@ Node *Parser::parse_if(LocalsHashmap &locals) {
     advance();
     OwnedPtr<Node> condition = parse_expression(Precedence::LOWEST, locals);
     next_expression();
-    auto true_expr = parse_if_body(locals);
-    Node *false_expr;
+    OwnedPtr<Node> true_expr = parse_if_body(locals);
+    OwnedPtr<Node> false_expr;
     if (current_token().is_elsif_keyword()) {
         false_expr = parse_if(locals);
-        return new IfNode { current_token(), condition.release(), true_expr, false_expr };
+        return new IfNode { current_token(), condition.release(), true_expr.release(), false_expr.release() };
     } else {
         if (current_token().is_else_keyword()) {
             advance();
@@ -1194,7 +1194,7 @@ Node *Parser::parse_if(LocalsHashmap &locals) {
         }
         expect(Token::Type::EndKeyword, "if end");
         advance();
-        return new IfNode { token, condition.release(), true_expr, false_expr };
+        return new IfNode { token, condition.release(), true_expr.release(), false_expr.release() };
     }
 }
 
@@ -1620,18 +1620,18 @@ Node *Parser::parse_string(LocalsHashmap &locals) {
     return string;
 };
 
-Node *Parser::concat_adjacent_strings(Node *string, LocalsHashmap &locals, bool &strings_were_appended) {
+Node *Parser::concat_adjacent_strings(OwnedPtr<Node> string, LocalsHashmap &locals, bool &strings_were_appended) {
     auto token = current_token();
     while (token.type() == Token::Type::String || token.type() == Token::Type::InterpolatedStringBegin) {
         switch (token.type()) {
         case Token::Type::String: {
             auto next_string = parse_string(locals);
-            string = append_string_nodes(string, next_string);
+            string = append_string_nodes(string.release(), next_string);
             break;
         }
         case Token::Type::InterpolatedStringBegin: {
             auto next_string = parse_interpolated_string(locals);
-            string = append_string_nodes(string, next_string);
+            string = append_string_nodes(string.release(), next_string);
             break;
         }
         default:
@@ -1640,7 +1640,7 @@ Node *Parser::concat_adjacent_strings(Node *string, LocalsHashmap &locals, bool 
         token = current_token();
         strings_were_appended = true;
     }
-    return string;
+    return string.release();
 }
 
 Node *Parser::append_string_nodes(Node *string1, Node *string2) {
@@ -1846,7 +1846,7 @@ Node *Parser::parse_undef(LocalsHashmap &locals) {
 
 Node *Parser::parse_word_array(LocalsHashmap &locals) {
     auto token = current_token();
-    auto array = new ArrayNode { token };
+    OwnedPtr<ArrayNode> array = new ArrayNode { token };
     advance();
     while (!current_token().is_eof() && current_token().type() != Token::Type::RBracket) {
         if (current_token().type() == Token::Type::UnterminatedWordArray)
@@ -1855,7 +1855,7 @@ Node *Parser::parse_word_array(LocalsHashmap &locals) {
     }
     expect(Token::Type::RBracket, "closing array bracket");
     advance();
-    return array;
+    return array.release();
 }
 
 Node *Parser::parse_word_symbol_array(LocalsHashmap &locals) {
@@ -2031,7 +2031,7 @@ void Parser::parse_call_expression_with_parens(Node *&left, LocalsHashmap &local
     left = call_node.release();
 }
 
-NodeWithArgs *Parser::to_node_with_args(Node *&node) {
+NodeWithArgs *Parser::to_node_with_args(Node *node) {
     switch (node->type()) {
     case Node::Type::Identifier: {
         auto identifier = static_cast<IdentifierNode *>(node);
@@ -2041,7 +2041,6 @@ NodeWithArgs *Parser::to_node_with_args(Node *&node) {
             identifier->name(),
         };
         delete identifier;
-        node = call_node;
         return call_node;
     }
     case Node::Type::Call:
@@ -2293,6 +2292,7 @@ void Parser::parse_proc_call_expression(Node *&left, LocalsHashmap &locals) {
         left,
         new String("call"),
     };
+    left = nullptr;
     if (!current_token().is_rparen())
         parse_call_args(call_node.ref(), locals, false);
     expect(Token::Type::RParen, "proc call right paren");
@@ -2640,8 +2640,6 @@ Parser::parse_left_fn Parser::left_denotation(Token &token, Node *left, Preceden
         }
     case Type::TernaryQuestion:
         return &Parser::parse_ternary_expression;
-    case Type::TernaryColon:
-        TM_UNREACHABLE();
     default:
         break;
     }
