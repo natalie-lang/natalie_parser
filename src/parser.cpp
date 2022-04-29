@@ -447,9 +447,17 @@ void Parser::parse_rest_of_begin(BeginNode &begin_node, LocalsHashmap &locals) {
             }
             if (current_token().type() == Token::Type::HashRocket) {
                 advance();
-                auto name = static_cast<IdentifierNode *>(parse_identifier(locals));
+                OwnedPtr<IdentifierNode> name;
+                switch (current_token().type()) {
+                case Token::Type::BareName:
+                    name = new IdentifierNode { current_token(), current_token().literal_string() };
+                    advance();
+                    break;
+                default:
+                    throw_unexpected("exception name");
+                }
                 name->add_to_locals(locals);
-                rescue_node->set_exception_name(name);
+                rescue_node->set_exception_name(name.release());
             }
             next_expression();
             auto body = parse_body(locals, Precedence::LOWEST, rescue_ending_tokens, "case: rescue, else, ensure, or end");
@@ -529,13 +537,13 @@ Node *Parser::parse_break(LocalsHashmap &locals) {
     } else if (current_token().can_be_first_arg_of_implicit_call()) {
         auto value = parse_expression(Precedence::BARE_CALL_ARG, locals);
         if (current_token().is_comma()) {
-            auto array = new ArrayNode { token };
+            OwnedPtr<ArrayNode> array = new ArrayNode { token };
             array->add_node(value);
             while (current_token().is_comma()) {
                 advance();
                 array->add_node(parse_expression(Precedence::BARE_CALL_ARG, locals));
             }
-            value = array;
+            value = array.release();
         }
         return new BreakNode { token, value };
     }
@@ -830,14 +838,13 @@ Node *Parser::parse_assignment_identifier(bool allow_splat, LocalsHashmap &local
         break;
     case Token::Type::LParen: {
         advance(); // (
-        auto left = parse_assignment_identifier(true, locals);
-        parse_multiple_assignment_expression(left, locals);
+        node = parse_assignment_identifier(true, locals);
+        parse_multiple_assignment_expression(node, locals);
         if (!current_token().is_rparen()) {
-            delete left;
+            delete node;
             throw_unexpected("closing paren for multiple assignment");
         }
         advance(); // )
-        node = left;
         break;
     }
     case Token::Type::Multiply: {
@@ -1483,13 +1490,13 @@ Node *Parser::parse_next(LocalsHashmap &locals) {
     } else if (current_token().can_be_first_arg_of_implicit_call()) {
         auto value = parse_expression(Precedence::BARE_CALL_ARG, locals);
         if (current_token().is_comma()) {
-            auto array = new ArrayNode { token };
+            OwnedPtr<ArrayNode> array = new ArrayNode { token };
             array->add_node(value);
             while (current_token().is_comma()) {
                 advance();
                 array->add_node(parse_expression(Precedence::BARE_CALL_ARG, locals));
             }
-            value = array;
+            value = array.release();
         }
         return new NextNode { token, value };
     }
@@ -1541,13 +1548,13 @@ Node *Parser::parse_return(LocalsHashmap &locals) {
         value = parse_expression(Precedence::BARE_CALL_ARG, locals);
     }
     if (current_token().is_comma()) {
-        auto array = new ArrayNode { current_token() };
+        OwnedPtr<ArrayNode> array = new ArrayNode { current_token() };
         array->add_node(value);
         while (current_token().is_comma()) {
             advance();
             array->add_node(parse_expression(Precedence::BARE_CALL_ARG, locals));
         }
-        value = array;
+        value = array.release();
     }
     return new ReturnNode { token, value };
 };
@@ -1860,7 +1867,7 @@ Node *Parser::parse_word_array(LocalsHashmap &locals) {
 
 Node *Parser::parse_word_symbol_array(LocalsHashmap &locals) {
     auto token = current_token();
-    auto array = new ArrayNode { token };
+    OwnedPtr<ArrayNode> array = new ArrayNode { token };
     advance();
     while (!current_token().is_eof() && current_token().type() != Token::Type::RBracket) {
         auto string = parse_expression(Precedence::WORD_ARRAY, locals);
@@ -1880,7 +1887,7 @@ Node *Parser::parse_word_symbol_array(LocalsHashmap &locals) {
     }
     expect(Token::Type::RBracket, "closing array bracket");
     advance();
-    return array;
+    return array.release();
 }
 
 Node *Parser::parse_yield(LocalsHashmap &) {
@@ -2382,6 +2389,8 @@ void Parser::parse_send_expression(Node *&left, LocalsHashmap &) {
             *name = name_token.type_value();
             advance();
         } else {
+            delete left;
+            left = nullptr;
             throw_unexpected("send method name");
         }
     };

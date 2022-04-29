@@ -105,9 +105,9 @@ int main() {
         abort();
     }
     test_fragments_with_syntax_errors();
-    test_fragments_with_fuzzing(1);
-    test_fragments_with_fuzzing(2);
-    test_fragments_with_fuzzing(3);
+    for (int i = 0; i < 7; ++i) {
+        test_fragments_with_fuzzing(i);
+    }
     printf("\n");
     return 0;
 }
