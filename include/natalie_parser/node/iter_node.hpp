@@ -12,7 +12,7 @@ using namespace TM;
 
 class IterNode : public NodeWithArgs {
 public:
-    IterNode(const Token &token, Node *call, bool has_args, const Vector<Node *> &args, BlockNode *body)
+    IterNode(const Token &token, SharedPtr<Node> call, bool has_args, const Vector<SharedPtr<Node>> &args, SharedPtr<BlockNode> body)
         : NodeWithArgs { token, args }
         , m_has_args { has_args }
         , m_call { call }
@@ -21,20 +21,10 @@ public:
         assert(m_body);
     }
 
-    IterNode(const IterNode &other)
-        : NodeWithArgs { other }
-        , m_has_args { other.m_has_args }
-        , m_call { other.call().clone() }
-        , m_body { new BlockNode { other.body() } } { }
-
-    virtual Node *clone() const override {
-        return new IterNode(*this);
-    }
-
     virtual Type type() const override { return Type::Iter; }
 
-    const Node &call() const { return m_call.ref(); }
-    const BlockNode &body() const { return m_body.ref(); }
+    const SharedPtr<Node> call() const { return m_call; }
+    const SharedPtr<BlockNode> body() const { return m_body; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("iter");
@@ -49,7 +39,7 @@ public:
 
 protected:
     bool m_has_args { false };
-    OwnedPtr<Node> m_call {};
-    OwnedPtr<BlockNode> m_body {};
+    SharedPtr<Node> m_call {};
+    SharedPtr<BlockNode> m_body {};
 };
 }

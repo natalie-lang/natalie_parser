@@ -9,11 +9,11 @@ void NodeWithArgs::append_method_or_block_args(Creator *creator) const {
         for (auto arg : m_args) {
             switch (arg->type()) {
             case Node::Type::Arg: {
-                auto arg_node = static_cast<ArgNode *>(arg);
+                auto arg_node = arg.static_cast_as<ArgNode>();
                 if (arg_node->value())
                     c->append(arg);
                 else
-                    static_cast<ArgNode *>(arg)->append_name(c);
+                    arg.static_cast_as<ArgNode>()->append_name(c);
                 break;
             }
             case Node::Type::KeywordArg:

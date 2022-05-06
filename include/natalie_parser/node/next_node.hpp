@@ -12,7 +12,7 @@ using namespace TM;
 
 class NextNode : public Node {
 public:
-    NextNode(const Token &token, Node *arg = nullptr)
+    NextNode(const Token &token, SharedPtr<Node> arg = {})
         : Node { token }
         , m_arg { arg } {
     }
@@ -32,6 +32,6 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_arg {};
+    SharedPtr<Node> m_arg {};
 };
 }

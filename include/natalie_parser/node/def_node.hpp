@@ -13,7 +13,7 @@ using namespace TM;
 
 class DefNode : public NodeWithArgs {
 public:
-    DefNode(const Token &token, Node *self_node, SharedPtr<String> name, Vector<Node *> &args, BlockNode *body)
+    DefNode(const Token &token, SharedPtr<Node> self_node, SharedPtr<String> name, const Vector<SharedPtr<Node>> &args, SharedPtr<BlockNode> body)
         : NodeWithArgs { token, args }
         , m_self_node { self_node }
         , m_name { name }
@@ -23,14 +23,9 @@ public:
 
     virtual Type type() const override { return Type::Def; }
 
-    const Node &self_node() const {
-        if (m_self_node)
-            return m_self_node.ref();
-        return Node::invalid();
-    }
-
+    const SharedPtr<Node> self_node() const { return m_self_node; }
     SharedPtr<String> name() const { return m_name; }
-    const BlockNode &body() const { return m_body.ref(); }
+    const SharedPtr<BlockNode> body() const { return m_body; }
 
     virtual void transform(Creator *creator) const override {
         if (m_self_node) {
@@ -53,8 +48,8 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_self_node {};
+    SharedPtr<Node> m_self_node {};
     SharedPtr<String> m_name {};
-    OwnedPtr<BlockNode> m_body {};
+    SharedPtr<BlockNode> m_body {};
 };
 }

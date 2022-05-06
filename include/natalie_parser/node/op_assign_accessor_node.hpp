@@ -12,7 +12,7 @@ using namespace TM;
 
 class OpAssignAccessorNode : public NodeWithArgs {
 public:
-    OpAssignAccessorNode(const Token &token, SharedPtr<String> op, Node *receiver, SharedPtr<String> message, Node *value, Vector<Node *> &args)
+    OpAssignAccessorNode(const Token &token, SharedPtr<String> op, SharedPtr<Node> receiver, SharedPtr<String> message, SharedPtr<Node> value, Vector<SharedPtr<Node>> &args)
         : NodeWithArgs { token }
         , m_op { op }
         , m_receiver { receiver }
@@ -23,15 +23,15 @@ public:
         assert(m_message);
         assert(m_value);
         for (auto arg : args)
-            add_arg(arg->clone());
+            add_arg(arg);
     }
 
     virtual Type type() const override { return Type::OpAssignAccessor; }
 
-    SharedPtr<String> op() const { return m_op; }
-    const Node &receiver() const { return m_receiver.ref(); }
-    SharedPtr<String> message() const { return m_message; }
-    const Node &value() const { return m_value.ref(); }
+    const SharedPtr<String> op() const { return m_op; }
+    const SharedPtr<Node> receiver() const { return m_receiver; }
+    const SharedPtr<String> message() const { return m_message; }
+    const SharedPtr<Node> value() const { return m_value; }
 
     virtual void transform(Creator *creator) const override {
         if (*m_message == "[]=") {
@@ -56,8 +56,8 @@ public:
 
 protected:
     SharedPtr<String> m_op {};
-    OwnedPtr<Node> m_receiver {};
+    SharedPtr<Node> m_receiver {};
     SharedPtr<String> m_message {};
-    OwnedPtr<Node> m_value {};
+    SharedPtr<Node> m_value {};
 };
 }

@@ -15,31 +15,17 @@ public:
     SplatNode(const Token &token)
         : Node { token } { }
 
-    SplatNode(const Token &token, Node *node)
+    SplatNode(const Token &token, SharedPtr<Node> node)
         : Node { token }
         , m_node { node } {
         assert(m_node);
-    }
-
-    SplatNode(const SplatNode &other)
-        : SplatNode {
-            other.token(),
-            other.node().clone(),
-        } { }
-
-    virtual Node *clone() const override {
-        return new SplatNode(*this);
     }
 
     virtual Type type() const override { return Type::Splat; }
 
     virtual bool is_assignable() const override { return true; }
 
-    const Node &node() const {
-        if (m_node)
-            return m_node.ref();
-        return Node::invalid();
-    }
+    const SharedPtr<Node> node() const { return m_node; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("splat");
@@ -48,6 +34,6 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_node {};
+    SharedPtr<Node> m_node {};
 };
 }

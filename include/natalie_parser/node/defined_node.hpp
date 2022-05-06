@@ -12,7 +12,7 @@ using namespace TM;
 
 class DefinedNode : public Node {
 public:
-    DefinedNode(const Token &token, Node *arg)
+    DefinedNode(const Token &token, SharedPtr<Node> arg)
         : Node { token }
         , m_arg { arg } {
         assert(arg);
@@ -20,7 +20,7 @@ public:
 
     virtual Type type() const override { return Type::Defined; }
 
-    const Node &arg() const { return m_arg.ref(); }
+    const SharedPtr<Node> arg() const { return m_arg; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("defined");
@@ -28,6 +28,6 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_arg {};
+    SharedPtr<Node> m_arg {};
 };
 }

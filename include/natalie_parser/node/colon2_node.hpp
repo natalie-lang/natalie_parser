@@ -12,7 +12,7 @@ using namespace TM;
 
 class Colon2Node : public Node {
 public:
-    Colon2Node(const Token &token, Node *left, SharedPtr<String> name)
+    Colon2Node(const Token &token, SharedPtr<Node> left, SharedPtr<String> name)
         : Node { token }
         , m_left { left }
         , m_name { name } {
@@ -20,16 +20,9 @@ public:
         assert(m_name);
     }
 
-    Colon2Node(const Colon2Node &other)
-        : Colon2Node { other.token(), other.left().clone(), other.name() } { }
-
-    virtual Node *clone() const override {
-        return new Colon2Node(*this);
-    }
-
     virtual Type type() const override { return Type::Colon2; }
 
-    const Node &left() const { return m_left.ref(); }
+    const SharedPtr<Node> left() const { return m_left; }
     SharedPtr<String> name() const { return m_name; }
 
     virtual void transform(Creator *creator) const override {
@@ -43,7 +36,7 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_left {};
+    SharedPtr<Node> m_left {};
     SharedPtr<String> m_name {};
 };
 }

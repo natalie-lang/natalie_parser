@@ -14,28 +14,13 @@ public:
     HashNode(const Token &token)
         : Node { token } { }
 
-    HashNode(const HashNode &other)
-        : HashNode { other.token() } {
-        for (auto node : other.nodes())
-            add_node(node->clone());
-    }
-
-    virtual Node *clone() const override {
-        return new HashNode(*this);
-    }
-
-    ~HashNode() {
-        for (auto node : m_nodes)
-            delete node;
-    }
-
     virtual Type type() const override { return Type::Hash; }
 
-    void add_node(Node *node) {
+    void add_node(SharedPtr<Node> node) {
         m_nodes.push(node);
     }
 
-    const Vector<Node *> &nodes() const { return m_nodes; }
+    const Vector<SharedPtr<Node>> &nodes() const { return m_nodes; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("hash");
@@ -44,6 +29,6 @@ public:
     }
 
 protected:
-    Vector<Node *> m_nodes {};
+    Vector<SharedPtr<Node>> m_nodes {};
 };
 }

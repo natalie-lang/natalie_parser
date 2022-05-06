@@ -14,13 +14,6 @@ public:
     NilNode(const Token &token)
         : Node { token } { }
 
-    NilNode(const NilNode &other)
-        : NilNode { other.token() } { }
-
-    virtual Node *clone() const override {
-        return new NilNode(*this);
-    }
-
     virtual Type type() const override { return Type::Nil; }
 
     virtual void transform(Creator *creator) const override {

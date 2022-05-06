@@ -13,7 +13,7 @@ using namespace TM;
 
 class CaseInNode : public Node {
 public:
-    CaseInNode(const Token &token, Node *pattern, BlockNode *body)
+    CaseInNode(const Token &token, SharedPtr<Node> pattern, SharedPtr<BlockNode> body)
         : Node { token }
         , m_pattern { pattern }
         , m_body { body } {
@@ -23,8 +23,8 @@ public:
 
     virtual Type type() const override { return Type::CaseIn; }
 
-    const Node &pattern() const { return m_pattern.ref(); }
-    const BlockNode &body() const { return m_body.ref(); }
+    const SharedPtr<Node> pattern() const { return m_pattern; }
+    const SharedPtr<BlockNode> body() const { return m_body; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("in");
@@ -34,7 +34,7 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_pattern {};
-    OwnedPtr<BlockNode> m_body {};
+    SharedPtr<Node> m_pattern {};
+    SharedPtr<BlockNode> m_body {};
 };
 }

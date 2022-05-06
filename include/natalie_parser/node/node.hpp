@@ -112,15 +112,7 @@ public:
     virtual bool is_symbol_key() const { return false; }
     virtual bool can_accept_a_block() const { return false; }
 
-    BlockNode *as_block_node();
-
-    virtual Node *clone() const {
-        if (type() == Type::Invalid)
-            printf("Trying to clone() an invalid Node\n");
-        else
-            printf("Need to implement Node::clone() in a subclass (type=%d)...\n", (int)type());
-        TM_UNREACHABLE();
-    }
+    BlockNode &as_block_node();
 
     virtual void transform(Creator *creator) const {
         creator->set_type("NOT_YET_IMPLEMENTED");
@@ -146,7 +138,7 @@ public:
     }
 
 protected:
-    static inline Node *s_invalid { nullptr };
+    static inline SharedPtr<Node> s_invalid {};
     Token m_token {};
 };
 

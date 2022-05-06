@@ -15,7 +15,7 @@ public:
     NodeWithArgs(const Token &token)
         : Node { token } { }
 
-    NodeWithArgs(const Token &token, const Vector<Node *> &args)
+    NodeWithArgs(const Token &token, const Vector<SharedPtr<Node>> &args)
         : Node { token } {
         for (auto arg : args)
             add_arg(arg);
@@ -24,24 +24,19 @@ public:
     NodeWithArgs(const NodeWithArgs &other)
         : NodeWithArgs { other.token() } {
         for (auto arg : other.args())
-            add_arg(arg->clone());
+            add_arg(arg);
     }
 
-    ~NodeWithArgs() {
-        for (auto arg : m_args)
-            delete arg;
-    }
-
-    void add_arg(Node *arg) {
+    void add_arg(SharedPtr<Node> arg) {
         m_args.push(arg);
     }
 
-    Vector<Node *> &args() { return m_args; }
-    const Vector<Node *> &args() const { return m_args; }
+    Vector<SharedPtr<Node>> &args() { return m_args; }
+    const Vector<SharedPtr<Node>> &args() const { return m_args; }
 
     void append_method_or_block_args(Creator *creator) const;
 
 protected:
-    Vector<Node *> m_args {};
+    Vector<SharedPtr<Node>> m_args {};
 };
 }

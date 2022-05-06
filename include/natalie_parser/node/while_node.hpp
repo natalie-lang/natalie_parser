@@ -13,7 +13,7 @@ using namespace TM;
 
 class WhileNode : public Node {
 public:
-    WhileNode(const Token &token, Node *condition, BlockNode *body, bool pre)
+    WhileNode(const Token &token, SharedPtr<Node> condition, SharedPtr<BlockNode> body, bool pre)
         : Node { token }
         , m_condition { condition }
         , m_body { body }
@@ -24,8 +24,8 @@ public:
 
     virtual Type type() const override { return Type::While; }
 
-    const Node &condition() const { return m_condition.ref(); }
-    const BlockNode &body() const { return m_body.ref(); }
+    const SharedPtr<Node> condition() const { return m_condition; }
+    const SharedPtr<BlockNode> body() const { return m_body; }
     bool pre() const { return m_pre; }
 
     virtual void transform(Creator *creator) const override {
@@ -45,8 +45,8 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_condition {};
-    OwnedPtr<BlockNode> m_body {};
+    SharedPtr<Node> m_condition {};
+    SharedPtr<BlockNode> m_body {};
     bool m_pre { false };
 };
 }

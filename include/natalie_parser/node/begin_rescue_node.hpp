@@ -17,53 +17,31 @@ public:
     BeginRescueNode(const Token &token)
         : Node { token } { }
 
-    BeginRescueNode(const BeginRescueNode &other)
-        : Node { other.token() }
-        , m_name { other.has_name() ? new IdentifierNode(other.name()) : nullptr }
-        , m_body { new BlockNode { other.body() } } {
-        for (auto node : other.exceptions())
-            add_exception_node(node->clone());
-    }
-
-    virtual Node *clone() const override {
-        return new BeginRescueNode(*this);
-    }
-
-    ~BeginRescueNode();
-
     virtual Type type() const override { return Type::BeginRescue; }
 
-    void add_exception_node(Node *node) {
+    void add_exception_node(SharedPtr<Node> node) {
         m_exceptions.push(node);
     }
 
-    void set_exception_name(IdentifierNode *name) {
+    void set_exception_name(SharedPtr<IdentifierNode> name) {
         m_name = name;
     }
 
-    void set_body(BlockNode *body) { m_body = body; }
+    void set_body(SharedPtr<BlockNode> body) { m_body = body; }
 
-    Node *name_to_node() const;
+    SharedPtr<Node> name_to_node() const;
 
     bool has_name() const { return m_name; }
 
-    const IdentifierNode &name() const {
-        assert(m_name);
-        return m_name.ref();
-    }
-
-    const Vector<Node *> &exceptions() const { return m_exceptions; }
-
-    const BlockNode &body() const {
-        assert(m_body);
-        return m_body.ref();
-    }
+    const SharedPtr<IdentifierNode> name() const { return m_name; }
+    const Vector<SharedPtr<Node>> &exceptions() const { return m_exceptions; }
+    const SharedPtr<BlockNode> body() const { return m_body; }
 
     virtual void transform(Creator *creator) const override;
 
 protected:
-    OwnedPtr<IdentifierNode> m_name {};
-    Vector<Node *> m_exceptions {};
-    OwnedPtr<BlockNode> m_body {};
+    SharedPtr<IdentifierNode> m_name {};
+    Vector<SharedPtr<Node>> m_exceptions {};
+    SharedPtr<BlockNode> m_body {};
 };
 }

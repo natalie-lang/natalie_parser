@@ -9,12 +9,21 @@ namespace NatalieParser {
 
 class MRICreator : public Creator {
 public:
-    MRICreator(const Node *node) {
+    MRICreator(const Node &node) {
         reset();
-        m_node = node;
-        rb_ivar_set(m_sexp, rb_intern("@file"), rb_str_new(node->file()->c_str(), node->file()->length()));
-        rb_ivar_set(m_sexp, rb_intern("@line"), rb_int_new(node->line() + 1));
-        rb_ivar_set(m_sexp, rb_intern("@column"), rb_int_new(node->column() + 1));
+        m_file = node.file().static_cast_as<const String>();
+        m_line = node.line();
+        m_column = node.column();
+        rb_ivar_set(m_sexp, rb_intern("@file"), rb_str_new(m_file->c_str(), m_file->length()));
+        rb_ivar_set(m_sexp, rb_intern("@line"), rb_int_new(m_line + 1));
+        rb_ivar_set(m_sexp, rb_intern("@column"), rb_int_new(m_column + 1));
+    }
+
+    MRICreator(const MRICreator &other)
+        : m_file { other.m_file }
+        , m_line { other.m_line }
+        , m_column { other.m_column } {
+        reset();
     }
 
     virtual ~MRICreator() { }
@@ -37,14 +46,14 @@ public:
             rb_ary_push(m_sexp, Qnil);
             return;
         }
-        MRICreator creator { &node };
+        MRICreator creator { node };
         creator.set_assignment(assignment());
         node.transform(&creator);
         rb_ary_push(m_sexp, creator.sexp());
     }
 
     virtual void append_array(const ArrayNode &array) override {
-        MRICreator creator { &array };
+        MRICreator creator { array };
         creator.set_assignment(assignment());
         array.ArrayNode::transform(&creator);
         rb_ary_push(m_sexp, creator.sexp());
@@ -81,7 +90,7 @@ public:
     }
 
     virtual void append_sexp(std::function<void(Creator *)> fn) override {
-        MRICreator creator { m_node };
+        MRICreator creator { *this };
         fn(&creator);
         rb_ary_push(m_sexp, creator.sexp());
     }
@@ -110,6 +119,8 @@ public:
 
 private:
     VALUE m_sexp { Qnil };
-    const Node *m_node { nullptr };
+    SharedPtr<const String> m_file {};
+    size_t m_line { 0 };
+    size_t m_column { 0 };
 };
 }

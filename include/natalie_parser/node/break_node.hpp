@@ -12,17 +12,13 @@ using namespace TM;
 
 class BreakNode : public NodeWithArgs {
 public:
-    BreakNode(const Token &token, Node *arg = nullptr)
+    BreakNode(const Token &token, SharedPtr<Node> arg = {})
         : NodeWithArgs { token }
         , m_arg { arg } { }
 
     virtual Type type() const override { return Type::Break; }
 
-    const Node &arg() const {
-        if (m_arg)
-            return m_arg.ref();
-        return Node::invalid();
-    }
+    const SharedPtr<Node> arg() const { return m_arg; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("break");
@@ -31,6 +27,6 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_arg {};
+    SharedPtr<Node> m_arg {};
 };
 }

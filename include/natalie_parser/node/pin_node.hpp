@@ -12,7 +12,7 @@ using namespace TM;
 
 class PinNode : public Node {
 public:
-    PinNode(const Token &token, Node *identifier)
+    PinNode(const Token &token, SharedPtr<Node> identifier)
         : Node { token }
         , m_identifier { identifier } {
         assert(m_identifier);
@@ -20,7 +20,7 @@ public:
 
     virtual Type type() const override { return Type::Pin; }
 
-    const Node &identifier() const { return m_identifier.ref(); }
+    const SharedPtr<Node> identifier() const { return m_identifier; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("pin");
@@ -28,6 +28,6 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_identifier {};
+    SharedPtr<Node> m_identifier {};
 };
 }

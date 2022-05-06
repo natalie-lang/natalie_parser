@@ -16,7 +16,10 @@ public:
         : InterpolatedNode { token } { }
 
     InterpolatedSymbolNode(const InterpolatedNode &other)
-        : InterpolatedNode { other } { }
+        : InterpolatedNode { other.token() } {
+        for (auto node : other.nodes())
+            add_node(node);
+    }
 
     virtual Type type() const override { return Type::InterpolatedSymbol; }
 

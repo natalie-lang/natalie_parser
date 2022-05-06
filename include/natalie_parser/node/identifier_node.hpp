@@ -15,14 +15,6 @@ public:
         : Node { token }
         , m_is_lvar { is_lvar } { }
 
-    IdentifierNode(const IdentifierNode &other)
-        : Node { other.token() }
-        , m_is_lvar { other.is_lvar() } { }
-
-    virtual Node *clone() const override {
-        return new IdentifierNode(*this);
-    }
-
     virtual Type type() const override { return Type::Identifier; }
 
     virtual bool is_assignable() const override { return true; }

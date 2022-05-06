@@ -2,9 +2,9 @@
 
 namespace NatalieParser {
 
-BlockNode *Node::as_block_node() {
+BlockNode &Node::as_block_node() {
     assert(type() == Node::Type::Block);
-    return static_cast<BlockNode *>(this);
+    return *static_cast<BlockNode *>(this);
 }
 
 }

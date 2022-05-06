@@ -8,7 +8,7 @@ void InterpolatedRegexpNode::transform(Creator *creator) const {
     for (size_t i = 0; i < nodes().size(); ++i) {
         auto node = nodes()[i];
         if (i == 0 && node->type() == Node::Type::String)
-            creator->append_string(static_cast<StringNode *>(node)->string());
+            creator->append_string(node.static_cast_as<StringNode>()->string());
         else
             creator->append(node);
     }

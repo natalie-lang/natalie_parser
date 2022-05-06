@@ -13,7 +13,7 @@ using namespace TM;
 
 class MatchNode : public Node {
 public:
-    MatchNode(const Token &token, RegexpNode *regexp, Node *arg, bool regexp_on_left)
+    MatchNode(const Token &token, SharedPtr<RegexpNode> regexp, SharedPtr<Node> arg, bool regexp_on_left)
         : Node { token }
         , m_regexp { regexp }
         , m_arg { arg }
@@ -24,15 +24,15 @@ public:
 
     virtual Type type() const override { return Type::Match; }
 
-    const RegexpNode &regexp() const { return m_regexp.ref(); }
-    const Node &arg() const { return m_arg.ref(); }
+    const SharedPtr<RegexpNode> regexp() const { return m_regexp; }
+    const SharedPtr<Node> arg() const { return m_arg; }
     bool regexp_on_left() const { return m_regexp_on_left; }
 
     virtual void transform(Creator *creator) const override;
 
 protected:
-    OwnedPtr<RegexpNode> m_regexp {};
-    OwnedPtr<Node> m_arg {};
+    SharedPtr<RegexpNode> m_regexp {};
+    SharedPtr<Node> m_arg {};
     bool m_regexp_on_left { false };
 };
 }

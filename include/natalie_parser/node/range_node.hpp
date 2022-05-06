@@ -13,7 +13,7 @@ using namespace TM;
 
 class RangeNode : public Node {
 public:
-    RangeNode(const Token &token, Node *first, Node *last, bool exclude_end)
+    RangeNode(const Token &token, SharedPtr<Node> first, SharedPtr<Node> last, bool exclude_end)
         : Node { token }
         , m_first { first }
         , m_last { last }
@@ -22,29 +22,17 @@ public:
         assert(m_last);
     }
 
-    RangeNode(const RangeNode &other)
-        : RangeNode {
-            other.token(),
-            other.first().clone(),
-            other.last().clone(),
-            other.exclude_end()
-        } { }
-
-    virtual Node *clone() const override {
-        return new RangeNode(*this);
-    }
-
     virtual Type type() const override { return Type::Range; }
 
-    const Node &first() const { return m_first.ref(); }
-    const Node &last() const { return m_last.ref(); }
+    const SharedPtr<Node> first() const { return m_first; }
+    const SharedPtr<Node> last() const { return m_last; }
     bool exclude_end() const { return m_exclude_end; }
 
     virtual void transform(Creator *creator) const override {
         if (m_first->type() == Node::Type::Fixnum && m_last->type() == Node::Type::Fixnum) {
             creator->set_type("lit");
-            auto first_num = static_cast<const FixnumNode *>(&first())->number();
-            auto last_num = static_cast<const FixnumNode *>(&last())->number();
+            auto first_num = m_first.static_cast_as<FixnumNode>()->number();
+            auto last_num = m_last.static_cast_as<FixnumNode>()->number();
             creator->append_range(first_num, last_num, m_exclude_end);
         } else {
             if (m_exclude_end)
@@ -57,8 +45,8 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_first {};
-    OwnedPtr<Node> m_last {};
+    SharedPtr<Node> m_first {};
+    SharedPtr<Node> m_last {};
     bool m_exclude_end { false };
 };
 }

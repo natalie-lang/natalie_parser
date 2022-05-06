@@ -14,7 +14,7 @@ using namespace TM;
 
 class OpAssignAndNode : public OpAssignNode {
 public:
-    OpAssignAndNode(const Token &token, IdentifierNode *name, Node *value)
+    OpAssignAndNode(const Token &token, SharedPtr<IdentifierNode> name, SharedPtr<Node> value)
         : OpAssignNode { token, name, value } { }
 
     virtual Type type() const override { return Type::OpAssignAnd; }
@@ -23,8 +23,12 @@ public:
         // s(:op_asgn_and, s(:lvar, :x), s(:lasgn, :x, s(:lit, 1)))
         creator->set_type("op_asgn_and");
         creator->append(m_name.ref());
-        auto assignment = AssignmentNode { token(), m_name->clone(), m_value->clone() };
-        creator->append(&assignment);
+        auto assignment = AssignmentNode {
+            token(),
+            m_name.static_cast_as<Node>(),
+            m_value
+        };
+        creator->append(assignment);
     }
 };
 }

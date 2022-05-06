@@ -13,15 +13,15 @@ using namespace TM;
 
 class SclassNode : public Node {
 public:
-    SclassNode(const Token &token, Node *klass, BlockNode *body)
+    SclassNode(const Token &token, SharedPtr<Node> klass, SharedPtr<BlockNode> body)
         : Node { token }
         , m_klass { klass }
         , m_body { body } { }
 
     virtual Type type() const override { return Type::Sclass; }
 
-    const Node &klass() const { return m_klass.ref(); }
-    const BlockNode &body() const { return m_body.ref(); }
+    const SharedPtr<Node> klass() const { return m_klass; }
+    const SharedPtr<BlockNode> body() const { return m_body; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("sclass");
@@ -31,7 +31,7 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_klass {};
-    OwnedPtr<BlockNode> m_body {};
+    SharedPtr<Node> m_klass {};
+    SharedPtr<BlockNode> m_body {};
 };
 }

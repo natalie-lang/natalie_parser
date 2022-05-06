@@ -15,13 +15,6 @@ public:
         : Node { token }
         , m_name { name } { }
 
-    SymbolNode(const SymbolNode &other)
-        : SymbolNode { other.token(), other.name() } { }
-
-    virtual Node *clone() const override {
-        return new SymbolNode(*this);
-    }
-
     virtual Type type() const override { return Type::Symbol; }
 
     SharedPtr<String> name() const { return m_name; }

@@ -15,13 +15,6 @@ public:
         : Node { token }
         , m_number { number } { }
 
-    BignumNode(const BignumNode &other)
-        : BignumNode { other.token(), other.number() } { }
-
-    virtual Node *clone() const override {
-        return new BignumNode(*this);
-    }
-
     virtual Type type() const override { return Type::Bignum; }
 
     virtual bool is_numeric() const override { return true; }

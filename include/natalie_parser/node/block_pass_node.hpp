@@ -12,25 +12,15 @@ using namespace TM;
 
 class BlockPassNode : public Node {
 public:
-    BlockPassNode(const Token &token, Node *node)
+    BlockPassNode(const Token &token, SharedPtr<Node> node)
         : Node { token }
         , m_node { node } {
         assert(m_node);
     }
 
-    BlockPassNode(const BlockPassNode &other)
-        : BlockPassNode {
-            other.token(),
-            other.node().clone(),
-        } { }
-
-    virtual Node *clone() const override {
-        return new BlockPassNode(*this);
-    }
-
     virtual Type type() const override { return Type::BlockPass; }
 
-    const Node &node() const { return m_node.ref(); }
+    const SharedPtr<Node> node() const { return m_node; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("block_pass");
@@ -38,6 +28,6 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_node {};
+    SharedPtr<Node> m_node {};
 };
 }

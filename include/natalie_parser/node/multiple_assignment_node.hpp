@@ -24,7 +24,7 @@ public:
     virtual void transform(Creator *creator) const override {
         creator->with_assignment(true, [&]() {
             creator->set_type("masgn");
-            creator->append_array(this);
+            creator->append_array(*this);
         });
     }
 };

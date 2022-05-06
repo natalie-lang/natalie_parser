@@ -15,13 +15,6 @@ public:
         : Node { token }
         , m_name { name } { }
 
-    Colon3Node(const Colon3Node &other)
-        : Colon3Node { other.token(), other.name() } { }
-
-    virtual Node *clone() const override {
-        return new Colon3Node(*this);
-    }
-
     virtual Type type() const override { return Type::Colon3; }
 
     SharedPtr<String> name() const { return m_name; }

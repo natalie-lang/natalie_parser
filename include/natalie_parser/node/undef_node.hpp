@@ -14,13 +14,6 @@ public:
     UndefNode(const Token &token)
         : NodeWithArgs { token } { }
 
-    UndefNode(const UndefNode &other)
-        : NodeWithArgs { other } { }
-
-    virtual Node *clone() const override {
-        return new UndefNode(*this);
-    }
-
     virtual Type type() const override { return Type::Undef; }
 
     // NOTE: UndefNode is handled separately from yield, break, etc.,

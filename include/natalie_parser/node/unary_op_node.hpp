@@ -10,7 +10,7 @@ using namespace TM;
 
 class UnaryOpNode : public Node {
 public:
-    UnaryOpNode(const Token &token, SharedPtr<String> op, Node *right)
+    UnaryOpNode(const Token &token, SharedPtr<String> op, SharedPtr<Node> right)
         : Node { token }
         , m_op { op }
         , m_right { right } {
@@ -18,21 +18,12 @@ public:
         assert(m_right);
     }
 
-    UnaryOpNode(const UnaryOpNode &other)
-        : Node { other.token() }
-        , m_op { other.op() }
-        , m_right { other.right().clone() } { }
-
-    virtual Node *clone() const override {
-        return new UnaryOpNode(*this);
-    }
-
     virtual Type type() const override { return Type::UnaryOp; }
 
     const SharedPtr<String> op() const { return m_op; }
-    const Node &right() const { return m_right.ref(); }
+    const SharedPtr<Node> right() const { return m_right; }
 
-    void set_right(Node *right) { m_right = right; }
+    void set_right(SharedPtr<Node> right) { m_right = right; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("call");
@@ -42,6 +33,6 @@ public:
 
 protected:
     SharedPtr<String> m_op {};
-    OwnedPtr<Node> m_right {};
+    SharedPtr<Node> m_right {};
 };
 }

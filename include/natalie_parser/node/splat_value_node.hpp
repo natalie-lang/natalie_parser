@@ -12,13 +12,13 @@ using namespace TM;
 
 class SplatValueNode : public Node {
 public:
-    SplatValueNode(const Token &token, Node *value)
+    SplatValueNode(const Token &token, SharedPtr<Node> value)
         : Node { token }
         , m_value { value } { }
 
     virtual Type type() const override { return Type::SplatValue; }
 
-    const Node &value() const { return m_value.ref(); }
+    const SharedPtr<Node> value() const { return m_value; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("svalue");
@@ -26,7 +26,7 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_value {};
+    SharedPtr<Node> m_value {};
 };
 
 }

@@ -27,7 +27,7 @@ VALUE initialize(int argc, VALUE *argv, VALUE self) {
 }
 
 VALUE node_to_ruby(TM::SharedPtr<NatalieParser::Node> node) {
-    NatalieParser::MRICreator creator { &node.ref() };
+    NatalieParser::MRICreator creator { node.ref() };
     node->transform(&creator);
     return creator.sexp();
 }

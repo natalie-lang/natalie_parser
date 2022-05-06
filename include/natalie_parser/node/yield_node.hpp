@@ -14,13 +14,6 @@ public:
     YieldNode(const Token &token)
         : NodeWithArgs { token } { }
 
-    YieldNode(const YieldNode &other)
-        : NodeWithArgs { other } { }
-
-    virtual Node *clone() const override {
-        return new YieldNode(*this);
-    }
-
     virtual Type type() const override { return Type::Yield; }
 
     virtual bool is_callable() const override { return true; }

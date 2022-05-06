@@ -9,7 +9,7 @@ void InterpolatedStringNode::transform(Creator *creator) const {
     for (size_t i = 0; i < m_nodes.size(); ++i) {
         auto node = m_nodes.at(i);
         if (i == 0 && node->type() == Node::Type::String) {
-            creator->append_string(static_cast<StringNode *>(node)->string());
+            creator->append_string(node.static_cast_as<StringNode>()->string());
             has_starter_string = true;
         } else {
             if (!has_starter_string) {

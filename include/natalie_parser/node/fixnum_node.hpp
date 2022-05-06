@@ -15,13 +15,6 @@ public:
         : Node { token }
         , m_number { number } { }
 
-    FixnumNode(const FixnumNode &other)
-        : FixnumNode { other.token(), other.number() } { }
-
-    virtual Node *clone() const override {
-        return new FixnumNode(*this);
-    }
-
     virtual Type type() const override { return Type::Fixnum; }
 
     virtual bool is_numeric() const override { return true; }

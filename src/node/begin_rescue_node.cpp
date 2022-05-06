@@ -4,16 +4,11 @@
 
 namespace NatalieParser {
 
-BeginRescueNode::~BeginRescueNode() {
-    for (auto node : m_exceptions)
-        delete node;
-}
-
-Node *BeginRescueNode::name_to_node() const {
+SharedPtr<Node> BeginRescueNode::name_to_node() const {
     assert(m_name);
     return new AssignmentNode {
         token(),
-        new IdentifierNode(*m_name),
+        m_name.static_cast_as<Node>(),
         new IdentifierNode {
             Token { Token::Type::GlobalVariable, "$!", file(), line(), column() },
             false },
@@ -23,9 +18,8 @@ Node *BeginRescueNode::name_to_node() const {
 void BeginRescueNode::transform(Creator *creator) const {
     creator->set_type("resbody");
     auto array = ArrayNode { token() };
-    for (auto exception_node : m_exceptions) {
-        array.add_node(exception_node->clone());
-    }
+    for (auto exception_node : m_exceptions)
+        array.add_node(exception_node);
     if (m_name)
         array.add_node(name_to_node());
     creator->append(array);

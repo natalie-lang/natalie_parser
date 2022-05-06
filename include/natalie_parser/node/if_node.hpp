@@ -12,7 +12,7 @@ using namespace TM;
 
 class IfNode : public Node {
 public:
-    IfNode(const Token &token, Node *condition, Node *true_expr, Node *false_expr)
+    IfNode(const Token &token, SharedPtr<Node> condition, SharedPtr<Node> true_expr, SharedPtr<Node> false_expr)
         : Node { token }
         , m_condition { condition }
         , m_true_expr { true_expr }
@@ -24,9 +24,9 @@ public:
 
     virtual Type type() const override { return Type::If; }
 
-    const Node &condition() const { return m_condition.ref(); }
-    const Node &true_expr() const { return m_true_expr.ref(); }
-    const Node &false_expr() const { return m_false_expr.ref(); }
+    const SharedPtr<Node> condition() const { return m_condition; }
+    const SharedPtr<Node> true_expr() const { return m_true_expr; }
+    const SharedPtr<Node> false_expr() const { return m_false_expr; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("if");
@@ -36,8 +36,8 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_condition {};
-    OwnedPtr<Node> m_true_expr {};
-    OwnedPtr<Node> m_false_expr {};
+    SharedPtr<Node> m_condition {};
+    SharedPtr<Node> m_true_expr {};
+    SharedPtr<Node> m_false_expr {};
 };
 }

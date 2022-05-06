@@ -12,7 +12,7 @@ using namespace TM;
 
 class LogicalOrNode : public Node {
 public:
-    LogicalOrNode(const Token &token, Node *left, Node *right)
+    LogicalOrNode(const Token &token, SharedPtr<Node> left, SharedPtr<Node> right)
         : Node { token }
         , m_left { left }
         , m_right { right } {
@@ -20,19 +20,12 @@ public:
         assert(m_right);
     }
 
-    LogicalOrNode(const LogicalOrNode &other)
-        : LogicalOrNode { other.token(), other.left().clone(), other.right().clone() } { }
-
-    virtual Node *clone() const override {
-        return new LogicalOrNode(*this);
-    }
-
     virtual Type type() const override { return Type::LogicalOr; }
 
-    const Node &left() const { return m_left.ref(); }
-    const Node &right() const { return m_right.ref(); }
+    const SharedPtr<Node> left() const { return m_left; }
+    const SharedPtr<Node> right() const { return m_right; }
 
-    void set_right(Node *right) { m_right = right; }
+    void set_right(SharedPtr<Node> right) { m_right = right; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("or");
@@ -41,7 +34,7 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_left {};
-    OwnedPtr<Node> m_right {};
+    SharedPtr<Node> m_left {};
+    SharedPtr<Node> m_right {};
 };
 }

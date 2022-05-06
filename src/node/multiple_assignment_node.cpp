@@ -8,7 +8,7 @@ void MultipleAssignmentNode::add_locals(TM::Hashmap<TM::String> &locals) {
     for (auto node : m_nodes) {
         switch (node->type()) {
         case Node::Type::Identifier: {
-            auto identifier = static_cast<IdentifierNode *>(node);
+            auto identifier = node.static_cast_as<IdentifierNode>();
             identifier->add_to_locals(locals);
             break;
         }
@@ -17,15 +17,15 @@ void MultipleAssignmentNode::add_locals(TM::Hashmap<TM::String> &locals) {
         case Node::Type::Colon3:
             break;
         case Node::Type::Splat: {
-            auto splat = static_cast<SplatNode *>(node);
-            if (splat->node() && splat->node().type() == Node::Type::Identifier) {
-                auto identifier = static_cast<const IdentifierNode *>(&splat->node());
+            auto splat = node.static_cast_as<SplatNode>();
+            if (splat->node() && splat->node()->type() == Node::Type::Identifier) {
+                auto identifier = splat->node().static_cast_as<IdentifierNode>();
                 identifier->add_to_locals(locals);
             }
             break;
         }
         case Node::Type::MultipleAssignment:
-            static_cast<MultipleAssignmentNode *>(node)->add_locals(locals);
+            node.static_cast_as<MultipleAssignmentNode>()->add_locals(locals);
             break;
         default:
             printf("unknown node type %d\n", (int)node->type());

@@ -9,7 +9,7 @@ void InterpolatedShellNode::transform(Creator *creator) const {
     for (size_t i = 0; i < m_nodes.size(); ++i) {
         auto node = m_nodes.at(i);
         if (i == 0 && node->type() == Node::Type::String) {
-            auto string_node = static_cast<StringNode *>(node);
+            auto string_node = node.static_cast_as<StringNode>();
             creator->append_string(string_node->string());
             has_starter_string = true;
         } else {

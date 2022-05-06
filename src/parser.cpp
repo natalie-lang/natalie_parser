@@ -44,7 +44,7 @@ enum class Parser::Precedence {
     REF, // foo[1] / foo[1] = 2
 };
 
-bool Parser::higher_precedence(Token &token, Node *left, Precedence current_precedence) {
+bool Parser::higher_precedence(Token &token, SharedPtr<Node> left, Precedence current_precedence) {
     auto next_precedence = get_precedence(token, left);
 
     // printf("token %d, left %d, current_precedence %d, next_precedence %d\n", (int)token.type(), (int)left->type(), (int)current_precedence, (int)next_precedence);
@@ -91,7 +91,7 @@ bool Parser::higher_precedence(Token &token, Node *left, Precedence current_prec
     return next_precedence > current_precedence;
 }
 
-Parser::Precedence Parser::get_precedence(Token &token, Node *left) {
+Parser::Precedence Parser::get_precedence(Token &token, SharedPtr<Node> left) {
     switch (token.type()) {
     case Token::Type::Plus:
         return left ? Precedence::SUM : Precedence::UNARY_PLUS;
@@ -196,7 +196,7 @@ Parser::Precedence Parser::get_precedence(Token &token, Node *left) {
     return Precedence::LOWEST;
 }
 
-Node *Parser::parse_expression(Parser::Precedence precedence, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_expression(Parser::Precedence precedence, LocalsHashmap &locals) {
     skip_newlines();
 
     m_precedence_stack.push(precedence);
@@ -205,29 +205,16 @@ Node *Parser::parse_expression(Parser::Precedence precedence, LocalsHashmap &loc
     if (!null_fn)
         throw_unexpected("expression");
 
-    Node *left = nullptr;
-    try {
-        left = (this->*null_fn)(locals);
-    } catch (SyntaxError &) {
-        delete left;
-        throw;
-    }
+    auto left = (this->*null_fn)(locals);
 
     while (current_token().is_valid()) {
         auto token = current_token();
         if (!higher_precedence(token, left, precedence))
             break;
         auto left_fn = left_denotation(token, left, precedence);
-        if (!left_fn) {
-            delete left;
+        if (!left_fn)
             throw_unexpected(token, "expression");
-        }
-        try {
-            (this->*left_fn)(left, locals);
-        } catch (SyntaxError &) {
-            delete left;
-            throw;
-        }
+        left = (this->*left_fn)(left, locals);
         m_precedence_stack.pop();
         m_precedence_stack.push(precedence);
     }
@@ -244,35 +231,35 @@ SharedPtr<Node> Parser::tree() {
     skip_newlines();
     while (!current_token().is_eof()) {
         auto exp = parse_expression(Precedence::LOWEST, locals);
-        tree->as_block_node()->add_node(exp);
+        tree->as_block_node().add_node(exp);
         validate_current_token();
         next_expression();
     }
     return tree;
 }
 
-BlockNode *Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Token::Type end_token_type, bool allow_rescue) {
-    OwnedPtr<BlockNode> body = new BlockNode { current_token() };
+SharedPtr<BlockNode> Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Token::Type end_token_type, bool allow_rescue) {
+    SharedPtr<BlockNode> body = new BlockNode { current_token() };
     validate_current_token();
     skip_newlines();
     while (!current_token().is_eof() && current_token().type() != end_token_type) {
         if (allow_rescue && current_token().type() == Token::Type::RescueKeyword) {
             auto token = body->token();
-            OwnedPtr<BeginNode> begin_node = new BeginNode { body->token(), body.release() };
+            SharedPtr<BeginNode> begin_node = new BeginNode { body->token(), body };
             parse_rest_of_begin(begin_node.ref(), locals);
             rewind(); // so the 'end' keyword can be consumed by our caller
-            return new BlockNode { token, begin_node.release() };
+            return new BlockNode { token, begin_node.static_cast_as<Node>() };
         }
         auto exp = parse_expression(precedence, locals);
         body->add_node(exp);
         next_expression();
     }
-    return body.release();
+    return body;
 }
 
 // FIXME: Maybe pass a lambda in that can just compare the two types? (No vector needed.)
-BlockNode *Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Vector<Token::Type> &end_tokens, const char *expected_message) {
-    OwnedPtr<BlockNode> body = new BlockNode { current_token() };
+SharedPtr<BlockNode> Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Vector<Token::Type> &end_tokens, const char *expected_message) {
+    SharedPtr<BlockNode> body = new BlockNode { current_token() };
     validate_current_token();
     skip_newlines();
     auto finished = [this, end_tokens] {
@@ -290,36 +277,36 @@ BlockNode *Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Vect
     }
     if (!finished())
         throw_unexpected(expected_message);
-    return body.release();
+    return body;
 }
 
-BlockNode *Parser::parse_def_body(LocalsHashmap &locals) {
+SharedPtr<BlockNode> Parser::parse_def_body(LocalsHashmap &locals) {
     auto token = current_token();
-    OwnedPtr<BlockNode> body = new BlockNode { token };
+    SharedPtr<BlockNode> body = new BlockNode { token };
     skip_newlines();
     while (!current_token().is_eof() && !current_token().is_end_keyword()) {
         if (current_token().type() == Token::Type::RescueKeyword) {
-            OwnedPtr<BeginNode> begin_node = new BeginNode { token, body.release() };
+            SharedPtr<BeginNode> begin_node = new BeginNode { token, body };
             parse_rest_of_begin(begin_node.ref(), locals);
             rewind(); // so the 'end' keyword can be consumed by parse_def
-            return new BlockNode { token, begin_node.release() };
+            return new BlockNode { token, begin_node.static_cast_as<Node>() };
         }
         auto exp = parse_expression(Precedence::LOWEST, locals);
         body->add_node(exp);
         next_expression();
     }
-    return body.release();
+    return body;
 }
 
-Node *Parser::parse_alias(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_alias(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    OwnedPtr<SymbolNode> new_name = parse_alias_arg(locals, "alias new name (first argument)", false);
+    SharedPtr<SymbolNode> new_name = parse_alias_arg(locals, "alias new name (first argument)", false);
     auto existing_name = parse_alias_arg(locals, "alias existing name (second argument)", true);
-    return new AliasNode { token, new_name.release(), existing_name };
+    return new AliasNode { token, new_name, existing_name };
 }
 
-SymbolNode *Parser::parse_alias_arg(LocalsHashmap &locals, const char *expected_message, bool reinsert_collapsed_newline) {
+SharedPtr<SymbolNode> Parser::parse_alias_arg(LocalsHashmap &locals, const char *expected_message, bool reinsert_collapsed_newline) {
     auto token = current_token();
     switch (token.type()) {
         // TODO: handle Constant too
@@ -328,9 +315,9 @@ SymbolNode *Parser::parse_alias_arg(LocalsHashmap &locals, const char *expected_
         return new SymbolNode { token, token.literal_string() };
     }
     case Token::Type::Symbol:
-        return static_cast<SymbolNode *>(parse_symbol(locals));
+        return parse_symbol(locals).static_cast_as<SymbolNode>();
     case Token::Type::InterpolatedSymbolBegin:
-        return static_cast<SymbolNode *>(parse_interpolated_symbol(locals));
+        return parse_interpolated_symbol(locals).static_cast_as<SymbolNode>();
     default:
         if (token.is_operator() || token.is_keyword()) {
             advance();
@@ -355,24 +342,24 @@ SymbolNode *Parser::parse_alias_arg(LocalsHashmap &locals, const char *expected_
     }
 }
 
-Node *Parser::parse_array(LocalsHashmap &locals) {
-    OwnedPtr<ArrayNode> array = new ArrayNode { current_token() };
+SharedPtr<Node> Parser::parse_array(LocalsHashmap &locals) {
+    SharedPtr<ArrayNode> array = new ArrayNode { current_token() };
     if (current_token().type() == Token::Type::LBracketRBracket) {
         advance();
-        return array.release();
+        return array.static_cast_as<Node>();
     }
     advance();
-    auto add_node = [&]() -> Node * {
+    auto add_node = [&]() -> SharedPtr<Node> {
         auto token = current_token();
         if (token.type() == Token::Type::RBracket) {
             advance();
-            return array.release();
+            return array.static_cast_as<Node>();
         }
         if (token.type() == Token::Type::SymbolKey) {
             array->add_node(parse_hash_inner(locals, Precedence::HASH, Token::Type::RBracket));
             expect(Token::Type::RBracket, "array closing bracket");
             advance();
-            return array.release();
+            return array.static_cast_as<Node>();
         }
         auto value = parse_expression(Precedence::ARRAY, locals);
         token = current_token();
@@ -380,10 +367,10 @@ Node *Parser::parse_array(LocalsHashmap &locals) {
             array->add_node(parse_hash_inner(locals, Precedence::HASH, Token::Type::RBracket, value));
             expect(Token::Type::RBracket, "array closing bracket");
             advance();
-            return array.release();
+            return array.static_cast_as<Node>();
         }
         array->add_node(value);
-        return nullptr;
+        return {};
     };
     auto ret = add_node();
     if (ret) return ret;
@@ -394,7 +381,7 @@ Node *Parser::parse_array(LocalsHashmap &locals) {
     }
     expect(Token::Type::RBracket, "array closing bracket");
     advance();
-    return array.release();
+    return array.static_cast_as<Node>();
 }
 
 void Parser::parse_comma_separated_expressions(ArrayNode &array, LocalsHashmap &locals) {
@@ -405,27 +392,27 @@ void Parser::parse_comma_separated_expressions(ArrayNode &array, LocalsHashmap &
     }
 }
 
-Node *Parser::parse_back_ref(LocalsHashmap &) {
+SharedPtr<Node> Parser::parse_back_ref(LocalsHashmap &) {
     auto token = current_token();
     advance();
     return new BackRefNode { token, token.literal_string()->at(0) };
 }
 
-Node *Parser::parse_begin(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_begin(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     next_expression();
     auto begin_ending_tokens = Vector<Token::Type> { { Token::Type::RescueKeyword, Token::Type::ElseKeyword, Token::Type::EnsureKeyword, Token::Type::EndKeyword } };
     auto body = parse_body(locals, Precedence::LOWEST, begin_ending_tokens, "case: rescue, else, ensure, or end");
 
-    OwnedPtr<BeginNode> begin_node = new BeginNode { token, body };
+    SharedPtr<BeginNode> begin_node = new BeginNode { token, body };
     parse_rest_of_begin(begin_node.ref(), locals);
 
     // a begin/end with nothing else just becomes a BlockNode
     if (!(begin_node->has_rescue_nodes() || begin_node->has_else_body() || begin_node->has_ensure_body()))
-        return new BlockNode { begin_node->body() };
+        return begin_node->body().static_cast_as<Node>();
 
-    return begin_node.release();
+    return begin_node.static_cast_as<Node>();
 }
 
 void Parser::parse_rest_of_begin(BeginNode &begin_node, LocalsHashmap &locals) {
@@ -434,7 +421,7 @@ void Parser::parse_rest_of_begin(BeginNode &begin_node, LocalsHashmap &locals) {
     while (!current_token().is_eof() && !current_token().is_end_keyword()) {
         switch (current_token().type()) {
         case Token::Type::RescueKeyword: {
-            OwnedPtr<BeginRescueNode> rescue_node = new BeginRescueNode { current_token() };
+            SharedPtr<BeginRescueNode> rescue_node = new BeginRescueNode { current_token() };
             advance();
             if (!current_token().is_eol() && current_token().type() != Token::Type::HashRocket) {
                 auto name = parse_expression(Precedence::BARE_CALL_ARG, locals);
@@ -447,7 +434,7 @@ void Parser::parse_rest_of_begin(BeginNode &begin_node, LocalsHashmap &locals) {
             }
             if (current_token().type() == Token::Type::HashRocket) {
                 advance();
-                OwnedPtr<IdentifierNode> name;
+                SharedPtr<IdentifierNode> name;
                 switch (current_token().type()) {
                 case Token::Type::BareName:
                     name = new IdentifierNode { current_token(), current_token().literal_string() };
@@ -457,12 +444,12 @@ void Parser::parse_rest_of_begin(BeginNode &begin_node, LocalsHashmap &locals) {
                     throw_unexpected("exception name");
                 }
                 name->add_to_locals(locals);
-                rescue_node->set_exception_name(name.release());
+                rescue_node->set_exception_name(name);
             }
             next_expression();
             auto body = parse_body(locals, Precedence::LOWEST, rescue_ending_tokens, "case: rescue, else, ensure, or end");
             rescue_node->set_body(body);
-            begin_node.add_rescue_node(rescue_node.release());
+            begin_node.add_rescue_node(rescue_node);
             break;
         }
         case Token::Type::ElseKeyword: {
@@ -487,7 +474,7 @@ void Parser::parse_rest_of_begin(BeginNode &begin_node, LocalsHashmap &locals) {
     advance();
 }
 
-Node *Parser::parse_beginless_range(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_beginless_range(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     auto end_node = parse_expression(Precedence::LOWEST, locals);
@@ -499,14 +486,14 @@ Node *Parser::parse_beginless_range(LocalsHashmap &locals) {
     };
 }
 
-Node *Parser::parse_block_pass(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_block_pass(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     auto value = parse_expression(Precedence::UNARY_PLUS, locals);
     return new BlockPassNode { token, value };
 }
 
-Node *Parser::parse_bool(LocalsHashmap &) {
+SharedPtr<Node> Parser::parse_bool(LocalsHashmap &) {
     auto token = current_token();
     switch (current_token().type()) {
     case Token::Type::TrueKeyword:
@@ -520,7 +507,7 @@ Node *Parser::parse_bool(LocalsHashmap &) {
     }
 }
 
-Node *Parser::parse_break(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_break(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     if (current_token().is_lparen()) {
@@ -537,36 +524,36 @@ Node *Parser::parse_break(LocalsHashmap &locals) {
     } else if (current_token().can_be_first_arg_of_implicit_call()) {
         auto value = parse_expression(Precedence::BARE_CALL_ARG, locals);
         if (current_token().is_comma()) {
-            OwnedPtr<ArrayNode> array = new ArrayNode { token };
+            SharedPtr<ArrayNode> array = new ArrayNode { token };
             array->add_node(value);
             while (current_token().is_comma()) {
                 advance();
                 array->add_node(parse_expression(Precedence::BARE_CALL_ARG, locals));
             }
-            value = array.release();
+            value = array.static_cast_as<Node>();
         }
         return new BreakNode { token, value };
     }
     return new BreakNode { token };
 }
 
-Node *Parser::parse_case(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_case(LocalsHashmap &locals) {
     auto case_token = current_token();
     advance();
-    OwnedPtr<Node> subject;
+    SharedPtr<Node> subject;
     if (current_token().type() == Token::Type::WhenKeyword) {
         subject = new NilNode { case_token };
     } else {
         subject = parse_expression(Precedence::CASE, locals);
         next_expression();
     }
-    OwnedPtr<CaseNode> node = new CaseNode { case_token, subject.release() };
+    SharedPtr<CaseNode> node = new CaseNode { case_token, subject };
     while (!current_token().is_end_keyword()) {
         auto token = current_token();
         switch (token.type()) {
         case Token::Type::WhenKeyword: {
             advance();
-            OwnedPtr<ArrayNode> condition_array = new ArrayNode { token };
+            SharedPtr<ArrayNode> condition_array = new ArrayNode { token };
             parse_comma_separated_expressions(condition_array.ref(), locals);
             if (current_token().type() == Token::Type::ThenKeyword) {
                 advance();
@@ -575,13 +562,13 @@ Node *Parser::parse_case(LocalsHashmap &locals) {
                 next_expression();
             }
             auto body = parse_case_when_body(locals);
-            auto when_node = new CaseWhenNode { token, condition_array.release(), body };
+            auto when_node = new CaseWhenNode { token, condition_array.static_cast_as<Node>(), body };
             node->add_node(when_node);
             break;
         }
         case Token::Type::InKeyword: {
             advance();
-            OwnedPtr<Node> pattern = parse_case_in_patterns(locals);
+            SharedPtr<Node> pattern = parse_case_in_patterns(locals);
             if (current_token().type() == Token::Type::ThenKeyword) {
                 advance();
                 skip_newlines();
@@ -589,7 +576,7 @@ Node *Parser::parse_case(LocalsHashmap &locals) {
                 next_expression();
             }
             auto body = parse_case_in_body(locals);
-            auto in_node = new CaseInNode { token, pattern.release(), body };
+            auto in_node = new CaseInNode { token, pattern, body };
             node->add_node(in_node);
             break;
         }
@@ -598,7 +585,7 @@ Node *Parser::parse_case(LocalsHashmap &locals) {
                 throw_unexpected("case 'when' or 'in'");
             advance();
             skip_newlines();
-            BlockNode *body = parse_body(locals, Precedence::LOWEST);
+            SharedPtr<BlockNode> body = parse_body(locals, Precedence::LOWEST);
             node->set_else_node(body);
             expect(Token::Type::EndKeyword, "case end");
             break;
@@ -609,16 +596,16 @@ Node *Parser::parse_case(LocalsHashmap &locals) {
     }
     expect(Token::Type::EndKeyword, "case end");
     advance();
-    return node.release();
+    return node.static_cast_as<Node>();
 }
 
-BlockNode *Parser::parse_case_in_body(LocalsHashmap &locals) {
+SharedPtr<BlockNode> Parser::parse_case_in_body(LocalsHashmap &locals) {
     return parse_case_when_body(locals);
 }
 
-Node *Parser::parse_case_in_pattern(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
     auto token = current_token();
-    OwnedPtr<Node> node;
+    SharedPtr<Node> node;
     switch (token.type()) {
     case Token::Type::BareName:
         advance();
@@ -640,10 +627,10 @@ Node *Parser::parse_case_in_pattern(LocalsHashmap &locals) {
     case Token::Type::LBracket: {
         // TODO: might need to keep track of and pass along precedence value?
         advance();
-        OwnedPtr<ArrayPatternNode> array = new ArrayPatternNode { token };
+        SharedPtr<ArrayPatternNode> array = new ArrayPatternNode { token };
         if (current_token().type() == Token::Type::RBracket) {
             advance();
-            node = array.release();
+            node = array.static_cast_as<Node>();
             break;
         }
         array->add_node(parse_case_in_pattern(locals));
@@ -653,15 +640,15 @@ Node *Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         }
         expect(Token::Type::RBracket, "array pattern closing bracket");
         advance();
-        node = array.release();
+        node = array.static_cast_as<Node>();
         break;
     }
     case Token::Type::LCurlyBrace: {
         advance();
-        OwnedPtr<HashPatternNode> hash = new HashPatternNode { token };
+        SharedPtr<HashPatternNode> hash = new HashPatternNode { token };
         if (current_token().type() == Token::Type::RCurlyBrace) {
             advance();
-            node = hash.release();
+            node = hash.static_cast_as<Node>();
             break;
         }
         expect(Token::Type::SymbolKey, "hash pattern symbol key");
@@ -674,7 +661,7 @@ Node *Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         }
         expect(Token::Type::RCurlyBrace, "hash pattern closing brace");
         advance();
-        node = hash.release();
+        node = hash.static_cast_as<Node>();
         break;
     }
     case Token::Type::Bignum:
@@ -685,7 +672,7 @@ Node *Parser::parse_case_in_pattern(LocalsHashmap &locals) {
     case Token::Type::Multiply: {
         auto splat_token = current_token();
         advance();
-        OwnedPtr<ArrayPatternNode> array = new ArrayPatternNode { token };
+        SharedPtr<ArrayPatternNode> array = new ArrayPatternNode { token };
         switch (current_token().type()) {
         case Token::Type::BareName:
         case Token::Type::Constant: {
@@ -699,7 +686,7 @@ Node *Parser::parse_case_in_pattern(LocalsHashmap &locals) {
             array->add_node(new IdentifierNode { splat_token, true });
         }
         advance();
-        node = array.release();
+        node = array.static_cast_as<Node>();
         break;
     }
     case Token::Type::String:
@@ -718,13 +705,13 @@ Node *Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         token = current_token();
         advance();
         auto identifier = new IdentifierNode { token, true };
-        node = new AssignmentNode { token, identifier, node.release() };
+        node = new AssignmentNode { token, identifier, node };
     }
-    return node.release();
+    return node;
 }
 
-Node *Parser::parse_case_in_patterns(LocalsHashmap &locals) {
-    OwnedVector<Node *> patterns;
+SharedPtr<Node> Parser::parse_case_in_patterns(LocalsHashmap &locals) {
+    Vector<SharedPtr<Node>> patterns;
     patterns.push(parse_case_in_pattern(locals));
     while (current_token().type() == Token::Type::BitwiseOr) {
         advance();
@@ -735,7 +722,7 @@ Node *Parser::parse_case_in_patterns(LocalsHashmap &locals) {
         auto last_pattern = patterns.last();
         auto next_pattern = parse_case_in_pattern(locals);
         if (last_pattern->type() == Node::Type::ArrayPattern) {
-            static_cast<ArrayPatternNode *>(last_pattern)->add_node(next_pattern);
+            last_pattern.static_cast_as<ArrayPatternNode>()->add_node(next_pattern);
         } else {
             patterns.pop();
             auto array_pattern = new ArrayPatternNode { last_pattern->token() };
@@ -759,8 +746,8 @@ Node *Parser::parse_case_in_patterns(LocalsHashmap &locals) {
     }
 }
 
-BlockNode *Parser::parse_case_when_body(LocalsHashmap &locals) {
-    OwnedPtr<BlockNode> body = new BlockNode { current_token() };
+SharedPtr<BlockNode> Parser::parse_case_when_body(LocalsHashmap &locals) {
+    SharedPtr<BlockNode> body = new BlockNode { current_token() };
     validate_current_token();
     skip_newlines();
     while (!current_token().is_eof() && !current_token().is_when_keyword() && !current_token().is_else_keyword() && !current_token().is_end_keyword()) {
@@ -771,10 +758,10 @@ BlockNode *Parser::parse_case_when_body(LocalsHashmap &locals) {
     }
     if (!current_token().is_when_keyword() && !current_token().is_else_keyword() && !current_token().is_end_keyword())
         throw_unexpected("case: when, else, or end");
-    return body.release();
+    return body;
 }
 
-Node *Parser::parse_class_or_module_name(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_class_or_module_name(LocalsHashmap &locals) {
     Token name_token;
     if (current_token().type() == Token::Type::ConstantResolution) {
         name_token = peek_token();
@@ -786,32 +773,31 @@ Node *Parser::parse_class_or_module_name(LocalsHashmap &locals) {
     return parse_expression(Precedence::LESS_GREATER, locals);
 }
 
-Node *Parser::parse_class(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_class(LocalsHashmap &locals) {
     auto token = current_token();
     if (peek_token().type() == Token::Type::LeftShift)
         return parse_sclass(locals);
     advance();
     LocalsHashmap our_locals { TM::HashType::TMString };
-    OwnedPtr<Node> name = parse_class_or_module_name(our_locals);
-    OwnedPtr<Node> superclass;
+    SharedPtr<Node> name = parse_class_or_module_name(our_locals);
+    SharedPtr<Node> superclass;
     if (current_token().type() == Token::Type::LessThan) {
         advance();
         superclass = parse_expression(Precedence::LOWEST, our_locals);
     } else {
         superclass = new NilNode { token };
     }
-    OwnedPtr<BlockNode> body = parse_body(our_locals, Precedence::LOWEST, Token::Type::EndKeyword, true);
+    SharedPtr<BlockNode> body = parse_body(our_locals, Precedence::LOWEST, Token::Type::EndKeyword, true);
     expect(Token::Type::EndKeyword, "class end");
     advance();
-    return new ClassNode { token, name.release(), superclass.release(), body.release() };
+    return new ClassNode { token, name, superclass, body };
 };
 
-void Parser::parse_multiple_assignment_expression(Node *&left, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_multiple_assignment_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
     if (!left->is_assignable())
         throw_unexpected("assignment =");
-    OwnedPtr<MultipleAssignmentNode> list = new MultipleAssignmentNode { left->token() };
+    SharedPtr<MultipleAssignmentNode> list = new MultipleAssignmentNode { left->token() };
     list->add_node(left);
-    left = nullptr;
     while (current_token().is_comma()) {
         advance();
         auto node = parse_assignment_identifier(true, locals);
@@ -819,13 +805,13 @@ void Parser::parse_multiple_assignment_expression(Node *&left, LocalsHashmap &lo
     }
     if (!current_token().is_rparen())
         expect(Token::Type::Equal, "assignment =");
-    left = list.release();
+    return list.static_cast_as<Node>();
 }
 
-Node *Parser::parse_assignment_identifier(bool allow_splat, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_assignment_identifier(bool allow_splat, LocalsHashmap &locals) {
     auto token = current_token();
-    Node *node;
-    switch (current_token().type()) {
+    SharedPtr<Node> node;
+    switch (token.type()) {
     case Token::Type::BareName:
     case Token::Type::ClassVariable:
     case Token::Type::Constant:
@@ -839,11 +825,9 @@ Node *Parser::parse_assignment_identifier(bool allow_splat, LocalsHashmap &local
     case Token::Type::LParen: {
         advance(); // (
         node = parse_assignment_identifier(true, locals);
-        parse_multiple_assignment_expression(node, locals);
-        if (!current_token().is_rparen()) {
-            delete node;
+        node = parse_multiple_assignment_expression(node, locals);
+        if (!current_token().is_rparen())
             throw_unexpected("closing paren for multiple assignment");
-        }
         advance(); // )
         break;
     }
@@ -869,14 +853,14 @@ Node *Parser::parse_assignment_identifier(bool allow_splat, LocalsHashmap &local
         token = current_token();
         switch (token.type()) {
         case Token::Type::ConstantResolution:
-            parse_constant_resolution_expression(node, locals);
+            node = parse_constant_resolution_expression(node, locals);
             break;
         case Token::Type::Dot:
-            parse_send_expression(node, locals);
+            node = parse_send_expression(node, locals);
             break;
         case Token::Type::LBracket:
             if (treat_left_bracket_as_element_reference(node, token))
-                parse_ref_expression(node, locals);
+                node = parse_ref_expression(node, locals);
             else
                 consumed = true;
             break;
@@ -888,17 +872,17 @@ Node *Parser::parse_assignment_identifier(bool allow_splat, LocalsHashmap &local
     return node;
 }
 
-Node *Parser::parse_constant(LocalsHashmap &) {
+SharedPtr<Node> Parser::parse_constant(LocalsHashmap &) {
     auto node = new ConstantNode { current_token() };
     advance();
     return node;
 };
 
-Node *Parser::parse_def(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_def(LocalsHashmap &locals) {
     auto def_token = current_token();
     advance();
     LocalsHashmap our_locals { TM::HashType::TMString };
-    OwnedPtr<Node> self_node;
+    SharedPtr<Node> self_node;
     SharedPtr<String> name = new String("");
     auto token = current_token();
     switch (token.type()) {
@@ -939,7 +923,7 @@ Node *Parser::parse_def(LocalsHashmap &locals) {
         advance();
         name->append_char('=');
     }
-    auto args = OwnedVector<Node *> {};
+    auto args = Vector<SharedPtr<Node>> {};
     if (current_token().is_lparen()) {
         advance();
         if (current_token().is_rparen()) {
@@ -952,20 +936,26 @@ Node *Parser::parse_def(LocalsHashmap &locals) {
     } else if (current_token().is_bare_name() || current_token().is_splat()) {
         parse_def_args(args, our_locals);
     }
-    OwnedPtr<BlockNode> body = parse_def_body(our_locals);
+    SharedPtr<BlockNode> body = parse_def_body(our_locals);
     expect(Token::Type::EndKeyword, "def end");
     advance();
-    return new DefNode { def_token, self_node.release(), name, *args.release(), body.release() };
+    return new DefNode {
+        def_token,
+        self_node,
+        name,
+        args,
+        body
+    };
 };
 
-Node *Parser::parse_defined(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_defined(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     auto arg = parse_expression(Precedence::BARE_CALL_ARG, locals);
     return new DefinedNode { token, arg };
 }
 
-void Parser::parse_def_args(OwnedVector<Node *> &args, LocalsHashmap &locals) {
+void Parser::parse_def_args(Vector<SharedPtr<Node>> &args, LocalsHashmap &locals) {
     args.push(parse_def_single_arg(locals));
     while (current_token().is_comma()) {
         advance();
@@ -973,22 +963,22 @@ void Parser::parse_def_args(OwnedVector<Node *> &args, LocalsHashmap &locals) {
     }
 }
 
-Node *Parser::parse_def_single_arg(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_def_single_arg(LocalsHashmap &locals) {
     auto token = current_token();
     switch (token.type()) {
     case Token::Type::BareName: {
-        OwnedPtr<ArgNode> arg = new ArgNode { token, token.literal_string() };
+        SharedPtr<ArgNode> arg = new ArgNode { token, token.literal_string() };
         advance();
         arg->add_to_locals(locals);
         if (current_token().type() == Token::Type::Equal) {
             advance();
             arg->set_value(parse_expression(Precedence::DEF_ARG, locals));
         }
-        return arg.release();
+        return arg.static_cast_as<Node>();
     }
     case Token::Type::LParen: {
         advance();
-        auto sub_args = OwnedVector<Node *> {};
+        auto sub_args = Vector<SharedPtr<Node>> {};
         parse_def_args(sub_args, locals);
         expect(Token::Type::RParen, "nested args closing paren");
         advance();
@@ -996,12 +986,11 @@ Node *Parser::parse_def_single_arg(LocalsHashmap &locals) {
         for (auto arg : sub_args) {
             masgn->add_node(arg);
         }
-        sub_args.release();
         return masgn;
     }
     case Token::Type::Multiply: {
         advance();
-        ArgNode *arg;
+        SharedPtr<ArgNode> arg;
         if (current_token().is_bare_name()) {
             arg = new ArgNode { token, current_token().literal_string() };
             advance();
@@ -1010,11 +999,11 @@ Node *Parser::parse_def_single_arg(LocalsHashmap &locals) {
             arg = new ArgNode { token };
         }
         arg->set_splat(true);
-        return arg;
+        return arg.static_cast_as<Node>();
     }
     case Token::Type::Exponent: {
         advance();
-        ArgNode *arg;
+        SharedPtr<ArgNode> arg;
         if (current_token().is_bare_name()) {
             arg = new ArgNode { token, current_token().literal_string() };
             advance();
@@ -1023,7 +1012,7 @@ Node *Parser::parse_def_single_arg(LocalsHashmap &locals) {
             arg = new ArgNode { token };
         }
         arg->set_kwsplat(true);
-        return arg;
+        return arg.static_cast_as<Node>();
     }
     case Token::Type::BitwiseAnd: {
         advance();
@@ -1035,7 +1024,7 @@ Node *Parser::parse_def_single_arg(LocalsHashmap &locals) {
         return arg;
     }
     case Token::Type::SymbolKey: {
-        OwnedPtr<KeywordArgNode> arg = new KeywordArgNode { token, current_token().literal_string() };
+        SharedPtr<KeywordArgNode> arg = new KeywordArgNode { token, current_token().literal_string() };
         advance();
         switch (current_token().type()) {
         case Token::Type::Comma:
@@ -1047,109 +1036,105 @@ Node *Parser::parse_def_single_arg(LocalsHashmap &locals) {
             arg->set_value(parse_expression(Precedence::DEF_ARG, locals));
         }
         arg->add_to_locals(locals);
-        return arg.release();
+        return arg.static_cast_as<Node>();
     }
     default:
         throw_unexpected("argument");
     }
 }
 
-void Parser::parse_modifier_expression(Node *&left, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_modifier_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
     auto token = current_token();
     switch (token.type()) {
     case Token::Type::IfKeyword: {
         advance();
         auto condition = parse_expression(Precedence::LOWEST, locals);
-        left = new IfNode { token, condition, left, new NilNode { token } };
-        return;
+        return new IfNode { token, condition, left, new NilNode { token } };
     }
     case Token::Type::UnlessKeyword: {
         advance();
         auto condition = parse_expression(Precedence::LOWEST, locals);
-        left = new IfNode { token, condition, new NilNode { token }, left };
-        return;
+        return new IfNode { token, condition, new NilNode { token }, left };
     }
     case Token::Type::UntilKeyword: {
         advance();
         auto condition = parse_expression(Precedence::LOWEST, locals);
-        BlockNode *body;
+        SharedPtr<BlockNode> body;
         bool pre = true;
         if (left->type() == Node::Type::Block) {
-            body = static_cast<BlockNode *>(left);
+            body = left.static_cast_as<BlockNode>();
             pre = false;
         } else {
             if (left->type() == Node::Type::Begin) pre = false;
             body = new BlockNode { token, left };
         }
-        left = new UntilNode { token, condition, body, pre };
-        return;
+        return new UntilNode { token, condition, body, pre };
     }
     case Token::Type::WhileKeyword: {
         advance();
         auto condition = parse_expression(Precedence::LOWEST, locals);
-        BlockNode *body;
+        SharedPtr<BlockNode> body;
         bool pre = true;
         if (left->type() == Node::Type::Block) {
-            body = static_cast<BlockNode *>(left);
+            body = left.static_cast_as<BlockNode>();
             pre = false;
         } else {
             if (left->type() == Node::Type::Begin) pre = false;
             body = new BlockNode { token, left };
         }
-        left = new WhileNode { token, condition, body, pre };
-        return;
+        return new WhileNode { token, condition, body, pre };
     }
     default:
         TM_NOT_YET_IMPLEMENTED();
     }
 }
 
-Node *Parser::parse_file_constant(LocalsHashmap &) {
+SharedPtr<Node> Parser::parse_file_constant(LocalsHashmap &) {
     auto token = current_token();
     advance();
     return new StringNode { token, token.file() };
 }
 
-Node *Parser::parse_group(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_group(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     if (current_token().is_rparen()) {
         advance();
         return new NilSexpNode { token };
     }
-    OwnedPtr<Node> exp = parse_expression(Precedence::LOWEST, locals);
+    SharedPtr<Node> exp = parse_expression(Precedence::LOWEST, locals);
     if (current_token().is_end_of_expression()) {
-        OwnedPtr<BlockNode> block = new BlockNode { token };
-        block->add_node(exp.release());
+        SharedPtr<BlockNode> block = new BlockNode { token };
+        block->add_node(exp);
         while (current_token().is_end_of_expression()) {
             next_expression();
             auto next_exp = parse_expression(Precedence::LOWEST, locals);
             block->add_node(next_exp);
         }
-        exp = block.release();
+        exp = block.static_cast_as<Node>();
     }
     expect(Token::Type::RParen, "group closing paren");
     advance();
-    return exp.release();
+    return exp;
 };
 
-Node *Parser::parse_hash(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_hash(LocalsHashmap &locals) {
     expect(Token::Type::LCurlyBrace, "hash opening curly brace");
     auto token = current_token();
     advance();
-    OwnedPtr<Node> hash;
+    SharedPtr<Node> hash;
     if (current_token().type() == Token::Type::RCurlyBrace)
         hash = new HashNode { token };
     else
         hash = parse_hash_inner(locals, Precedence::HASH, Token::Type::RCurlyBrace);
     expect(Token::Type::RCurlyBrace, "hash closing curly brace");
     advance();
-    return hash.release();
+    return hash;
 }
 
-Node *Parser::parse_hash_inner(LocalsHashmap &locals, Precedence precedence, Token::Type closing_token, Node *first_key) {
+SharedPtr<Node> Parser::parse_hash_inner(LocalsHashmap &locals, Precedence precedence, Token::Type closing_token, SharedPtr<Node> first_key) {
     auto token = current_token();
-    OwnedPtr<HashNode> hash = new HashNode { token };
+    SharedPtr<HashNode> hash = new HashNode { token };
     if (!first_key)
         first_key = parse_expression(precedence, locals);
     hash->add_node(first_key);
@@ -1170,10 +1155,10 @@ Node *Parser::parse_hash_inner(LocalsHashmap &locals, Precedence precedence, Tok
         }
         hash->add_node(parse_expression(precedence, locals));
     }
-    return hash.release();
+    return hash.static_cast_as<Node>();
 }
 
-Node *Parser::parse_identifier(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_identifier(LocalsHashmap &locals) {
     auto name = current_token().literal();
     assert(name);
     bool is_lvar = !!locals.get(name);
@@ -1182,16 +1167,16 @@ Node *Parser::parse_identifier(LocalsHashmap &locals) {
     return identifier;
 };
 
-Node *Parser::parse_if(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_if(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    OwnedPtr<Node> condition = parse_expression(Precedence::LOWEST, locals);
+    SharedPtr<Node> condition = parse_expression(Precedence::LOWEST, locals);
     next_expression();
-    OwnedPtr<Node> true_expr = parse_if_body(locals);
-    OwnedPtr<Node> false_expr;
+    SharedPtr<Node> true_expr = parse_if_body(locals);
+    SharedPtr<Node> false_expr;
     if (current_token().is_elsif_keyword()) {
         false_expr = parse_if(locals);
-        return new IfNode { current_token(), condition.release(), true_expr.release(), false_expr.release() };
+        return new IfNode { current_token(), condition, true_expr, false_expr };
     } else {
         if (current_token().is_else_keyword()) {
             advance();
@@ -1201,12 +1186,12 @@ Node *Parser::parse_if(LocalsHashmap &locals) {
         }
         expect(Token::Type::EndKeyword, "if end");
         advance();
-        return new IfNode { token, condition.release(), true_expr.release(), false_expr.release() };
+        return new IfNode { token, condition, true_expr, false_expr };
     }
 }
 
-Node *Parser::parse_if_body(LocalsHashmap &locals) {
-    OwnedPtr<BlockNode> body = new BlockNode { current_token() };
+SharedPtr<Node> Parser::parse_if_body(LocalsHashmap &locals) {
+    SharedPtr<BlockNode> body = new BlockNode { current_token() };
     validate_current_token();
     skip_newlines();
     while (!current_token().is_eof() && !current_token().is_elsif_keyword() && !current_token().is_else_keyword() && !current_token().is_end_keyword()) {
@@ -1221,7 +1206,7 @@ Node *Parser::parse_if_body(LocalsHashmap &locals) {
         auto node = body->take_first_node();
         return node;
     } else {
-        return body.release();
+        return body.static_cast_as<Node>();
     }
 }
 
@@ -1230,7 +1215,7 @@ void Parser::parse_interpolated_body(LocalsHashmap &locals, InterpolatedNode &no
         switch (current_token().type()) {
         case Token::Type::EvaluateToStringBegin: {
             advance();
-            OwnedPtr<BlockNode> block = new BlockNode { current_token() };
+            SharedPtr<BlockNode> block = new BlockNode { current_token() };
             while (current_token().type() != Token::Type::EvaluateToStringEnd) {
                 block->add_node(parse_expression(Precedence::LOWEST, locals));
                 skip_newlines();
@@ -1243,7 +1228,7 @@ void Parser::parse_interpolated_body(LocalsHashmap &locals, InterpolatedNode &no
                 else
                     node.add_node(new EvaluateToStringNode { current_token(), first });
             } else {
-                node.add_node(new EvaluateToStringNode { current_token(), block.release() });
+                node.add_node(new EvaluateToStringNode { current_token(), block.static_cast_as<Node>() });
             }
             break;
         }
@@ -1269,7 +1254,7 @@ void Parser::parse_interpolated_body(LocalsHashmap &locals, InterpolatedNode &no
     }
 };
 
-Node *Parser::parse_interpolated_regexp(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_interpolated_regexp(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     if (current_token().type() == Token::Type::InterpolatedRegexpEnd) {
@@ -1292,7 +1277,7 @@ Node *Parser::parse_interpolated_regexp(LocalsHashmap &locals) {
         advance();
         return regexp_node;
     } else {
-        OwnedPtr<InterpolatedRegexpNode> interpolated_regexp = new InterpolatedRegexpNode { token };
+        SharedPtr<InterpolatedRegexpNode> interpolated_regexp = new InterpolatedRegexpNode { token };
         parse_interpolated_body(locals, interpolated_regexp.ref(), Token::Type::InterpolatedRegexpEnd);
         if (current_token().has_literal()) {
             auto str = current_token().literal_string().ref();
@@ -1300,7 +1285,7 @@ Node *Parser::parse_interpolated_regexp(LocalsHashmap &locals) {
             interpolated_regexp->set_options(options_int);
         }
         advance();
-        return interpolated_regexp.release();
+        return interpolated_regexp.static_cast_as<Node>();
     }
 };
 
@@ -1332,7 +1317,7 @@ int Parser::parse_regexp_options(String &options_string) {
     return options;
 }
 
-Node *Parser::parse_interpolated_shell(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_interpolated_shell(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     if (current_token().type() == Token::Type::InterpolatedShellEnd) {
@@ -1345,25 +1330,23 @@ Node *Parser::parse_interpolated_shell(LocalsHashmap &locals) {
         advance();
         return shell;
     } else {
-        OwnedPtr<InterpolatedNode> interpolated_shell = new InterpolatedShellNode { token };
+        SharedPtr<InterpolatedNode> interpolated_shell = new InterpolatedShellNode { token };
         parse_interpolated_body(locals, interpolated_shell.ref(), Token::Type::InterpolatedShellEnd);
         advance();
-        return interpolated_shell.release();
+        return interpolated_shell.static_cast_as<Node>();
     }
 };
 
-static Node *convert_string_to_symbol_key(Node *string) {
+static SharedPtr<Node> convert_string_to_symbol_key(SharedPtr<Node> string) {
     switch (string->type()) {
     case Node::Type::String: {
         auto token = string->token();
-        auto name = static_cast<StringNode *>(string)->string();
-        delete string;
+        auto name = string.static_cast_as<StringNode>()->string();
         return new SymbolKeyNode { token, name };
     }
     case Node::Type::InterpolatedString: {
         auto token = string->token();
-        auto node = new InterpolatedSymbolKeyNode { *static_cast<InterpolatedStringNode *>(string) };
-        delete string;
+        auto node = new InterpolatedSymbolKeyNode { *string.static_cast_as<InterpolatedStringNode>() };
         return node;
     }
     default:
@@ -1371,10 +1354,10 @@ static Node *convert_string_to_symbol_key(Node *string) {
     }
 }
 
-Node *Parser::parse_interpolated_string(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_interpolated_string(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    Node *string;
+    SharedPtr<Node> string;
     if (current_token().type() == Token::Type::InterpolatedStringEnd) {
         string = new StringNode { token, new String };
         advance();
@@ -1383,10 +1366,10 @@ Node *Parser::parse_interpolated_string(LocalsHashmap &locals) {
         advance();
         advance();
     } else {
-        OwnedPtr<InterpolatedNode> interpolated_string = new InterpolatedStringNode { token };
+        SharedPtr<InterpolatedNode> interpolated_string = new InterpolatedStringNode { token };
         parse_interpolated_body(locals, interpolated_string.ref(), Token::Type::InterpolatedStringEnd);
         advance();
-        string = interpolated_string.release();
+        string = interpolated_string.static_cast_as<Node>();
     }
 
     bool adjacent_strings_were_appended = false;
@@ -1401,7 +1384,7 @@ Node *Parser::parse_interpolated_string(LocalsHashmap &locals) {
     return string;
 };
 
-Node *Parser::parse_interpolated_symbol(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_interpolated_symbol(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     if (current_token().type() == Token::Type::InterpolatedSymbolEnd) {
@@ -1414,14 +1397,14 @@ Node *Parser::parse_interpolated_symbol(LocalsHashmap &locals) {
         advance();
         return symbol;
     } else {
-        OwnedPtr<InterpolatedNode> interpolated_symbol = new InterpolatedSymbolNode { token };
+        SharedPtr<InterpolatedNode> interpolated_symbol = new InterpolatedSymbolNode { token };
         parse_interpolated_body(locals, interpolated_symbol.ref(), Token::Type::InterpolatedSymbolEnd);
         advance();
-        return interpolated_symbol.release();
+        return interpolated_symbol.static_cast_as<Node>();
     }
 };
 
-Node *Parser::parse_lit(LocalsHashmap &) {
+SharedPtr<Node> Parser::parse_lit(LocalsHashmap &) {
     auto token = current_token();
     switch (token.type()) {
     case Token::Type::Bignum:
@@ -1438,7 +1421,7 @@ Node *Parser::parse_lit(LocalsHashmap &) {
     }
 };
 
-Node *Parser::parse_keyword_splat(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_keyword_splat(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     return new KeywordSplatNode { token, parse_expression(Precedence::SPLAT, locals) };
@@ -1462,18 +1445,18 @@ SharedPtr<String> Parser::parse_method_name(LocalsHashmap &) {
     return name;
 }
 
-Node *Parser::parse_module(LocalsHashmap &) {
+SharedPtr<Node> Parser::parse_module(LocalsHashmap &) {
     auto token = current_token();
     advance();
     LocalsHashmap our_locals { TM::HashType::TMString };
-    OwnedPtr<Node> name = parse_class_or_module_name(our_locals);
-    OwnedPtr<BlockNode> body = parse_body(our_locals, Precedence::LOWEST, Token::Type::EndKeyword, true);
+    SharedPtr<Node> name = parse_class_or_module_name(our_locals);
+    SharedPtr<BlockNode> body = parse_body(our_locals, Precedence::LOWEST, Token::Type::EndKeyword, true);
     expect(Token::Type::EndKeyword, "module end");
     advance();
-    return new ModuleNode { token, name.release(), body.release() };
+    return new ModuleNode { token, name, body };
 }
 
-Node *Parser::parse_next(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_next(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     if (current_token().is_lparen()) {
@@ -1482,34 +1465,34 @@ Node *Parser::parse_next(LocalsHashmap &locals) {
             advance();
             return new NextNode { token, new NilSexpNode { token } };
         } else {
-            OwnedPtr<Node> arg = parse_expression(Precedence::BARE_CALL_ARG, locals);
+            SharedPtr<Node> arg = parse_expression(Precedence::BARE_CALL_ARG, locals);
             expect(Token::Type::RParen, "break closing paren");
             advance();
-            return new NextNode { token, arg.release() };
+            return new NextNode { token, arg };
         }
     } else if (current_token().can_be_first_arg_of_implicit_call()) {
         auto value = parse_expression(Precedence::BARE_CALL_ARG, locals);
         if (current_token().is_comma()) {
-            OwnedPtr<ArrayNode> array = new ArrayNode { token };
+            SharedPtr<ArrayNode> array = new ArrayNode { token };
             array->add_node(value);
             while (current_token().is_comma()) {
                 advance();
                 array->add_node(parse_expression(Precedence::BARE_CALL_ARG, locals));
             }
-            value = array.release();
+            value = array.static_cast_as<Node>();
         }
         return new NextNode { token, value };
     }
     return new NextNode { token };
 }
 
-Node *Parser::parse_nil(LocalsHashmap &) {
+SharedPtr<Node> Parser::parse_nil(LocalsHashmap &) {
     auto token = current_token();
     advance();
     return new NilSexpNode { token };
 }
 
-Node *Parser::parse_not(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_not(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     auto precedence = get_precedence(token);
@@ -1520,73 +1503,73 @@ Node *Parser::parse_not(LocalsHashmap &locals) {
     return node;
 }
 
-Node *Parser::parse_nth_ref(LocalsHashmap &) {
+SharedPtr<Node> Parser::parse_nth_ref(LocalsHashmap &) {
     auto token = current_token();
     advance();
     return new NthRefNode { token, token.get_fixnum() };
 }
 
-Node *Parser::parse_redo(LocalsHashmap &) {
+SharedPtr<Node> Parser::parse_redo(LocalsHashmap &) {
     auto token = current_token();
     advance();
     return new RedoNode { token };
 }
 
-Node *Parser::parse_retry(LocalsHashmap &) {
+SharedPtr<Node> Parser::parse_retry(LocalsHashmap &) {
     auto token = current_token();
     advance();
     return new RetryNode { token };
 }
 
-Node *Parser::parse_return(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_return(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    Node *value;
+    SharedPtr<Node> value;
     if (current_token().is_end_of_expression()) {
         value = new NilNode { token };
     } else {
         value = parse_expression(Precedence::BARE_CALL_ARG, locals);
     }
     if (current_token().is_comma()) {
-        OwnedPtr<ArrayNode> array = new ArrayNode { current_token() };
+        SharedPtr<ArrayNode> array = new ArrayNode { current_token() };
         array->add_node(value);
         while (current_token().is_comma()) {
             advance();
             array->add_node(parse_expression(Precedence::BARE_CALL_ARG, locals));
         }
-        value = array.release();
+        value = array.static_cast_as<Node>();
     }
     return new ReturnNode { token, value };
 };
 
-Node *Parser::parse_sclass(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_sclass(LocalsHashmap &locals) {
     auto token = current_token();
     advance(); // class
     advance(); // <<
-    OwnedPtr<Node> klass = parse_expression(Precedence::BARE_CALL_ARG, locals);
-    OwnedPtr<BlockNode> body = parse_body(locals, Precedence::LOWEST);
+    SharedPtr<Node> klass = parse_expression(Precedence::BARE_CALL_ARG, locals);
+    SharedPtr<BlockNode> body = parse_body(locals, Precedence::LOWEST);
     expect(Token::Type::EndKeyword, "sclass end");
     advance();
-    return new SclassNode { token, klass.release(), body.release() };
+    return new SclassNode { token, klass, body };
 }
 
-Node *Parser::parse_self(LocalsHashmap &) {
+SharedPtr<Node> Parser::parse_self(LocalsHashmap &) {
     auto token = current_token();
     advance();
     return new SelfNode { token };
 };
 
-Node *Parser::parse_splat(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_splat(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     return new SplatNode { token, parse_expression(Precedence::SPLAT, locals) };
 };
 
-Node *Parser::parse_stabby_proc(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_stabby_proc(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     bool has_args = false;
-    auto args = OwnedVector<Node *> {};
+    auto args = Vector<SharedPtr<Node>> {};
     if (current_token().is_lparen()) {
         has_args = true;
         advance();
@@ -1606,13 +1589,13 @@ Node *Parser::parse_stabby_proc(LocalsHashmap &locals) {
     return new StabbyProcNode {
         token,
         has_args,
-        *args.release()
+        args
     };
 };
 
-Node *Parser::parse_string(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_string(LocalsHashmap &locals) {
     auto string_token = current_token();
-    Node *string = new StringNode { string_token, string_token.literal_string() };
+    SharedPtr<Node> string = new StringNode { string_token, string_token.literal_string() };
     advance();
 
     bool adjacent_strings_were_appended = false;
@@ -1627,18 +1610,18 @@ Node *Parser::parse_string(LocalsHashmap &locals) {
     return string;
 };
 
-Node *Parser::concat_adjacent_strings(OwnedPtr<Node> string, LocalsHashmap &locals, bool &strings_were_appended) {
+SharedPtr<Node> Parser::concat_adjacent_strings(SharedPtr<Node> string, LocalsHashmap &locals, bool &strings_were_appended) {
     auto token = current_token();
     while (token.type() == Token::Type::String || token.type() == Token::Type::InterpolatedStringBegin) {
         switch (token.type()) {
         case Token::Type::String: {
             auto next_string = parse_string(locals);
-            string = append_string_nodes(string.release(), next_string);
+            string = append_string_nodes(string, next_string);
             break;
         }
         case Token::Type::InterpolatedStringBegin: {
             auto next_string = parse_interpolated_string(locals);
-            string = append_string_nodes(string.release(), next_string);
+            string = append_string_nodes(string, next_string);
             break;
         }
         default:
@@ -1647,28 +1630,27 @@ Node *Parser::concat_adjacent_strings(OwnedPtr<Node> string, LocalsHashmap &loca
         token = current_token();
         strings_were_appended = true;
     }
-    return string.release();
+    return string;
 }
 
-Node *Parser::append_string_nodes(Node *string1, Node *string2) {
+SharedPtr<Node> Parser::append_string_nodes(SharedPtr<Node> string1, SharedPtr<Node> string2) {
     switch (string1->type()) {
     case Node::Type::String: {
-        auto string1_node = static_cast<StringNode *>(string1);
+        auto string1_node = string1.static_cast_as<StringNode>();
         switch (string2->type()) {
         case Node::Type::String: {
-            auto string2_node = static_cast<StringNode *>(string2);
+            auto string2_node = string2.static_cast_as<StringNode>();
             string1_node->string()->append(*string2_node->string());
-            delete string2;
             return string1;
         }
         case Node::Type::InterpolatedString: {
-            auto string2_node = static_cast<InterpolatedStringNode *>(string2);
+            auto string2_node = string2.static_cast_as<InterpolatedStringNode>();
             assert(!string2_node->is_empty());
             if (string2_node->nodes().first()->type() == Node::Type::String) {
-                static_cast<StringNode *>(string2_node->nodes().first())->string()->prepend(*string1_node->string());
-                delete string1;
+                auto n1 = string2_node->nodes().first().static_cast_as<StringNode>();
+                n1->string()->prepend(*string1_node->string());
             } else {
-                string2_node->prepend_node(string1_node);
+                string2_node->prepend_node(string1_node.static_cast_as<Node>());
             }
             return string2;
         }
@@ -1678,10 +1660,10 @@ Node *Parser::append_string_nodes(Node *string1, Node *string2) {
         break;
     }
     case Node::Type::InterpolatedString: {
-        auto string1_node = static_cast<InterpolatedStringNode *>(string1);
+        auto string1_node = string1.static_cast_as<InterpolatedStringNode>();
         switch (string2->type()) {
         case Node::Type::String: {
-            auto string2_node = static_cast<StringNode *>(string2);
+            auto string2_node = string2.static_cast_as<StringNode>();
             assert(!string1_node->is_empty());
             auto last_node = string1_node->nodes().last();
             switch (last_node->type()) {
@@ -1691,8 +1673,7 @@ Node *Parser::append_string_nodes(Node *string1, Node *string2) {
                     // if there is an evstr present.
                     string1_node->add_node(string2);
                 } else {
-                    static_cast<StringNode *>(last_node)->string()->append(*string2_node->string());
-                    delete string2;
+                    last_node.static_cast_as<StringNode>()->string()->append(*string2_node->string());
                 }
                 return string1;
             case Node::Type::EvaluateToString:
@@ -1703,13 +1684,12 @@ Node *Parser::append_string_nodes(Node *string1, Node *string2) {
             }
         }
         case Node::Type::InterpolatedString: {
-            auto string2_node = static_cast<InterpolatedStringNode *>(string2);
+            auto string2_node = string2.static_cast_as<InterpolatedStringNode>();
             assert(!string1_node->is_empty());
             assert(!string2_node->is_empty());
             for (auto node : string2_node->nodes()) {
-                string1_node->add_node(node->clone());
+                string1_node->add_node(node);
             }
-            delete string2;
             return string1;
         }
         default:
@@ -1723,7 +1703,7 @@ Node *Parser::append_string_nodes(Node *string1, Node *string2) {
     return string1;
 }
 
-Node *Parser::parse_super(LocalsHashmap &) {
+SharedPtr<Node> Parser::parse_super(LocalsHashmap &) {
     auto token = current_token();
     advance();
     auto node = new SuperNode { token };
@@ -1732,21 +1712,21 @@ Node *Parser::parse_super(LocalsHashmap &) {
     return node;
 };
 
-Node *Parser::parse_symbol(LocalsHashmap &) {
+SharedPtr<Node> Parser::parse_symbol(LocalsHashmap &) {
     auto token = current_token();
     auto symbol = new SymbolNode { token, current_token().literal_string() };
     advance();
     return symbol;
 };
 
-Node *Parser::parse_symbol_key(LocalsHashmap &) {
+SharedPtr<Node> Parser::parse_symbol_key(LocalsHashmap &) {
     auto token = current_token();
     auto symbol = new SymbolKeyNode { token, current_token().literal_string() };
     advance();
     return symbol;
 };
 
-Node *Parser::parse_top_level_constant(LocalsHashmap &) {
+SharedPtr<Node> Parser::parse_top_level_constant(LocalsHashmap &) {
     auto token = current_token();
     advance();
     auto name_token = current_token();
@@ -1763,7 +1743,7 @@ Node *Parser::parse_top_level_constant(LocalsHashmap &) {
     return new Colon3Node { token, name };
 }
 
-Node *Parser::parse_unary_operator(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_unary_operator(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     auto precedence = get_precedence(token);
@@ -1772,25 +1752,25 @@ Node *Parser::parse_unary_operator(LocalsHashmap &locals) {
         switch (receiver->type()) {
         case Node::Type::Bignum: {
             if (token.type() == Token::Type::Minus) {
-                auto num = static_cast<BignumNode *>(receiver);
+                auto num = receiver.static_cast_as<BignumNode>();
                 num->negate();
-                return num;
+                return num.static_cast_as<Node>();
             }
             return receiver;
         }
         case Node::Type::Fixnum: {
             if (token.type() == Token::Type::Minus) {
-                auto num = static_cast<FixnumNode *>(receiver);
+                auto num = receiver.static_cast_as<FixnumNode>();
                 num->negate();
-                return num;
+                return num.static_cast_as<Node>();
             }
             return receiver;
         }
         case Node::Type::Float: {
             if (token.type() == Token::Type::Minus) {
-                auto num = static_cast<FloatNode *>(receiver);
+                auto num = receiver.static_cast_as<FloatNode>();
                 num->negate();
-                return num;
+                return num.static_cast_as<Node>();
             }
             return receiver;
         }
@@ -1815,45 +1795,45 @@ Node *Parser::parse_unary_operator(LocalsHashmap &locals) {
     return new UnaryOpNode { token, message, receiver };
 }
 
-Node *Parser::parse_undef(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_undef(LocalsHashmap &locals) {
     auto undef_token = current_token();
     advance();
-    auto symbol_from_token = [&](Token &token) {
+    auto symbol_from_token = [&](Token &token) -> SharedPtr<Node> {
         switch (token.type()) {
         case Token::Type::BareName:
         case Token::Type::Constant:
             advance();
             return new SymbolNode { token, token.literal_string() };
         case Token::Type::Symbol:
-            return static_cast<SymbolNode *>(parse_symbol(locals));
+            return parse_symbol(locals);
         case Token::Type::InterpolatedSymbolBegin: {
-            return static_cast<SymbolNode *>(parse_interpolated_symbol(locals));
+            return parse_interpolated_symbol(locals);
         }
         default:
             throw_unexpected("method name for undef");
         }
     };
-    OwnedPtr<UndefNode> undef_node = new UndefNode { undef_token };
+    SharedPtr<UndefNode> undef_node = new UndefNode { undef_token };
     auto token = current_token();
     undef_node->add_arg(symbol_from_token(token));
     if (current_token().is_comma()) {
-        OwnedPtr<BlockNode> block = new BlockNode { undef_token };
-        block->add_node(undef_node.release());
+        SharedPtr<BlockNode> block = new BlockNode { undef_token };
+        block->add_node(undef_node.static_cast_as<Node>());
         while (current_token().is_comma()) {
             advance();
             token = current_token();
-            OwnedPtr<UndefNode> undef_node = new UndefNode { undef_token };
+            SharedPtr<UndefNode> undef_node = new UndefNode { undef_token };
             undef_node->add_arg(symbol_from_token(token));
-            block->add_node(undef_node.release());
+            block->add_node(undef_node.static_cast_as<Node>());
         }
-        return block.release();
+        return block.static_cast_as<Node>();
     }
-    return undef_node.release();
+    return undef_node.static_cast_as<Node>();
 };
 
-Node *Parser::parse_word_array(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_word_array(LocalsHashmap &locals) {
     auto token = current_token();
-    OwnedPtr<ArrayNode> array = new ArrayNode { token };
+    SharedPtr<ArrayNode> array = new ArrayNode { token };
     advance();
     while (!current_token().is_eof() && current_token().type() != Token::Type::RBracket) {
         if (current_token().type() == Token::Type::UnterminatedWordArray)
@@ -1862,96 +1842,91 @@ Node *Parser::parse_word_array(LocalsHashmap &locals) {
     }
     expect(Token::Type::RBracket, "closing array bracket");
     advance();
-    return array.release();
+    return array.static_cast_as<Node>();
 }
 
-Node *Parser::parse_word_symbol_array(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_word_symbol_array(LocalsHashmap &locals) {
     auto token = current_token();
-    OwnedPtr<ArrayNode> array = new ArrayNode { token };
+    SharedPtr<ArrayNode> array = new ArrayNode { token };
     advance();
     while (!current_token().is_eof() && current_token().type() != Token::Type::RBracket) {
         auto string = parse_expression(Precedence::WORD_ARRAY, locals);
-        Node *symbol_node;
+        SharedPtr<Node> symbol_node;
         switch (string->type()) {
         case Node::Type::String:
-            symbol_node = static_cast<StringNode *>(string)->to_symbol_node();
+            symbol_node = string.static_cast_as<StringNode>()->to_symbol_node().static_cast_as<Node>();
             break;
         case Node::Type::InterpolatedString:
-            symbol_node = static_cast<InterpolatedStringNode *>(string)->to_symbol_node();
+            symbol_node = string.static_cast_as<InterpolatedStringNode>()->to_symbol_node().static_cast_as<Node>();
             break;
         default:
             TM_UNREACHABLE();
         }
-        delete string;
         array->add_node(symbol_node);
     }
     expect(Token::Type::RBracket, "closing array bracket");
     advance();
-    return array.release();
+    return array.static_cast_as<Node>();
 }
 
-Node *Parser::parse_yield(LocalsHashmap &) {
+SharedPtr<Node> Parser::parse_yield(LocalsHashmap &) {
     auto token = current_token();
     advance();
     return new YieldNode { token };
 };
 
-void Parser::parse_assignment_expression(Node *&left, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_assignment_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
     return parse_assignment_expression(left, locals, true);
 }
 
-void Parser::parse_assignment_expression_without_multiple_values(Node *&left, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_assignment_expression_without_multiple_values(SharedPtr<Node> left, LocalsHashmap &locals) {
     return parse_assignment_expression(left, locals, false);
 }
 
-void Parser::parse_assignment_expression(Node *&left, LocalsHashmap &locals, bool allow_multiple) {
+SharedPtr<Node> Parser::parse_assignment_expression(SharedPtr<Node> left, LocalsHashmap &locals, bool allow_multiple) {
     auto token = current_token();
     if (left->type() == Node::Type::Splat) {
-        parse_multiple_assignment_expression(left, locals);
-        return;
+        return parse_multiple_assignment_expression(left, locals);
     }
     switch (left->type()) {
     case Node::Type::Identifier: {
-        auto left_identifier = static_cast<IdentifierNode *>(left);
+        auto left_identifier = left.static_cast_as<IdentifierNode>();
         left_identifier->add_to_locals(locals);
         advance();
         auto value = parse_assignment_expression_value(false, locals, allow_multiple);
-        left = new AssignmentNode { token, left, value };
-        return;
+        return new AssignmentNode { token, left, value };
     }
     case Node::Type::Call:
     case Node::Type::Colon2:
     case Node::Type::Colon3: {
         advance();
         auto value = parse_assignment_expression_value(false, locals, allow_multiple);
-        left = new AssignmentNode { token, left, value };
-        return;
+        return new AssignmentNode { token, left, value };
     }
     case Node::Type::MultipleAssignment: {
-        static_cast<MultipleAssignmentNode *>(left)->add_locals(locals);
+        left.static_cast_as<MultipleAssignmentNode>()->add_locals(locals);
         advance();
         auto value = parse_assignment_expression_value(true, locals, allow_multiple);
-        left = new AssignmentNode { token, left, value };
-        return;
+        return new AssignmentNode { token, left, value };
     }
     default:
         throw_unexpected(left->token(), "left side of assignment");
     }
 };
 
-Node *Parser::parse_assignment_expression_value(bool to_array, LocalsHashmap &locals, bool allow_multiple) {
+SharedPtr<Node> Parser::parse_assignment_expression_value(bool to_array, LocalsHashmap &locals, bool allow_multiple) {
     auto token = current_token();
     auto value = parse_expression(Precedence::ASSIGNMENT_RHS, locals);
     bool is_splat;
 
     if (allow_multiple && current_token().type() == Token::Type::Comma) {
-        OwnedPtr<ArrayNode> array = new ArrayNode { token };
+        SharedPtr<ArrayNode> array = new ArrayNode { token };
         array->add_node(value);
         while (current_token().type() == Token::Type::Comma) {
             advance();
             array->add_node(parse_expression(Precedence::ASSIGNMENT_RHS, locals));
         }
-        value = array.release();
+        value = array.static_cast_as<Node>();
         is_splat = true;
     } else if (value->type() == Node::Type::Splat) {
         is_splat = true;
@@ -1974,18 +1949,18 @@ Node *Parser::parse_assignment_expression_value(bool to_array, LocalsHashmap &lo
     }
 }
 
-void Parser::parse_iter_expression(Node *&left, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_iter_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
     auto token = current_token();
     LocalsHashmap our_locals { locals }; // copy!
     bool curly_brace = current_token().type() == Token::Type::LCurlyBrace;
     bool has_args = false;
-    auto args = OwnedVector<Node *> {};
+    auto args = Vector<SharedPtr<Node>> {};
     if (left->type() == Node::Type::StabbyProc) {
         advance();
-        auto stabby_proc_node = static_cast<StabbyProcNode *>(left);
+        auto stabby_proc_node = left.static_cast_as<StabbyProcNode>();
         has_args = stabby_proc_node->has_args();
         for (auto arg : stabby_proc_node->args())
-            args.push(arg->clone());
+            args.push(arg);
     } else if (left->can_accept_a_block()) {
         advance();
         if (current_token().type() == Token::Type::Or) {
@@ -2001,14 +1976,20 @@ void Parser::parse_iter_expression(Node *&left, LocalsHashmap &locals) {
     } else {
         throw_unexpected(left->token(), "call to accept block");
     }
-    OwnedPtr<BlockNode> body = parse_iter_body(our_locals, curly_brace);
+    SharedPtr<BlockNode> body = parse_iter_body(our_locals, curly_brace);
     auto end_token_type = curly_brace ? Token::Type::RCurlyBrace : Token::Type::EndKeyword;
     expect(end_token_type, curly_brace ? "}" : "end");
     advance();
-    left = new IterNode { token, left, has_args, *args.release(), body.release() };
+    return new IterNode {
+        token,
+        left,
+        has_args,
+        args,
+        body
+    };
 }
 
-void Parser::parse_iter_args(Vector<Node *> &args, LocalsHashmap &locals) {
+void Parser::parse_iter_args(Vector<SharedPtr<Node>> &args, LocalsHashmap &locals) {
     args.push(parse_def_single_arg(locals));
     while (current_token().is_comma()) {
         advance();
@@ -2021,33 +2002,31 @@ void Parser::parse_iter_args(Vector<Node *> &args, LocalsHashmap &locals) {
     }
 }
 
-BlockNode *Parser::parse_iter_body(LocalsHashmap &locals, bool curly_brace) {
+SharedPtr<BlockNode> Parser::parse_iter_body(LocalsHashmap &locals, bool curly_brace) {
     auto end_token_type = curly_brace ? Token::Type::RCurlyBrace : Token::Type::EndKeyword;
     return parse_body(locals, Precedence::LOWEST, end_token_type, true);
 }
 
-void Parser::parse_call_expression_with_parens(Node *&left, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_call_expression_with_parens(SharedPtr<Node> left, LocalsHashmap &locals) {
     auto token = current_token();
-    OwnedPtr<NodeWithArgs> call_node = to_node_with_args(left);
-    left = nullptr;
+    SharedPtr<NodeWithArgs> call_node = to_node_with_args(left);
     advance();
     if (!current_token().is_rparen())
         parse_call_args(call_node.ref(), locals, false);
     expect(Token::Type::RParen, "call rparen");
     advance();
-    left = call_node.release();
+    return call_node.static_cast_as<Node>();
 }
 
-NodeWithArgs *Parser::to_node_with_args(Node *node) {
+SharedPtr<NodeWithArgs> Parser::to_node_with_args(SharedPtr<Node> node) {
     switch (node->type()) {
     case Node::Type::Identifier: {
-        auto identifier = static_cast<IdentifierNode *>(node);
+        auto identifier = node.static_cast_as<IdentifierNode>();
         auto call_node = new CallNode {
             identifier->token(),
             new NilNode { identifier->token() },
             identifier->name(),
         };
-        delete identifier;
         return call_node;
     }
     case Node::Type::Call:
@@ -2055,7 +2034,7 @@ NodeWithArgs *Parser::to_node_with_args(Node *node) {
     case Node::Type::Super:
     case Node::Type::Undef:
     case Node::Type::Yield:
-        return static_cast<NodeWithArgs *>(node);
+        return node.static_cast_as<NodeWithArgs>();
     default:
         throw_unexpected(current_token(), nullptr, "left-hand-side is not callable");
     }
@@ -2085,17 +2064,16 @@ void Parser::parse_call_args(NodeWithArgs &node, LocalsHashmap &locals, bool bar
     }
 }
 
-Node *Parser::parse_call_hash_args(LocalsHashmap &locals, bool bare, Node *first_arg) {
+SharedPtr<Node> Parser::parse_call_hash_args(LocalsHashmap &locals, bool bare, SharedPtr<Node> first_arg) {
     if (bare)
         return parse_hash_inner(locals, Precedence::BARE_CALL_ARG, Token::Type::Invalid, first_arg);
     else
         return parse_hash_inner(locals, Precedence::CALL_ARG, Token::Type::RParen, first_arg);
 }
 
-void Parser::parse_call_expression_without_parens(Node *&left, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_call_expression_without_parens(SharedPtr<Node> left, LocalsHashmap &locals) {
     auto token = current_token();
-    OwnedPtr<NodeWithArgs> call_node = to_node_with_args(left);
-    left = nullptr;
+    SharedPtr<NodeWithArgs> call_node = to_node_with_args(left);
     switch (token.type()) {
     case Token::Type::Comma:
     case Token::Type::Eof:
@@ -2107,14 +2085,14 @@ void Parser::parse_call_expression_without_parens(Node *&left, LocalsHashmap &lo
     default:
         parse_call_args(call_node.ref(), locals, true);
     }
-    left = call_node.release();
+    return call_node.static_cast_as<Node>();
 }
 
-void Parser::parse_constant_resolution_expression(Node *&left, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_constant_resolution_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     auto name_token = current_token();
-    OwnedPtr<Node> node;
+    SharedPtr<Node> node;
     switch (name_token.type()) {
     case Token::Type::BareName:
         advance();
@@ -2126,22 +2104,21 @@ void Parser::parse_constant_resolution_expression(Node *&left, LocalsHashmap &lo
         break;
     case Token::Type::LParen: {
         advance();
-        OwnedPtr<CallNode> call_node = new CallNode { name_token, left, new String("call") };
-        left = nullptr;
+        SharedPtr<CallNode> call_node = new CallNode { name_token, left, new String("call") };
         if (!current_token().is_rparen())
             parse_call_args(call_node.ref(), locals, false);
         expect(Token::Type::RParen, "::() call right paren");
         advance();
-        node = call_node.release();
+        node = call_node.static_cast_as<Node>();
         break;
     }
     default:
         throw_unexpected(name_token, ":: identifier name");
     }
-    left = node.release();
+    return node;
 }
 
-void Parser::parse_infix_expression(Node *&left, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_infix_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
     auto token = current_token();
     auto op = current_token();
     auto precedence = get_precedence(token, left);
@@ -2153,65 +2130,61 @@ void Parser::parse_infix_expression(Node *&left, LocalsHashmap &locals) {
         new String(op.type_value()),
         right,
     };
-    left = node;
+    return node;
 };
 
-void Parser::parse_logical_expression(Node *&left, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_logical_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
     auto token = current_token();
     switch (token.type()) {
     case Token::Type::And: {
         advance();
         auto right = parse_expression(Precedence::LOGICAL_AND, locals);
         if (left->type() == Node::Type::LogicalAnd) {
-            left = regroup<LogicalAndNode>(token, left, right);
+            return regroup<LogicalAndNode>(token, left, right);
         } else {
-            left = new LogicalAndNode { token, left, right };
+            return new LogicalAndNode { token, left, right };
         }
-        return;
     }
     case Token::Type::AndKeyword: {
         advance();
         auto right = parse_expression(Precedence::COMPOSITION, locals);
         if (left->type() == Node::Type::LogicalAnd) {
-            left = regroup<LogicalAndNode>(token, left, right);
+            return regroup<LogicalAndNode>(token, left, right);
         } else {
-            left = new LogicalAndNode { token, left, right };
+            return new LogicalAndNode { token, left, right };
         }
-        return;
     }
     case Token::Type::Or: {
         advance();
         auto right = parse_expression(Precedence::LOGICAL_OR, locals);
         if (left->type() == Node::Type::LogicalOr) {
-            left = regroup<LogicalOrNode>(token, left, right);
+            return regroup<LogicalOrNode>(token, left, right);
         } else {
-            left = new LogicalOrNode { token, left, right };
+            return new LogicalOrNode { token, left, right };
         }
-        return;
     }
     case Token::Type::OrKeyword: {
         advance();
         auto right = parse_expression(Precedence::COMPOSITION, locals);
         if (left->type() == Node::Type::LogicalOr) {
-            left = regroup<LogicalOrNode>(token, left, right);
+            return regroup<LogicalOrNode>(token, left, right);
         } else {
-            left = new LogicalOrNode { token, left, right };
+            return new LogicalOrNode { token, left, right };
         }
-        return;
     }
     default:
         TM_UNREACHABLE();
     }
 }
 
-void Parser::parse_match_expression(Node *&left, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_match_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     auto arg = parse_expression(Precedence::EQUALITY, locals);
     if (left->type() == Node::Type::Regexp) {
-        left = new MatchNode { token, static_cast<RegexpNode *>(left), arg, true };
+        return new MatchNode { token, left.static_cast_as<RegexpNode>(), arg, true };
     } else if (arg->type() == Node::Type::Regexp) {
-        left = new MatchNode { token, static_cast<RegexpNode *>(arg), left, false };
+        return new MatchNode { token, arg.static_cast_as<RegexpNode>(), left, false };
     } else {
         auto *node = new CallNode {
             token,
@@ -2219,30 +2192,29 @@ void Parser::parse_match_expression(Node *&left, LocalsHashmap &locals) {
             new String("=~"),
         };
         node->add_arg(arg);
-        left = node;
+        return node;
     }
 }
 
-void Parser::parse_not_match_expression(Node *&left, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_not_match_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
     auto token = current_token();
-    parse_match_expression(left, locals);
-    left = new NotMatchNode { token, left };
+    left = parse_match_expression(left, locals);
+    return new NotMatchNode { token, left };
 }
 
-void Parser::parse_op_assign_expression(Node *&left, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_op_assign_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
     if (left->type() == Node::Type::Call)
         return parse_op_attr_assign_expression(left, locals);
     if (left->type() != Node::Type::Identifier)
         throw_unexpected(left->token(), "identifier");
-    auto left_identifier = static_cast<IdentifierNode *>(left);
+    auto left_identifier = left.static_cast_as<IdentifierNode>();
     left_identifier->set_is_lvar(true);
     left_identifier->add_to_locals(locals);
     auto token = current_token();
     advance();
     switch (token.type()) {
     case Token::Type::AndEqual:
-        left = new OpAssignAndNode { token, left_identifier, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
-        return;
+        return new OpAssignAndNode { token, left_identifier, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
     case Token::Type::BitwiseAndEqual:
     case Token::Type::BitwiseOrEqual:
     case Token::Type::BitwiseXorEqual:
@@ -2256,21 +2228,19 @@ void Parser::parse_op_assign_expression(Node *&left, LocalsHashmap &locals) {
     case Token::Type::RightShiftEqual: {
         auto op = new String(token.type_value());
         op->chomp();
-        left = new OpAssignNode { token, op, left_identifier, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
-        return;
+        return new OpAssignNode { token, op, left_identifier, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
     }
     case Token::Type::OrEqual:
-        left = new OpAssignOrNode { token, left_identifier, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
-        return;
+        return new OpAssignOrNode { token, left_identifier, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
     default:
         TM_UNREACHABLE();
     }
 }
 
-void Parser::parse_op_attr_assign_expression(Node *&left, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_op_attr_assign_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
     if (left->type() != Node::Type::Call)
         throw_unexpected(left->token(), "call");
-    auto left_call = static_cast<CallNode *>(left);
+    auto left_call = left.static_cast_as<CallNode>();
     auto token = current_token();
     advance();
     auto value = parse_expression(Precedence::OP_ASSIGNMENT, locals);
@@ -2281,36 +2251,34 @@ void Parser::parse_op_attr_assign_expression(Node *&left, LocalsHashmap &locals)
     auto op_assign_node = new OpAssignAccessorNode {
         token,
         op,
-        left_call->receiver().clone(),
+        left_call->receiver(),
         message,
         value,
         left_call->args(),
     };
-    delete left;
-    left = op_assign_node;
+    return op_assign_node;
 }
 
-void Parser::parse_proc_call_expression(Node *&left, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_proc_call_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     advance();
-    OwnedPtr<CallNode> call_node = new CallNode {
+    SharedPtr<CallNode> call_node = new CallNode {
         token,
         left,
         new String("call"),
     };
-    left = nullptr;
     if (!current_token().is_rparen())
         parse_call_args(call_node.ref(), locals, false);
     expect(Token::Type::RParen, "proc call right paren");
     advance();
-    left = call_node.release();
+    return call_node.static_cast_as<Node>();
 }
 
-void Parser::parse_range_expression(Node *&left, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_range_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    Node *right;
+    SharedPtr<Node> right;
     try {
         right = parse_expression(Precedence::RANGE, locals);
     } catch (SyntaxError &e) {
@@ -2318,30 +2286,28 @@ void Parser::parse_range_expression(Node *&left, LocalsHashmap &locals) {
         // but it seems to be effective for the tests I threw at it. ¯\_(ツ)_/¯
         right = new NilNode { token };
     }
-    left = new RangeNode { token, left, right, token.type() == Token::Type::DotDotDot };
+    return new RangeNode { token, left, right, token.type() == Token::Type::DotDotDot };
 }
 
-void Parser::parse_ref_expression(Node *&left, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_ref_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    OwnedPtr<CallNode> call_node = new CallNode {
+    SharedPtr<CallNode> call_node = new CallNode {
         token,
         left,
         new String("[]"),
     };
     if (token.type() == Token::Type::LBracketRBracket) {
-        left = call_node.release();
-        return;
+        return call_node.static_cast_as<Node>();
     }
-    left = nullptr;
     if (current_token().type() != Token::Type::RBracket)
         parse_call_args(call_node.ref(), locals, false);
     expect(Token::Type::RBracket, "element reference right bracket");
     advance();
-    left = call_node.release();
+    return call_node.static_cast_as<Node>();
 }
 
-void Parser::parse_rescue_expression(Node *&left, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_rescue_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     auto value = parse_expression(Precedence::LOWEST, locals);
@@ -2350,24 +2316,23 @@ void Parser::parse_rescue_expression(Node *&left, LocalsHashmap &locals) {
     auto rescue_node = new BeginRescueNode { token };
     rescue_node->set_body(new BlockNode { value->token(), value });
     begin_node->add_rescue_node(rescue_node);
-    left = begin_node;
+    return begin_node;
 }
 
-void Parser::parse_safe_send_expression(Node *&left, LocalsHashmap &) {
+SharedPtr<Node> Parser::parse_safe_send_expression(SharedPtr<Node> left, LocalsHashmap &) {
     auto token = current_token();
     advance();
     expect(Token::Type::BareName, "safe navigator method name");
     auto name_token = current_token();
     advance();
-    auto call_node = new SafeCallNode {
+    return new SafeCallNode {
         token,
         left,
         name_token.literal_string(),
     };
-    left = call_node;
 }
 
-void Parser::parse_send_expression(Node *&left, LocalsHashmap &) {
+SharedPtr<Node> Parser::parse_send_expression(SharedPtr<Node> left, LocalsHashmap &) {
     auto dot_token = current_token();
     advance();
     auto name_token = current_token();
@@ -2389,36 +2354,34 @@ void Parser::parse_send_expression(Node *&left, LocalsHashmap &) {
             *name = name_token.type_value();
             advance();
         } else {
-            delete left;
-            left = nullptr;
             throw_unexpected("send method name");
         }
     };
-    left = new CallNode {
+    return new CallNode {
         dot_token,
         left,
         name,
     };
 }
 
-void Parser::parse_ternary_expression(Node *&left, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_ternary_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
     auto token = current_token();
     expect(Token::Type::TernaryQuestion, "ternary question");
     advance();
-    OwnedPtr<Node> true_expr = parse_expression(Precedence::TERNARY_TRUE, locals);
+    SharedPtr<Node> true_expr = parse_expression(Precedence::TERNARY_TRUE, locals);
     expect(Token::Type::TernaryColon, "ternary colon");
     advance();
     auto false_expr = parse_expression(Precedence::TERNARY_FALSE, locals);
-    left = new IfNode { token, left, true_expr.release(), false_expr };
+    return new IfNode { token, left, true_expr, false_expr };
 }
 
-Node *Parser::parse_unless(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_unless(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    OwnedPtr<Node> condition = parse_expression(Precedence::LOWEST, locals);
+    SharedPtr<Node> condition = parse_expression(Precedence::LOWEST, locals);
     next_expression();
-    OwnedPtr<Node> false_expr = parse_if_body(locals);
-    OwnedPtr<Node> true_expr;
+    SharedPtr<Node> false_expr = parse_if_body(locals);
+    SharedPtr<Node> true_expr;
     if (current_token().is_else_keyword()) {
         advance();
         true_expr = parse_if_body(locals);
@@ -2427,22 +2390,22 @@ Node *Parser::parse_unless(LocalsHashmap &locals) {
     }
     expect(Token::Type::EndKeyword, "unless end");
     advance();
-    return new IfNode { token, condition.release(), true_expr.release(), false_expr.release() };
+    return new IfNode { token, condition, true_expr, false_expr };
 }
 
-Node *Parser::parse_while(LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_while(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    OwnedPtr<Node> condition = parse_expression(Precedence::LOWEST, locals);
+    SharedPtr<Node> condition = parse_expression(Precedence::LOWEST, locals);
     next_expression();
-    OwnedPtr<BlockNode> body = parse_body(locals, Precedence::LOWEST);
+    SharedPtr<BlockNode> body = parse_body(locals, Precedence::LOWEST);
     expect(Token::Type::EndKeyword, "while end");
     advance();
     switch (token.type()) {
     case Token::Type::UntilKeyword:
-        return new UntilNode { token, condition.release(), body.release(), true };
+        return new UntilNode { token, condition, body, true };
     case Token::Type::WhileKeyword:
-        return new WhileNode { token, condition.release(), body.release(), true };
+        return new WhileNode { token, condition, body, true };
     default:
         TM_UNREACHABLE();
     }
@@ -2559,11 +2522,11 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
     case Type::YieldKeyword:
         return &Parser::parse_yield;
     default:
-        return nullptr;
+        return {};
     }
 }
 
-Parser::parse_left_fn Parser::left_denotation(Token &token, Node *left, Precedence precedence) {
+Parser::parse_left_fn Parser::left_denotation(Token &token, SharedPtr<Node> left, Precedence precedence) {
     using Type = Token::Type;
     switch (token.type()) {
     case Type::Equal:
@@ -2654,10 +2617,10 @@ Parser::parse_left_fn Parser::left_denotation(Token &token, Node *left, Preceden
     }
     if (is_first_arg_of_call_without_parens(left, token))
         return &Parser::parse_call_expression_without_parens;
-    return nullptr;
+    return {};
 }
 
-bool Parser::is_first_arg_of_call_without_parens(Node *left, Token &token) {
+bool Parser::is_first_arg_of_call_without_parens(SharedPtr<Node> left, Token &token) {
     return left->is_callable() && token.can_be_first_arg_of_implicit_call();
 }
 

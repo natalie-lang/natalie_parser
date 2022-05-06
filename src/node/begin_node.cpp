@@ -2,18 +2,13 @@
 
 namespace NatalieParser {
 
-BeginNode::~BeginNode() {
-    for (auto node : m_rescue_nodes)
-        delete node;
-}
-
 void BeginNode::transform(Creator *creator) const {
     assert(m_body);
     creator->set_type("rescue");
     if (!m_body->is_empty())
         creator->append(m_body->without_unnecessary_nesting());
     for (auto rescue_node : m_rescue_nodes) {
-        creator->append(rescue_node);
+        creator->append(rescue_node.static_cast_as<Node>());
     }
     if (m_else_body)
         creator->append(m_else_body->without_unnecessary_nesting());

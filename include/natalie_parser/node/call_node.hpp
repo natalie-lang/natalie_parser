@@ -12,7 +12,7 @@ using namespace TM;
 
 class CallNode : public NodeWithArgs {
 public:
-    CallNode(const Token &token, Node *receiver, SharedPtr<String> message)
+    CallNode(const Token &token, SharedPtr<Node> receiver, SharedPtr<String> message)
         : NodeWithArgs { token }
         , m_receiver { receiver }
         , m_message { message } {
@@ -22,24 +22,11 @@ public:
 
     CallNode(const Token &token, CallNode &node)
         : NodeWithArgs { token }
-        , m_receiver { node.receiver().clone() }
+        , m_receiver { node.receiver() }
         , m_message { node.m_message } {
         for (auto arg : node.m_args) {
-            add_arg(arg->clone());
+            add_arg(arg);
         }
-    }
-
-    CallNode(const CallNode &other)
-        : NodeWithArgs { other.token() }
-        , m_receiver { other.receiver().clone() }
-        , m_message { other.message() } {
-        for (auto arg : other.args()) {
-            add_arg(arg->clone());
-        }
-    }
-
-    virtual Node *clone() const override {
-        return new CallNode(*this);
     }
 
     virtual Type type() const override { return Type::Call; }
@@ -51,8 +38,8 @@ public:
     virtual bool is_callable() const override { return true; }
     virtual bool can_accept_a_block() const override { return true; }
 
-    const Node &receiver() const { return m_receiver.ref(); }
-    void set_receiver(Node *receiver) { m_receiver = receiver; }
+    const SharedPtr<Node> receiver() const { return m_receiver; }
+    void set_receiver(SharedPtr<Node> receiver) { m_receiver = receiver; }
 
     SharedPtr<String> message() const { return m_message; }
 
@@ -87,7 +74,7 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_receiver {};
+    SharedPtr<Node> m_receiver {};
     SharedPtr<String> m_message {};
 };
 }

@@ -18,7 +18,7 @@ public:
 
     virtual Type type() const override { return Type::InterpolatedString; }
 
-    InterpolatedSymbolNode *to_symbol_node() const {
+    SharedPtr<InterpolatedSymbolNode> to_symbol_node() const {
         return new InterpolatedSymbolNode { *this };
     }
 

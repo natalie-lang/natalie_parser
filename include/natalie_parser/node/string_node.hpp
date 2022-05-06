@@ -18,18 +18,11 @@ public:
         assert(m_string);
     }
 
-    StringNode(const StringNode &other)
-        : StringNode { other.token(), other.string() } { }
-
-    virtual Node *clone() const override {
-        return new StringNode(*this);
-    }
-
     virtual Type type() const override { return Type::String; }
 
     SharedPtr<String> string() const { return m_string; }
 
-    SymbolNode *to_symbol_node() const {
+    SharedPtr<SymbolNode> to_symbol_node() const {
         return new SymbolNode { m_token, m_string };
     }
 

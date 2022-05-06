@@ -15,13 +15,6 @@ public:
         : Node { token }
         , m_number { number } { }
 
-    FloatNode(const FloatNode &other)
-        : FloatNode { other.token(), other.number() } { }
-
-    virtual Node *clone() const override {
-        return new FloatNode(*this);
-    }
-
     virtual Type type() const override { return Type::Float; }
 
     virtual bool is_numeric() const override { return true; }

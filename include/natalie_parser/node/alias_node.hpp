@@ -13,7 +13,7 @@ using namespace TM;
 
 class AliasNode : public Node {
 public:
-    AliasNode(const Token &token, SymbolNode *new_name, SymbolNode *existing_name)
+    AliasNode(const Token &token, SharedPtr<SymbolNode> new_name, SharedPtr<SymbolNode> existing_name)
         : Node { token }
         , m_new_name { new_name }
         , m_existing_name { existing_name } {
@@ -23,13 +23,13 @@ public:
 
     virtual Type type() const override { return Type::Alias; }
 
-    const SymbolNode &new_name() const { return m_new_name.ref(); }
-    const SymbolNode &existing_name() const { return m_existing_name.ref(); }
+    const SharedPtr<SymbolNode> new_name() const { return m_new_name; }
+    const SharedPtr<SymbolNode> existing_name() const { return m_existing_name; }
 
     virtual void transform(Creator *creator) const override;
 
 private:
-    OwnedPtr<SymbolNode> m_new_name {};
-    OwnedPtr<SymbolNode> m_existing_name {};
+    SharedPtr<SymbolNode> m_new_name {};
+    SharedPtr<SymbolNode> m_existing_name {};
 };
 }

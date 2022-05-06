@@ -13,7 +13,7 @@ using namespace TM;
 
 class UntilNode : public WhileNode {
 public:
-    UntilNode(const Token &token, Node *condition, BlockNode *body, bool pre)
+    UntilNode(const Token &token, SharedPtr<Node> condition, SharedPtr<BlockNode> body, bool pre)
         : WhileNode { token, condition, body, pre } { }
 
     virtual Type type() const override { return Type::Until; }

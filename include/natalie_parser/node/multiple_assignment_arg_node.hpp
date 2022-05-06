@@ -22,7 +22,7 @@ public:
         creator->set_type("masgn");
         for (auto arg : nodes()) {
             if (arg->type() == Node::Type::Arg) {
-                static_cast<ArgNode *>(arg)->append_name(creator);
+                arg.static_cast_as<ArgNode>()->append_name(creator);
             } else {
                 creator->append(arg);
             }

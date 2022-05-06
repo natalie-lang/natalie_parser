@@ -19,18 +19,6 @@ public:
         : Node { token }
         , m_name { name } { }
 
-    ArgNode(const ArgNode &other)
-        : Node { other.m_token }
-        , m_name { other.m_name }
-        , m_block_arg { other.m_block_arg }
-        , m_splat { other.m_splat }
-        , m_kwsplat { other.m_kwsplat }
-        , m_value { other.value() ? other.value().clone() : nullptr } { }
-
-    virtual Node *clone() const override {
-        return new ArgNode(*this);
-    }
-
     virtual Type type() const override { return Type::Arg; }
 
     const SharedPtr<String> name() const { return m_name; }
@@ -59,13 +47,9 @@ public:
     bool block_arg() const { return m_block_arg; }
     void set_block_arg(bool block_arg) { m_block_arg = block_arg; }
 
-    const Node &value() const {
-        if (m_value)
-            return m_value.ref();
-        return Node::invalid();
-    }
+    const SharedPtr<Node> value() const { return m_value; }
 
-    void set_value(Node *value) { m_value = value; }
+    void set_value(SharedPtr<Node> value) { m_value = value; }
 
     void add_to_locals(TM::Hashmap<TM::String> &locals) {
         locals.set(m_name->c_str());
@@ -83,6 +67,6 @@ protected:
     bool m_block_arg { false };
     bool m_splat { false };
     bool m_kwsplat { false };
-    OwnedPtr<Node> m_value {};
+    SharedPtr<Node> m_value {};
 };
 }

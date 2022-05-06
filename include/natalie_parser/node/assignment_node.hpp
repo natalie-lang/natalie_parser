@@ -12,7 +12,7 @@ using namespace TM;
 
 class AssignmentNode : public Node {
 public:
-    AssignmentNode(const Token &token, Node *identifier, Node *value)
+    AssignmentNode(const Token &token, SharedPtr<Node> identifier, SharedPtr<Node> value)
         : Node { token }
         , m_identifier { identifier }
         , m_value { value } {
@@ -20,22 +20,15 @@ public:
         assert(m_value);
     }
 
-    AssignmentNode(const AssignmentNode &other)
-        : AssignmentNode { other.token(), other.identifier().clone(), other.value().clone() } { }
-
-    virtual Node *clone() const override {
-        return new AssignmentNode(*this);
-    }
-
     virtual Type type() const override { return Type::Assignment; }
 
-    const Node &identifier() const { return m_identifier.ref(); }
-    const Node &value() const { return m_value.ref(); }
+    const SharedPtr<Node> identifier() const { return m_identifier; }
+    const SharedPtr<Node> value() const { return m_value; }
 
     virtual void transform(Creator *creator) const override;
 
 protected:
-    OwnedPtr<Node> m_identifier {};
-    OwnedPtr<Node> m_value {};
+    SharedPtr<Node> m_identifier {};
+    SharedPtr<Node> m_value {};
 };
 }

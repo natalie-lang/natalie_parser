@@ -15,7 +15,7 @@ public:
     KeywordSplatNode(const Token &token)
         : Node { token } { }
 
-    KeywordSplatNode(const Token &token, Node *node)
+    KeywordSplatNode(const Token &token, SharedPtr<Node> node)
         : Node { token }
         , m_node { node } {
         assert(m_node);
@@ -23,7 +23,7 @@ public:
 
     virtual Type type() const override { return Type::KeywordSplat; }
 
-    const Node &node() const { return m_node.ref(); }
+    const SharedPtr<Node> node() const { return m_node; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("hash");
@@ -35,7 +35,7 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_node {};
+    SharedPtr<Node> m_node {};
 };
 
 }

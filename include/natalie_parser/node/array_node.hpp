@@ -14,28 +14,13 @@ public:
     ArrayNode(const Token &token)
         : Node { token } { }
 
-    ArrayNode(const ArrayNode &other)
-        : Node { other.m_token } {
-        for (auto node : other.m_nodes)
-            m_nodes.push(node->clone());
-    }
-
-    ~ArrayNode() {
-        for (auto node : m_nodes)
-            delete node;
-    }
-
-    virtual Node *clone() const override {
-        return new ArrayNode(*this);
-    }
-
     virtual Type type() const override { return Type::Array; }
 
-    void add_node(Node *node) {
+    void add_node(SharedPtr<Node> node) {
         m_nodes.push(node);
     }
 
-    const Vector<Node *> &nodes() const { return m_nodes; }
+    const Vector<SharedPtr<Node>> &nodes() const { return m_nodes; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("array");
@@ -44,6 +29,6 @@ public:
     }
 
 protected:
-    Vector<Node *> m_nodes {};
+    Vector<SharedPtr<Node>> m_nodes {};
 };
 }

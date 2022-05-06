@@ -12,7 +12,7 @@ using namespace TM;
 
 class NotMatchNode : public Node {
 public:
-    NotMatchNode(const Token &token, Node *expression)
+    NotMatchNode(const Token &token, SharedPtr<Node> expression)
         : Node { token }
         , m_expression { expression } {
         assert(m_expression);
@@ -20,9 +20,9 @@ public:
 
     virtual Type type() const override { return Type::NotMatch; }
 
-    const Node &expression() const { return m_expression.ref(); }
+    const SharedPtr<Node> expression() const { return m_expression; }
 
-    void set_expression(Node *expression) { m_expression = expression; }
+    void set_expression(SharedPtr<Node> expression) { m_expression = expression; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("not");
@@ -30,6 +30,6 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_expression {};
+    SharedPtr<Node> m_expression {};
 };
 }

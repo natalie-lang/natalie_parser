@@ -13,20 +13,20 @@ using namespace TM;
 
 class ModuleNode : public Node {
 public:
-    ModuleNode(const Token &token, Node *name, BlockNode *body)
+    ModuleNode(const Token &token, SharedPtr<Node> name, SharedPtr<BlockNode> body)
         : Node { token }
         , m_name { name }
         , m_body { body } { }
 
     virtual Type type() const override { return Type::Module; }
 
-    const Node &name() const { return m_name.ref(); }
-    const BlockNode &body() const { return m_body.ref(); }
+    const SharedPtr<Node> name() const { return m_name; }
+    const SharedPtr<BlockNode> body() const { return m_body; }
 
     virtual void transform(Creator *creator) const override;
 
 protected:
-    OwnedPtr<Node> m_name {};
-    OwnedPtr<BlockNode> m_body {};
+    SharedPtr<Node> m_name {};
+    SharedPtr<BlockNode> m_body {};
 };
 }

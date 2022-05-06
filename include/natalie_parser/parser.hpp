@@ -51,135 +51,134 @@ public:
     SharedPtr<Node> tree();
 
 private:
-    bool higher_precedence(Token &token, Node *left, Precedence current_precedence);
+    bool higher_precedence(Token &token, SharedPtr<Node> left, Precedence current_precedence);
 
-    Precedence get_precedence(Token &token, Node *left = nullptr);
+    Precedence get_precedence(Token &token, SharedPtr<Node> left = {});
 
-    bool is_first_arg_of_call_without_parens(Node *, Token &);
+    bool is_first_arg_of_call_without_parens(SharedPtr<Node>, Token &);
 
-    Node *parse_expression(Precedence, LocalsHashmap &);
+    SharedPtr<Node> parse_expression(Precedence, LocalsHashmap &);
 
-    BlockNode *parse_body(LocalsHashmap &, Precedence, Token::Type = Token::Type::EndKeyword, bool = false);
-    BlockNode *parse_body(LocalsHashmap &, Precedence, Vector<Token::Type> &, const char *);
-    BlockNode *parse_case_in_body(LocalsHashmap &);
-    BlockNode *parse_case_when_body(LocalsHashmap &);
-    Node *parse_if_body(LocalsHashmap &);
-    BlockNode *parse_def_body(LocalsHashmap &);
+    SharedPtr<BlockNode> parse_body(LocalsHashmap &, Precedence, Token::Type = Token::Type::EndKeyword, bool = false);
+    SharedPtr<BlockNode> parse_body(LocalsHashmap &, Precedence, Vector<Token::Type> &, const char *);
+    SharedPtr<BlockNode> parse_case_in_body(LocalsHashmap &);
+    SharedPtr<BlockNode> parse_case_when_body(LocalsHashmap &);
+    SharedPtr<Node> parse_if_body(LocalsHashmap &);
+    SharedPtr<BlockNode> parse_def_body(LocalsHashmap &);
 
-    Node *parse_alias(LocalsHashmap &);
-    SymbolNode *parse_alias_arg(LocalsHashmap &, const char *, bool);
-    Node *parse_array(LocalsHashmap &);
-    Node *parse_back_ref(LocalsHashmap &);
-    Node *parse_begin(LocalsHashmap &);
+    SharedPtr<Node> parse_alias(LocalsHashmap &);
+    SharedPtr<SymbolNode> parse_alias_arg(LocalsHashmap &, const char *, bool);
+    SharedPtr<Node> parse_array(LocalsHashmap &);
+    SharedPtr<Node> parse_back_ref(LocalsHashmap &);
+    SharedPtr<Node> parse_begin(LocalsHashmap &);
     void parse_rest_of_begin(BeginNode &, LocalsHashmap &);
-    Node *parse_beginless_range(LocalsHashmap &);
-    Node *parse_block_pass(LocalsHashmap &);
-    Node *parse_bool(LocalsHashmap &);
-    Node *parse_break(LocalsHashmap &);
-    Node *parse_class(LocalsHashmap &);
-    Node *parse_class_or_module_name(LocalsHashmap &);
-    Node *parse_case(LocalsHashmap &);
-    Node *parse_case_in_pattern(LocalsHashmap &);
-    Node *parse_case_in_patterns(LocalsHashmap &);
+    SharedPtr<Node> parse_beginless_range(LocalsHashmap &);
+    SharedPtr<Node> parse_block_pass(LocalsHashmap &);
+    SharedPtr<Node> parse_bool(LocalsHashmap &);
+    SharedPtr<Node> parse_break(LocalsHashmap &);
+    SharedPtr<Node> parse_class(LocalsHashmap &);
+    SharedPtr<Node> parse_class_or_module_name(LocalsHashmap &);
+    SharedPtr<Node> parse_case(LocalsHashmap &);
+    SharedPtr<Node> parse_case_in_pattern(LocalsHashmap &);
+    SharedPtr<Node> parse_case_in_patterns(LocalsHashmap &);
     void parse_comma_separated_expressions(ArrayNode &, LocalsHashmap &);
-    Node *parse_constant(LocalsHashmap &);
-    Node *parse_def(LocalsHashmap &);
-    Node *parse_defined(LocalsHashmap &);
-    void parse_def_args(OwnedVector<Node *> &, LocalsHashmap &);
-    Node *parse_def_single_arg(LocalsHashmap &);
-    Node *parse_file_constant(LocalsHashmap &);
-    Node *parse_group(LocalsHashmap &);
-    Node *parse_hash(LocalsHashmap &);
-    Node *parse_hash_inner(LocalsHashmap &, Precedence, Token::Type, Node * = nullptr);
-    Node *parse_identifier(LocalsHashmap &);
-    Node *parse_if(LocalsHashmap &);
+    SharedPtr<Node> parse_constant(LocalsHashmap &);
+    SharedPtr<Node> parse_def(LocalsHashmap &);
+    SharedPtr<Node> parse_defined(LocalsHashmap &);
+    void parse_def_args(Vector<SharedPtr<Node>> &, LocalsHashmap &);
+    SharedPtr<Node> parse_def_single_arg(LocalsHashmap &);
+    SharedPtr<Node> parse_file_constant(LocalsHashmap &);
+    SharedPtr<Node> parse_group(LocalsHashmap &);
+    SharedPtr<Node> parse_hash(LocalsHashmap &);
+    SharedPtr<Node> parse_hash_inner(LocalsHashmap &, Precedence, Token::Type, SharedPtr<Node> = {});
+    SharedPtr<Node> parse_identifier(LocalsHashmap &);
+    SharedPtr<Node> parse_if(LocalsHashmap &);
     void parse_interpolated_body(LocalsHashmap &, InterpolatedNode &, Token::Type);
-    Node *parse_interpolated_regexp(LocalsHashmap &);
+    SharedPtr<Node> parse_interpolated_regexp(LocalsHashmap &);
     int parse_regexp_options(String &);
-    Node *parse_interpolated_shell(LocalsHashmap &);
-    Node *parse_interpolated_string(LocalsHashmap &);
-    Node *parse_interpolated_symbol(LocalsHashmap &);
-    Node *parse_lit(LocalsHashmap &);
-    Node *parse_keyword_splat(LocalsHashmap &);
+    SharedPtr<Node> parse_interpolated_shell(LocalsHashmap &);
+    SharedPtr<Node> parse_interpolated_string(LocalsHashmap &);
+    SharedPtr<Node> parse_interpolated_symbol(LocalsHashmap &);
+    SharedPtr<Node> parse_lit(LocalsHashmap &);
+    SharedPtr<Node> parse_keyword_splat(LocalsHashmap &);
     SharedPtr<String> parse_method_name(LocalsHashmap &);
-    Node *parse_module(LocalsHashmap &);
-    Node *parse_next(LocalsHashmap &);
-    Node *parse_nil(LocalsHashmap &);
-    Node *parse_not(LocalsHashmap &);
-    Node *parse_nth_ref(LocalsHashmap &);
-    Node *parse_redo(LocalsHashmap &);
-    Node *parse_retry(LocalsHashmap &);
-    Node *parse_return(LocalsHashmap &);
-    Node *parse_sclass(LocalsHashmap &);
-    Node *parse_self(LocalsHashmap &);
-    Node *parse_splat(LocalsHashmap &);
-    Node *parse_stabby_proc(LocalsHashmap &);
-    Node *parse_string(LocalsHashmap &);
-    Node *parse_super(LocalsHashmap &);
-    Node *parse_symbol(LocalsHashmap &);
-    Node *parse_symbol_key(LocalsHashmap &);
-    Node *parse_statement_keyword(LocalsHashmap &);
-    Node *parse_top_level_constant(LocalsHashmap &);
-    Node *parse_unary_operator(LocalsHashmap &);
-    Node *parse_undef(LocalsHashmap &);
-    Node *parse_unless(LocalsHashmap &);
-    Node *parse_while(LocalsHashmap &);
-    Node *parse_word_array(LocalsHashmap &);
-    Node *parse_word_symbol_array(LocalsHashmap &);
-    Node *parse_yield(LocalsHashmap &);
+    SharedPtr<Node> parse_module(LocalsHashmap &);
+    SharedPtr<Node> parse_next(LocalsHashmap &);
+    SharedPtr<Node> parse_nil(LocalsHashmap &);
+    SharedPtr<Node> parse_not(LocalsHashmap &);
+    SharedPtr<Node> parse_nth_ref(LocalsHashmap &);
+    SharedPtr<Node> parse_redo(LocalsHashmap &);
+    SharedPtr<Node> parse_retry(LocalsHashmap &);
+    SharedPtr<Node> parse_return(LocalsHashmap &);
+    SharedPtr<Node> parse_sclass(LocalsHashmap &);
+    SharedPtr<Node> parse_self(LocalsHashmap &);
+    SharedPtr<Node> parse_splat(LocalsHashmap &);
+    SharedPtr<Node> parse_stabby_proc(LocalsHashmap &);
+    SharedPtr<Node> parse_string(LocalsHashmap &);
+    SharedPtr<Node> parse_super(LocalsHashmap &);
+    SharedPtr<Node> parse_symbol(LocalsHashmap &);
+    SharedPtr<Node> parse_symbol_key(LocalsHashmap &);
+    SharedPtr<Node> parse_statement_keyword(LocalsHashmap &);
+    SharedPtr<Node> parse_top_level_constant(LocalsHashmap &);
+    SharedPtr<Node> parse_unary_operator(LocalsHashmap &);
+    SharedPtr<Node> parse_undef(LocalsHashmap &);
+    SharedPtr<Node> parse_unless(LocalsHashmap &);
+    SharedPtr<Node> parse_while(LocalsHashmap &);
+    SharedPtr<Node> parse_word_array(LocalsHashmap &);
+    SharedPtr<Node> parse_word_symbol_array(LocalsHashmap &);
+    SharedPtr<Node> parse_yield(LocalsHashmap &);
 
-    void parse_assignment_expression(Node *&, LocalsHashmap &);
-    void parse_assignment_expression_without_multiple_values(Node *&, LocalsHashmap &);
-    void parse_assignment_expression(Node *&, LocalsHashmap &, bool);
-    Node *parse_assignment_expression_value(bool, LocalsHashmap &, bool);
-    Node *parse_assignment_identifier(bool, LocalsHashmap &);
-    void parse_call_expression_without_parens(Node *&, LocalsHashmap &);
-    void parse_call_expression_with_parens(Node *&, LocalsHashmap &);
+    SharedPtr<Node> parse_assignment_expression(SharedPtr<Node>, LocalsHashmap &);
+    SharedPtr<Node> parse_assignment_expression_without_multiple_values(SharedPtr<Node>, LocalsHashmap &);
+    SharedPtr<Node> parse_assignment_expression(SharedPtr<Node>, LocalsHashmap &, bool);
+    SharedPtr<Node> parse_assignment_expression_value(bool, LocalsHashmap &, bool);
+    SharedPtr<Node> parse_assignment_identifier(bool, LocalsHashmap &);
+    SharedPtr<Node> parse_call_expression_without_parens(SharedPtr<Node>, LocalsHashmap &);
+    SharedPtr<Node> parse_call_expression_with_parens(SharedPtr<Node>, LocalsHashmap &);
+    SharedPtr<Node> parse_call_hash_args(LocalsHashmap &, bool, SharedPtr<Node>);
+    SharedPtr<Node> parse_constant_resolution_expression(SharedPtr<Node>, LocalsHashmap &);
+    SharedPtr<Node> parse_infix_expression(SharedPtr<Node>, LocalsHashmap &);
+    SharedPtr<Node> parse_proc_call_expression(SharedPtr<Node>, LocalsHashmap &);
+    SharedPtr<Node> parse_iter_expression(SharedPtr<Node>, LocalsHashmap &);
+    SharedPtr<BlockNode> parse_iter_body(LocalsHashmap &, bool);
+    SharedPtr<Node> parse_logical_expression(SharedPtr<Node>, LocalsHashmap &);
+    SharedPtr<Node> parse_match_expression(SharedPtr<Node>, LocalsHashmap &);
+    SharedPtr<Node> parse_modifier_expression(SharedPtr<Node>, LocalsHashmap &);
+    SharedPtr<Node> parse_multiple_assignment_expression(SharedPtr<Node>, LocalsHashmap &);
+    SharedPtr<Node> parse_not_match_expression(SharedPtr<Node>, LocalsHashmap &);
+    SharedPtr<Node> parse_op_assign_expression(SharedPtr<Node>, LocalsHashmap &);
+    SharedPtr<Node> parse_op_attr_assign_expression(SharedPtr<Node>, LocalsHashmap &);
+    SharedPtr<Node> parse_range_expression(SharedPtr<Node>, LocalsHashmap &);
+    SharedPtr<Node> parse_ref_expression(SharedPtr<Node>, LocalsHashmap &);
+    SharedPtr<Node> parse_rescue_expression(SharedPtr<Node>, LocalsHashmap &);
+    SharedPtr<Node> parse_safe_send_expression(SharedPtr<Node>, LocalsHashmap &);
+    SharedPtr<Node> parse_send_expression(SharedPtr<Node>, LocalsHashmap &);
+    SharedPtr<Node> parse_ternary_expression(SharedPtr<Node>, LocalsHashmap &);
+
     void parse_call_args(NodeWithArgs &, LocalsHashmap &, bool = false);
-    Node *parse_call_hash_args(LocalsHashmap &, bool, Node *);
-    void parse_constant_resolution_expression(Node *&, LocalsHashmap &);
-    void parse_infix_expression(Node *&, LocalsHashmap &);
-    void parse_proc_call_expression(Node *&, LocalsHashmap &);
-    void parse_iter_expression(Node *&, LocalsHashmap &);
-    void parse_iter_args(Vector<Node *> &, LocalsHashmap &);
-    BlockNode *parse_iter_body(LocalsHashmap &, bool);
-    void parse_logical_expression(Node *&, LocalsHashmap &);
-    void parse_match_expression(Node *&, LocalsHashmap &);
-    void parse_modifier_expression(Node *&, LocalsHashmap &);
-    void parse_multiple_assignment_expression(Node *&, LocalsHashmap &);
-    void parse_not_match_expression(Node *&, LocalsHashmap &);
-    void parse_op_assign_expression(Node *&, LocalsHashmap &);
-    void parse_op_attr_assign_expression(Node *&, LocalsHashmap &);
-    void parse_range_expression(Node *&, LocalsHashmap &);
-    void parse_ref_expression(Node *&, LocalsHashmap &);
-    void parse_rescue_expression(Node *&, LocalsHashmap &);
-    void parse_safe_send_expression(Node *&, LocalsHashmap &);
-    void parse_send_expression(Node *&, LocalsHashmap &);
-    void parse_ternary_expression(Node *&, LocalsHashmap &);
+    void parse_iter_args(Vector<SharedPtr<Node>> &, LocalsHashmap &);
 
-    using parse_null_fn = Node *(Parser::*)(LocalsHashmap &);
-    using parse_left_fn = void (Parser::*)(Node *&, LocalsHashmap &);
+    using parse_null_fn = SharedPtr<Node> (Parser::*)(LocalsHashmap &);
+    using parse_left_fn = SharedPtr<Node> (Parser::*)(SharedPtr<Node>, LocalsHashmap &);
 
     parse_null_fn null_denotation(Token::Type);
-    parse_left_fn left_denotation(Token &, Node *, Precedence);
+    parse_left_fn left_denotation(Token &, SharedPtr<Node>, Precedence);
 
-    bool treat_left_bracket_as_element_reference(Node *left, Token &token) {
-        return !token.whitespace_precedes() || (left->type() == Node::Type::Identifier && static_cast<IdentifierNode *>(left)->is_lvar());
+    bool treat_left_bracket_as_element_reference(SharedPtr<Node> left, Token &token) {
+        return !token.whitespace_precedes() || (left->type() == Node::Type::Identifier && left.static_cast_as<IdentifierNode>()->is_lvar());
     }
 
     // convert ((x and y) and z) to (x and (y and z))
     template <typename T>
-    Node *regroup(Token &token, Node *left, Node *right) {
-        auto left_node = static_cast<T *>(left);
-        auto new_node = new T { left_node->token(), left_node->left().clone(), new T { token, left_node->right().clone(), right } };
-        delete left_node;
-        return new_node;
+    SharedPtr<Node> regroup(Token &token, SharedPtr<Node> left, SharedPtr<Node> right) {
+        auto left_node = left.static_cast_as<T>();
+        return new T { left_node->token(), left_node->left(), new T { token, left_node->right(), right } };
     };
 
-    Node *append_string_nodes(Node *string1, Node *string2);
-    Node *concat_adjacent_strings(OwnedPtr<Node> string, LocalsHashmap &locals, bool &strings_were_appended);
+    SharedPtr<Node> append_string_nodes(SharedPtr<Node> string1, SharedPtr<Node> string2);
+    SharedPtr<Node> concat_adjacent_strings(SharedPtr<Node> string, LocalsHashmap &locals, bool &strings_were_appended);
 
-    NodeWithArgs *to_node_with_args(Node *node);
+    SharedPtr<NodeWithArgs> to_node_with_args(SharedPtr<Node> node);
 
     // FIXME: return a Token&
     Token current_token() const;

@@ -9,7 +9,7 @@ void ClassNode::transform(Creator *creator) const {
     if (doc_comment)
         creator->set_comments(doc_comment.value().ref());
     if (m_name->type() == Node::Type::Identifier) {
-        auto identifier = static_cast<const IdentifierNode *>(&name());
+        auto identifier = m_name.static_cast_as<IdentifierNode>();
         creator->append_symbol(identifier->name());
     } else {
         creator->append(m_name.ref());

@@ -13,30 +13,25 @@ using namespace TM;
 
 class CaseNode : public Node {
 public:
-    CaseNode(const Token &token, Node *subject)
+    CaseNode(const Token &token, SharedPtr<Node> subject)
         : Node { token }
         , m_subject { subject } {
         assert(m_subject);
     }
 
-    ~CaseNode() {
-        for (auto node : m_nodes)
-            delete node;
-    }
-
     virtual Type type() const override { return Type::Case; }
 
-    void add_node(Node *node) {
+    void add_node(SharedPtr<Node> node) {
         m_nodes.push(node);
     }
 
-    void set_else_node(BlockNode *node) {
+    void set_else_node(SharedPtr<BlockNode> node) {
         m_else_node = node;
     }
 
-    const Node &subject() const { return m_subject.ref(); }
-    Vector<Node *> &nodes() { return m_nodes; }
-    const BlockNode &else_node() const { return m_else_node.ref(); }
+    const SharedPtr<Node> subject() const { return m_subject; }
+    Vector<SharedPtr<Node>> &nodes() { return m_nodes; }
+    const SharedPtr<BlockNode> else_node() const { return m_else_node; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("case");
@@ -50,8 +45,8 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_subject {};
-    Vector<Node *> m_nodes {};
-    OwnedPtr<BlockNode> m_else_node {};
+    SharedPtr<Node> m_subject {};
+    Vector<SharedPtr<Node>> m_nodes {};
+    SharedPtr<BlockNode> m_else_node {};
 };
 }

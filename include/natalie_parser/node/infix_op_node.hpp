@@ -10,7 +10,7 @@ using namespace TM;
 
 class InfixOpNode : public Node {
 public:
-    InfixOpNode(const Token &token, Node *left, SharedPtr<String> op, Node *right)
+    InfixOpNode(const Token &token, SharedPtr<Node> left, SharedPtr<String> op, SharedPtr<Node> right)
         : Node { token }
         , m_left { left }
         , m_op { op }
@@ -20,23 +20,13 @@ public:
         assert(m_right);
     }
 
-    InfixOpNode(const InfixOpNode &other)
-        : Node { other.token() }
-        , m_left { other.left().clone() }
-        , m_op { other.op() }
-        , m_right { other.right().clone() } { }
-
-    virtual Node *clone() const override {
-        return new InfixOpNode(*this);
-    }
-
     virtual Type type() const override { return Type::InfixOp; }
 
-    const Node &left() const { return m_left.ref(); }
+    const SharedPtr<Node> left() const { return m_left; }
     const SharedPtr<String> op() const { return m_op; }
-    const Node &right() const { return m_right.ref(); }
+    const SharedPtr<Node> right() const { return m_right; }
 
-    void set_right(Node *right) { m_right = right; }
+    void set_right(SharedPtr<Node> right) { m_right = right; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("call");
@@ -46,8 +36,8 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_left {};
+    SharedPtr<Node> m_left {};
     SharedPtr<String> m_op {};
-    OwnedPtr<Node> m_right {};
+    SharedPtr<Node> m_right {};
 };
 }

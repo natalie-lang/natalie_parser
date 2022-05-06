@@ -12,24 +12,17 @@ using namespace TM;
 
 class NotNode : public Node {
 public:
-    NotNode(const Token &token, Node *expression)
+    NotNode(const Token &token, SharedPtr<Node> expression)
         : Node { token }
         , m_expression { expression } {
         assert(m_expression);
     }
 
-    NotNode(const NotNode &other)
-        : NotNode { other.token(), other.expression().clone() } { }
-
-    virtual Node *clone() const override {
-        return new NotNode(*this);
-    }
-
     virtual Type type() const override { return Type::Not; }
 
-    const Node &expression() const { return m_expression.ref(); }
+    const SharedPtr<Node> expression() const { return m_expression; }
 
-    void set_expression(Node *expression) { m_expression = expression; }
+    void set_expression(SharedPtr<Node> expression) { m_expression = expression; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("call");
@@ -39,6 +32,6 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_expression {};
+    SharedPtr<Node> m_expression {};
 };
 }

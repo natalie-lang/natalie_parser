@@ -12,7 +12,7 @@ using namespace TM;
 
 class ReturnNode : public Node {
 public:
-    ReturnNode(const Token &token, Node *value)
+    ReturnNode(const Token &token, SharedPtr<Node> value)
         : Node { token }
         , m_value { value } {
         assert(m_value);
@@ -20,7 +20,7 @@ public:
 
     virtual Type type() const override { return Type::Return; }
 
-    const Node &value() const { return m_value.ref(); }
+    const SharedPtr<Node> value() const { return m_value; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("return");
@@ -29,6 +29,6 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_value {};
+    SharedPtr<Node> m_value {};
 };
 }

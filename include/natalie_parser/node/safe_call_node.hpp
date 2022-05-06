@@ -12,7 +12,7 @@ using namespace TM;
 
 class SafeCallNode : public CallNode {
 public:
-    SafeCallNode(const Token &token, Node *receiver, SharedPtr<String> message)
+    SafeCallNode(const Token &token, SharedPtr<Node> receiver, SharedPtr<String> message)
         : CallNode { token, receiver, message } { }
 
     SafeCallNode(const Token &token, CallNode &node)

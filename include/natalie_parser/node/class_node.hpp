@@ -13,7 +13,7 @@ using namespace TM;
 
 class ClassNode : public Node {
 public:
-    ClassNode(const Token &token, Node *name, Node *superclass, BlockNode *body)
+    ClassNode(const Token &token, SharedPtr<Node> name, SharedPtr<Node> superclass, SharedPtr<BlockNode> body)
         : Node { token }
         , m_name { name }
         , m_superclass { superclass }
@@ -25,15 +25,15 @@ public:
 
     virtual Type type() const override { return Type::Class; }
 
-    const Node &name() const { return m_name.ref(); }
-    const Node &superclass() const { return m_superclass.ref(); }
-    const BlockNode &body() const { return m_body.ref(); }
+    const SharedPtr<Node> name() const { return m_name; }
+    const SharedPtr<Node> superclass() const { return m_superclass; }
+    const SharedPtr<BlockNode> body() const { return m_body; }
 
     virtual void transform(Creator *creator) const override;
 
 protected:
-    OwnedPtr<Node> m_name {};
-    OwnedPtr<Node> m_superclass {};
-    OwnedPtr<BlockNode> m_body {};
+    SharedPtr<Node> m_name {};
+    SharedPtr<Node> m_superclass {};
+    SharedPtr<BlockNode> m_body {};
 };
 }

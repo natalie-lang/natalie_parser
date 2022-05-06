@@ -14,29 +14,14 @@ public:
     InterpolatedNode(const Token &token)
         : Node { token } { }
 
-    InterpolatedNode(const InterpolatedNode &other)
-        : InterpolatedNode { other.token() } {
-        for (auto node : other.nodes())
-            add_node(node->clone());
-    }
-
-    virtual Node *clone() const override {
-        return new InterpolatedNode(*this);
-    }
-
-    ~InterpolatedNode() {
-        for (auto node : m_nodes)
-            delete node;
-    }
-
     bool is_empty() const { return m_nodes.is_empty(); }
 
-    void prepend_node(Node *node) { m_nodes.push_front(node); };
-    void add_node(Node *node) { m_nodes.push(node); };
+    void prepend_node(SharedPtr<Node> node) { m_nodes.push_front(node); };
+    void add_node(SharedPtr<Node> node) { m_nodes.push(node); };
 
-    const Vector<Node *> &nodes() const { return m_nodes; }
+    const Vector<SharedPtr<Node>> &nodes() const { return m_nodes; }
 
 protected:
-    Vector<Node *> m_nodes {};
+    Vector<SharedPtr<Node>> m_nodes {};
 };
 }

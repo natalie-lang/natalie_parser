@@ -12,22 +12,15 @@ using namespace TM;
 
 class EvaluateToStringNode : public Node {
 public:
-    EvaluateToStringNode(const Token &token, Node *node)
+    EvaluateToStringNode(const Token &token, SharedPtr<Node> node)
         : Node { token }
         , m_node { node } {
         assert(m_node);
     }
 
-    EvaluateToStringNode(const EvaluateToStringNode &other)
-        : EvaluateToStringNode { other.token(), other.node().clone() } { }
-
-    virtual Node *clone() const override {
-        return new EvaluateToStringNode(*this);
-    }
-
     virtual Type type() const override { return Type::EvaluateToString; }
 
-    const Node &node() const { return m_node.ref(); }
+    const SharedPtr<Node> node() const { return m_node; }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("evstr");
@@ -35,6 +28,6 @@ public:
     }
 
 protected:
-    OwnedPtr<Node> m_node {};
+    SharedPtr<Node> m_node {};
 };
 }
