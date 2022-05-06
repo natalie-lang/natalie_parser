@@ -551,11 +551,17 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('def foo(x, *y, z); end')).must_equal s(:block, s(:defn, :foo, s(:args, :x, :'*y', :z), s(:nil)))
         expect(parse('def foo(a, &b); end')).must_equal s(:block, s(:defn, :foo, s(:args, :a, :'&b'), s(:nil)))
         expect(parse('def foo(a = nil, b = foo, c = FOO); end')).must_equal s(:block, s(:defn, :foo, s(:args, s(:lasgn, :a, s(:nil)), s(:lasgn, :b, s(:call, nil, :foo)), s(:lasgn, :c, s(:const, :FOO))), s(:nil)))
-        expect(parse('def foo(a, b: :c, d:); end')).must_equal s(:block, s(:defn, :foo, s(:args, :a, s(:kwarg, :b, s(:lit, :c)), s(:kwarg, :d)), s(:nil)))
         expect(parse('bar def foo() end')).must_equal s(:block, s(:call, nil, :bar, s(:defn, :foo, s(:args), s(:nil))))
         expect(parse('def (@foo = bar).===(obj); end')).must_equal s(:block, s(:defs, s(:iasgn, :@foo, s(:call, nil, :bar)), :===, s(:args, :obj), s(:nil)))
         expect(parse('def -@; end')).must_equal s(:block, s(:defn, :-@, s(:args), s(:nil)))
         expect(parse('def +@; end')).must_equal s(:block, s(:defn, :+@, s(:args), s(:nil)))
+      end
+
+      it 'parses method definition keyword args' do
+        expect(parse('def foo(a, b: :c, d:); end')).must_equal s(:block, s(:defn, :foo, s(:args, :a, s(:kwarg, :b, s(:lit, :c)), s(:kwarg, :d)), s(:nil)))
+        expect(parse('def foo bar: 1; end')).must_equal s(:block, s(:defn, :foo, s(:args, s(:kwarg, :bar, s(:lit, 1))), s(:nil)))
+        expect(parse('def self.foo bar: 1; end')).must_equal s(:block, s(:defs, s(:self), :foo, s(:args, s(:kwarg, :bar, s(:lit, 1))), s(:nil)))
+        expect(parse('def foo Bar: 1; end')).must_equal s(:block, s(:defn, :foo, s(:args, s(:kwarg, :Bar, s(:lit, 1))), s(:nil)))
       end
 
       it 'parses undef' do

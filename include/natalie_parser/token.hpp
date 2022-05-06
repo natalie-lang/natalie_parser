@@ -629,6 +629,7 @@ public:
     bool is_rparen() const { return m_type == Type::RParen; }
     bool is_semicolon() const { return m_type == Type::Semicolon; }
     bool is_splat() const { return m_type == Type::Multiply || m_type == Type::Exponent; }
+    bool is_symbol_key() const { return m_type == Type::SymbolKey; }
     bool is_when_keyword() const { return m_type == Type::WhenKeyword; }
 
     bool is_valid() const {

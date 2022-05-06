@@ -939,7 +939,7 @@ SharedPtr<Node> Parser::parse_def(LocalsHashmap &locals) {
             expect(Token::Type::RParen, "args closing paren");
             advance();
         }
-    } else if (current_token().is_bare_name() || current_token().is_splat()) {
+    } else if (current_token().is_bare_name() || current_token().is_splat() || current_token().is_symbol_key()) {
         parse_def_args(args, our_locals);
     }
     SharedPtr<BlockNode> body = parse_def_body(our_locals);
