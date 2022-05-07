@@ -29,6 +29,7 @@
 ENV["VERBOSE"] = "1"
 
 require "minitest/autorun"
+require "minitest/focus"
 
 $LOAD_PATH << File.expand_path('../lib', __dir__)
 $LOAD_PATH << File.expand_path('../ext', __dir__)
@@ -3760,6 +3761,7 @@ module TestRubyParserShared20Plus
   end
 
   def test_messy_op_asgn_lineno
+    skip # NATALIE: we handle this differently
     rb = "a (B::C *= d e)"
     pt = s(:call, nil, :a,
            s(:op_asgn, s(:const, :B),
@@ -5507,12 +5509,12 @@ class Minitest::Test
 end if ENV["NOSKIP"]
 
 class TestRubyParser < Minitest::Test
-  def test_cls_version
-    assert_equal 23, RubyParser::V23.version
-    assert_equal 24, RubyParser::V24.version
-    assert_equal 24, Ruby24Parser.version
-    refute RubyParser::Parser.version
-  end
+  #def test_cls_version
+    #assert_equal 23, RubyParser::V23.version
+    #assert_equal 24, RubyParser::V24.version
+    #assert_equal 24, Ruby24Parser.version
+    #refute RubyParser::Parser.version
+  #end
 
   def test_parse
     processor = RubyParser.new
