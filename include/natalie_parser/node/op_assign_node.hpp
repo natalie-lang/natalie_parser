@@ -13,7 +13,7 @@ using namespace TM;
 
 class OpAssignNode : public Node {
 public:
-    OpAssignNode(const Token &token, SharedPtr<IdentifierNode> name, SharedPtr<Node> value)
+    OpAssignNode(const Token &token, SharedPtr<Node> name, SharedPtr<Node> value)
         : Node { token }
         , m_name { name }
         , m_value { value } {
@@ -21,7 +21,7 @@ public:
         assert(m_value);
     }
 
-    OpAssignNode(const Token &token, SharedPtr<String> op, SharedPtr<IdentifierNode> name, SharedPtr<Node> value)
+    OpAssignNode(const Token &token, SharedPtr<String> op, SharedPtr<Node> name, SharedPtr<Node> value)
         : Node { token }
         , m_op { op }
         , m_name { name }
@@ -34,26 +34,14 @@ public:
     virtual Type type() const override { return Type::OpAssign; }
 
     const SharedPtr<String> op() const { return m_op; }
-    const SharedPtr<IdentifierNode> name() const { return m_name; }
+    const SharedPtr<Node> name() const { return m_name; }
     const SharedPtr<Node> value() const { return m_value; }
 
-    virtual void transform(Creator *creator) const override {
-        assert(op());
-        creator->with_assignment(true, [&]() {
-            m_name->transform(creator);
-        });
-        auto call = CallNode {
-            token(),
-            m_name.static_cast_as<Node>(),
-            m_op
-        };
-        call.add_arg(m_value);
-        creator->append(call);
-    }
+    virtual void transform(Creator *creator) const override;
 
 protected:
     SharedPtr<String> m_op {};
-    SharedPtr<IdentifierNode> m_name {};
+    SharedPtr<Node> m_name {};
     SharedPtr<Node> m_value {};
 };
 }

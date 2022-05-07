@@ -14,7 +14,7 @@ using namespace TM;
 
 class OpAssignOrNode : public OpAssignNode {
 public:
-    OpAssignOrNode(const Token &token, SharedPtr<IdentifierNode> name, SharedPtr<Node> value)
+    OpAssignOrNode(const Token &token, SharedPtr<Node> name, SharedPtr<Node> value)
         : OpAssignNode { token, name, value } { }
 
     virtual Type type() const override { return Type::OpAssignOr; }

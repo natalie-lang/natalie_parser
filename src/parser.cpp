@@ -125,7 +125,9 @@ Parser::Precedence Parser::get_precedence(Token &token, SharedPtr<Node> left) {
     case Token::Type::RightShift:
         return Precedence::BITWISE_SHIFT;
     case Token::Type::LParen:
-        return Precedence::CALL;
+        if (!token.whitespace_precedes())
+            return Precedence::CALL;
+        break;
     case Token::Type::AndKeyword:
     case Token::Type::OrKeyword:
         return Precedence::COMPOSITION;
@@ -2211,16 +2213,27 @@ SharedPtr<Node> Parser::parse_not_match_expression(SharedPtr<Node> left, LocalsH
 SharedPtr<Node> Parser::parse_op_assign_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
     if (left->type() == Node::Type::Call)
         return parse_op_attr_assign_expression(left, locals);
-    if (left->type() != Node::Type::Identifier)
-        throw_unexpected(left->token(), "identifier");
-    auto left_identifier = left.static_cast_as<IdentifierNode>();
-    left_identifier->set_is_lvar(true);
-    left_identifier->add_to_locals(locals);
+    switch (left->type()) {
+    case Node::Type::Identifier: {
+        auto identifier = left.static_cast_as<IdentifierNode>();
+        identifier->set_is_lvar(true);
+        identifier->add_to_locals(locals);
+        break;
+    }
+    case Node::Type::Constant:
+    case Node::Type::Colon2:
+    case Node::Type::Colon3:
+        break;
+    default:
+        throw_unexpected(left->token(), "variable or constant");
+    }
     auto token = current_token();
     advance();
     switch (token.type()) {
     case Token::Type::AndEqual:
-        return new OpAssignAndNode { token, left_identifier, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
+        return new OpAssignAndNode { token, left, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
+    case Token::Type::OrEqual:
+        return new OpAssignOrNode { token, left, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
     case Token::Type::BitwiseAndEqual:
     case Token::Type::BitwiseOrEqual:
     case Token::Type::BitwiseXorEqual:
@@ -2234,10 +2247,8 @@ SharedPtr<Node> Parser::parse_op_assign_expression(SharedPtr<Node> left, LocalsH
     case Token::Type::RightShiftEqual: {
         auto op = new String(token.type_value());
         op->chomp();
-        return new OpAssignNode { token, op, left_identifier, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
+        return new OpAssignNode { token, op, left, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
     }
-    case Token::Type::OrEqual:
-        return new OpAssignOrNode { token, left_identifier, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
     default:
         TM_UNREACHABLE();
     }
@@ -2541,7 +2552,9 @@ Parser::parse_left_fn Parser::left_denotation(Token &token, SharedPtr<Node> left
         else
             return &Parser::parse_assignment_expression;
     case Type::LParen:
-        return &Parser::parse_call_expression_with_parens;
+        if (!token.whitespace_precedes())
+            return &Parser::parse_call_expression_with_parens;
+        break;
     case Type::ConstantResolution:
         return &Parser::parse_constant_resolution_expression;
     case Type::BitwiseAnd:

@@ -152,8 +152,6 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('x >>= 1')).must_equal s(:block, s(:lasgn, :x, s(:call, s(:lvar, :x), :>>, s(:lit, 1))))
         expect(parse('x <<= 1')).must_equal s(:block, s(:lasgn, :x, s(:call, s(:lvar, :x), :<<, s(:lit, 1))))
         expect(parse('n = x += 1')).must_equal s(:block, s(:lasgn, :n, s(:lasgn, :x, s(:call, s(:lvar, :x), :+, s(:lit, 1)))))
-        expect(parse('x.y += 1')).must_equal s(:block, s(:op_asgn2, s(:call, nil, :x), :y=, :+, s(:lit, 1)))
-        expect(parse('x[:y] += 1')).must_equal s(:block, s(:op_asgn1, s(:call, nil, :x), s(:arglist, s(:lit, :y)), :+, s(:lit, 1)))
         expect(parse('foo&.bar')).must_equal s(:block, s(:safe_call, s(:call, nil, :foo), :bar))
         expect(parse('foo&.bar 1')).must_equal s(:block, s(:safe_call, s(:call, nil, :foo), :bar, s(:lit, 1)))
         expect(parse('foo&.bar x')).must_equal s(:block, s(:safe_call, s(:call, nil, :foo), :bar, s(:call, nil, :x)))
@@ -643,6 +641,24 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('(foo, (bar, baz)) = [1, [2, 3]]; foo; bar; baz')).must_equal s(:block, s(:masgn, s(:array, s(:lasgn, :foo), s(:masgn, s(:array, s(:lasgn, :bar), s(:lasgn, :baz)))), s(:to_ary, s(:array, s(:lit, 1), s(:array, s(:lit, 2), s(:lit, 3))))), s(:lvar, :foo), s(:lvar, :bar), s(:lvar, :baz))
       end
 
+      it 'parses op assignment' do
+        expect(parse("a *= 2")).must_equal s(:block, s(:lasgn, :a, s(:call, s(:lvar, :a), :*, s(:lit, 2))))
+        expect(parse("@a *= 2")).must_equal s(:block, s(:iasgn, :@a, s(:call, s(:ivar, :@a), :*, s(:lit, 2))))
+        expect(parse("@@a *= 2")).must_equal s(:block, s(:cvdecl, :@@a, s(:call, s(:cvar, :@@a), :*, s(:lit, 2))))
+        expect(parse("$a *= 2")).must_equal s(:block, s(:gasgn, :$a, s(:call, s(:gvar, :$a), :*, s(:lit, 2))))
+        expect(parse("A *= 2")).must_equal s(:block, s(:cdecl, :A, s(:call, s(:const, :A), :*, s(:lit, 2))))
+        expect(parse("::A *= 2")).must_equal s(:block, s(:op_asgn, s(:colon3, :A), :*, s(:lit, 2)))
+        expect(parse("A::B *= 2")).must_equal s(:block, s(:op_asgn, s(:colon2, s(:const, :A), :B), :*, s(:lit, 2)))
+        if parser == 'NatalieParser'
+          # NOTE: We choose to handle this differently than RubyParser; this way matches the similar results above
+          expect(parse("A::B *= c d")).must_equal s(:block, s(:op_asgn, s(:colon2, s(:const, :A), :B), :*, s(:call, nil, :c, s(:call, nil, :d))))
+        else
+          expect(parse("A::B *= c d")).must_equal s(:block, s(:op_asgn, s(:const, :A), s(:call, nil, :c, s(:call, nil, :d)), :B, :*))
+        end
+        expect(parse('x[:y] *= 2')).must_equal s(:block, s(:op_asgn1, s(:call, nil, :x), s(:arglist, s(:lit, :y)), :*, s(:lit, 2)))
+        expect(parse('x.y *= 2')).must_equal s(:block, s(:op_asgn2, s(:call, nil, :x), :y=, :*, s(:lit, 2)))
+      end
+
       it 'parses constants' do
         expect(parse('ARGV')).must_equal s(:block, s(:const, :ARGV))
         expect(parse('Foo::Bar')).must_equal s(:block, s(:colon2, s(:const, :Foo), :Bar))
@@ -746,6 +762,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("foo a and b do\n1\nend")).must_equal s(:block, s(:and, s(:call, nil, :foo, s(:call, nil, :a)), s(:iter, s(:call, nil, :b), 0, s(:lit, 1))))
         expect(parse("foo a == b, c")).must_equal s(:block, s(:call, nil, :foo, s(:call, s(:call, nil, :a), :==, s(:call, nil, :b)), s(:call, nil, :c)))
         expect(parse("foo self: a")).must_equal s(:block, s(:call, nil, :foo, s(:hash, s(:lit, :self), s(:call, nil, :a))))
+        # NOTE: technically this demonstrates a call without parentheses, but practically I cannot find a difference in the result
+        expect(parse("foo (1 + 2)")).must_equal s(:block, s(:call, nil, :foo, s(:call, s(:lit, 1), :+, s(:lit, 2))))
       end
 
       it 'parses operator method calls' do
