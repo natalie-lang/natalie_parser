@@ -720,6 +720,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('foo.()')).must_equal s(:block, s(:call, s(:call, nil, :foo), :call))
         expect(parse('foo.(1, 2)')).must_equal s(:block, s(:call, s(:call, nil, :foo), :call, s(:lit, 1), s(:lit, 2)))
         expect(parse('foo(a = b, c)')).must_equal s(:block, s(:call, nil, :foo, s(:lasgn, :a, s(:call, nil, :b)), s(:call, nil, :c)))
+        expect(parse("foo (1 + 2)")).must_equal s(:block, s(:call, nil, :foo, s(:call, s(:lit, 1), :+, s(:lit, 2))))
+        expect(parse("a.b (1) {c}")).must_equal s(:block, s(:iter, s(:call, s(:call, nil, :a), :b, s(:lit, 1)), 0, s(:call, nil, :c)))
         if parser == 'NatalieParser'
           expect_raise_with_message(-> { parse('foo(') }, SyntaxError, "(string)#1: syntax error, unexpected end-of-input (expected: 'expression')")
           expect_raise_with_message(-> { parse('123(') }, SyntaxError, "(string)#1: syntax error, unexpected '(' (error: 'left-hand-side is not callable')")
@@ -762,8 +764,6 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("foo a and b do\n1\nend")).must_equal s(:block, s(:and, s(:call, nil, :foo, s(:call, nil, :a)), s(:iter, s(:call, nil, :b), 0, s(:lit, 1))))
         expect(parse("foo a == b, c")).must_equal s(:block, s(:call, nil, :foo, s(:call, s(:call, nil, :a), :==, s(:call, nil, :b)), s(:call, nil, :c)))
         expect(parse("foo self: a")).must_equal s(:block, s(:call, nil, :foo, s(:hash, s(:lit, :self), s(:call, nil, :a))))
-        # NOTE: technically this demonstrates a call without parentheses, but practically I cannot find a difference in the result
-        expect(parse("foo (1 + 2)")).must_equal s(:block, s(:call, nil, :foo, s(:call, s(:lit, 1), :+, s(:lit, 2))))
       end
 
       it 'parses operator method calls' do

@@ -125,9 +125,7 @@ Parser::Precedence Parser::get_precedence(Token &token, SharedPtr<Node> left) {
     case Token::Type::RightShift:
         return Precedence::BITWISE_SHIFT;
     case Token::Type::LParen:
-        if (!token.whitespace_precedes())
-            return Precedence::CALL;
-        break;
+        return Precedence::CALL;
     case Token::Type::AndKeyword:
     case Token::Type::OrKeyword:
         return Precedence::COMPOSITION;
@@ -2552,9 +2550,7 @@ Parser::parse_left_fn Parser::left_denotation(Token &token, SharedPtr<Node> left
         else
             return &Parser::parse_assignment_expression;
     case Type::LParen:
-        if (!token.whitespace_precedes())
-            return &Parser::parse_call_expression_with_parens;
-        break;
+        return &Parser::parse_call_expression_with_parens;
     case Type::ConstantResolution:
         return &Parser::parse_constant_resolution_expression;
     case Type::BitwiseAnd:
