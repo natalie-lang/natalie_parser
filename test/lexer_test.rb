@@ -952,6 +952,7 @@ describe 'NatalieParser' do
         { type: :"\n" },
         { type: :end },
       ]
+      expect(tokenize("=begin\nstuff")).must_equal []
     end
 
     it 'stores line and column numbers with each token' do

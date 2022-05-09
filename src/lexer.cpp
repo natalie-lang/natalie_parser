@@ -182,7 +182,7 @@ Token Lexer::build_next_token() {
                 do {
                     doc->append_char(c);
                     c = next();
-                } while (!(m_cursor_column == 0 && match(4, "=end")));
+                } while (c && !(m_cursor_column == 0 && match(4, "=end")));
                 doc->append("=end\n");
                 return Token { Token::Type::Doc, doc, m_file, m_token_line, m_token_column };
             }
