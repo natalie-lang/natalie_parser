@@ -186,7 +186,9 @@ Token Lexer::build_next_token() {
                 doc->append("=end\n");
                 return Token { Token::Type::Doc, doc, m_file, m_token_line, m_token_column };
             }
-            return Token { Token::Type::Equal, m_file, m_token_line, m_token_column };
+            auto token = Token { Token::Type::Equal, m_file, m_token_line, m_token_column };
+            token.set_whitespace_precedes(m_whitespace_precedes);
+            return token;
         }
     }
     case '+':

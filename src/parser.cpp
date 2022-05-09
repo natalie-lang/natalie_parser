@@ -942,9 +942,16 @@ SharedPtr<Node> Parser::parse_def(LocalsHashmap &locals) {
     } else if (current_token().is_bare_name() || current_token().is_splat() || current_token().is_symbol_key()) {
         parse_def_args(args, our_locals);
     }
-    SharedPtr<BlockNode> body = parse_def_body(our_locals);
-    expect(Token::Type::EndKeyword, "def end");
-    advance();
+    SharedPtr<BlockNode> body;
+    if (current_token().type() == Token::Type::Equal) {
+        advance(); // =
+        auto exp = parse_expression(Precedence::LOWEST, our_locals);
+        body = new BlockNode { exp->token(), exp };
+    } else {
+        body = parse_def_body(our_locals);
+        expect(Token::Type::EndKeyword, "def end");
+        advance();
+    }
     return new DefNode {
         def_token,
         self_node,

@@ -553,6 +553,9 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('def (@foo = bar).===(obj); end')).must_equal s(:block, s(:defs, s(:iasgn, :@foo, s(:call, nil, :bar)), :===, s(:args, :obj), s(:nil)))
         expect(parse('def -@; end')).must_equal s(:block, s(:defn, :-@, s(:args), s(:nil)))
         expect(parse('def +@; end')).must_equal s(:block, s(:defn, :+@, s(:args), s(:nil)))
+        expect(parse('def exec(cmd) = system(cmd)')).must_equal s(:block, s(:defn, :exec, s(:args, :cmd), s(:call, nil, :system, s(:lvar, :cmd))))
+        expect(parse('def foo = bar')).must_equal s(:block, s(:defn, :foo, s(:args), s(:call, nil, :bar)))
+        expect(-> { parse('def foo a, b = bar') }).must_raise SyntaxError
       end
 
       it 'parses method definition keyword args' do
