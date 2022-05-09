@@ -5548,7 +5548,8 @@ class TestRubyParser < Minitest::Test
   end
 end
 
-class RubyParserTestCase < ParseTreeTestCase
+#class RubyParserTestCase < ParseTreeTestCase
+class RubyParserTestCase < Minitest::Test
   attr_accessor :result, :processor
 
   make_my_diffs_pretty!
