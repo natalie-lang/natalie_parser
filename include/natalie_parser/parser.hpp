@@ -180,9 +180,8 @@ private:
 
     SharedPtr<NodeWithArgs> to_node_with_args(SharedPtr<Node> node);
 
-    // FIXME: return a Token&
-    Token current_token() const;
-    Token peek_token() const;
+    Token &current_token() const;
+    Token &peek_token() const;
 
     void next_expression();
     void skip_newlines();

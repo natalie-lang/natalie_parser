@@ -209,7 +209,11 @@ public:
         assert(file);
     }
 
-    static Token invalid() { return Token {}; }
+    static Token &invalid() {
+        if (!s_invalid)
+            s_invalid = new Token {};
+        return *s_invalid;
+    }
 
     operator bool() const { return is_valid(); }
 
@@ -797,5 +801,6 @@ private:
     size_t m_line { 0 };
     size_t m_column { 0 };
     bool m_whitespace_precedes { false };
+    static inline Token *s_invalid { nullptr };
 };
 }

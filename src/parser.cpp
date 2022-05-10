@@ -2653,7 +2653,7 @@ bool Parser::is_first_arg_of_call_without_parens(SharedPtr<Node> left, Token &to
     return left->is_callable() && token.can_be_first_arg_of_implicit_call();
 }
 
-Token Parser::current_token() const {
+Token &Parser::current_token() const {
     if (m_index < m_tokens->size()) {
         return m_tokens->at(m_index);
     } else {
@@ -2661,7 +2661,7 @@ Token Parser::current_token() const {
     }
 }
 
-Token Parser::peek_token() const {
+Token &Parser::peek_token() const {
     if (m_index + 1 < m_tokens->size()) {
         return (*m_tokens)[m_index + 1];
     } else {
