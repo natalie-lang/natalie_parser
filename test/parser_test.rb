@@ -218,6 +218,13 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse(%q(%/1 {2} 3/))).must_equal s(:block, s(:str, "1 {2} 3"))
         expect(parse(%q(%[1 [2] 3]))).must_equal s(:block, s(:str, "1 [2] 3"))
         expect(parse(%q(%(1 (2) 3)))).must_equal s(:block, s(:str, "1 (2) 3"))
+        expect(parse(%q(%'1 \' 2'))).must_equal s(:block, s(:str, "1 ' 2"))
+        expect(parse(%q(%"1 \" 2"))).must_equal s(:block, s(:str, '1 " 2'))
+        expect(parse(%q(%q'1 \' 2'))).must_equal s(:block, s(:str, "1 ' 2"))
+        expect(parse(%q(%q"1 \" 2"))).must_equal s(:block, s(:str, '1 " 2'))
+        expect(parse(%q(%Q'1 \' 2'))).must_equal s(:block, s(:str, "1 ' 2"))
+        expect(parse(%q(%Q"1 \" 2"))).must_equal s(:block, s(:str, '1 " 2'))
+        expect(parse("%q(1 (\\x\\') 2)")).must_equal s(:block, s(:str, "1 (\\x\\') 2"))
 
         # escapes
         {
@@ -410,6 +417,11 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("/\\n\\\\n/")).must_equal s(:block, s(:lit, /\n\\n/))
         expect(parse("/\\/\\* foo \\*\\//")).must_equal s(:block, s(:lit, Regexp.new("/\\* foo \\*/")))
         expect(parse("/\\&\\a\\b/")).must_equal s(:block, s(:lit, /\&\a\b/))
+        expect(parse(%q(%r/foo\nbar/))).must_equal s(:block, s(:lit, /foo\nbar/))
+        expect(parse(%q(%r'foo\nbar'))).must_equal s(:block, s(:lit, /foo\nbar/))
+        expect(parse(%q(%r"foo\nbar"))).must_equal s(:block, s(:lit, /foo\nbar/))
+        # FIXME:
+        #expect(parse("%r(foo(\\n)bar)")).must_equal s(:block, s(:lit, /foo(\n)bar/))
       end
 
       it 'parses multiple expressions' do

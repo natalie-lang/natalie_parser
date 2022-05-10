@@ -285,6 +285,7 @@ Token Lexer::build_next_token() {
             return Token { Token::Type::ModulusEqual, m_file, m_token_line, m_token_column };
         case 'q':
             switch (peek()) {
+            case '\'':
             case '/':
             case '|': {
                 char c = next();
@@ -303,11 +304,15 @@ Token Lexer::build_next_token() {
             case '(':
                 advance(2);
                 return consume_single_quoted_string('(', ')');
+            case '"':
+                advance(2);
+                return consume_double_quoted_string('"', '"');
             default:
                 return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
             }
         case 'Q':
             switch (peek()) {
+            case '\'':
             case '/':
             case '|': {
                 char c = next();
@@ -326,11 +331,15 @@ Token Lexer::build_next_token() {
             case '(':
                 advance(2);
                 return consume_double_quoted_string('(', ')');
+            case '"':
+                advance(2);
+                return consume_double_quoted_string('"', '"');
             default:
                 return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
             }
         case 'r':
             switch (peek()) {
+            case '\'':
             case '/':
             case '|': {
                 char c = next();
@@ -346,6 +355,9 @@ Token Lexer::build_next_token() {
             case '(':
                 advance(2);
                 return consume_regexp(')');
+            case '"':
+                advance(2);
+                return consume_regexp('"');
             default:
                 return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
             }
@@ -462,6 +474,7 @@ Token Lexer::build_next_token() {
             default:
                 return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
             }
+        case '\'':
         case '/':
         case '|': {
             char c = current_char();
@@ -484,6 +497,9 @@ Token Lexer::build_next_token() {
             }
             advance();
             return consume_single_quoted_string('(', ')');
+        case '"':
+            advance();
+            return consume_double_quoted_string('"', '"');
         }
         return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
     case '!':
@@ -1457,15 +1473,11 @@ Token Lexer::consume_single_quoted_string(char start_char, char stop_char) {
     while (c) {
         if (c == '\\') {
             c = next();
-            switch (c) {
-            case '\\':
-            case '\'':
+            if (c == stop_char || c == '\\') {
                 buf->append_char(c);
-                break;
-            default:
+            } else {
                 buf->append_char('\\');
                 buf->append_char(c);
-                break;
             }
         } else if (c == start_char && start_char != stop_char) {
             pair_depth++;
