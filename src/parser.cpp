@@ -681,13 +681,12 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
             auto name = new IdentifierNode { current_token(), true };
             name->prepend_to_name('*');
             array->add_node(name);
+            advance();
             break;
         }
         default:
-            splat_token.set_literal('*');
-            array->add_node(new IdentifierNode { splat_token, true });
+            array->add_node(new SplatNode { splat_token });
         }
-        advance();
         node = array.static_cast_as<Node>();
         break;
     }

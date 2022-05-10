@@ -1210,6 +1210,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("case 1\nin {}\n:a\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil), s(:lit, :a)), nil))
         expect(parse("case 1\nin { x: x }\nx\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil, s(:lit, :x), s(:lvar, :x)), s(:call, nil, :x)), nil))
         expect(parse("case 1\nin { x: [:a, a] => b } => y\nx\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:in, s(:lasgn, :y, s(:hash_pat, nil, s(:lit, :x), s(:lasgn, :b, s(:array_pat, nil, s(:lit, :a), s(:lvar, :a))))), s(:call, nil, :x)), nil))
+        expect(-> { parse("case 1\nin [1,* 2]\n:a\nend") }).must_raise SyntaxError
       end
 
       it 'parses begin/rescue/else/ensure' do
