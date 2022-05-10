@@ -1184,7 +1184,11 @@ SharedPtr<Node> Parser::parse_if(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     SharedPtr<Node> condition = parse_expression(Precedence::LOWEST, locals);
-    next_expression();
+    if (current_token().type() == Token::Type::ThenKeyword) {
+        advance(); // then
+    } else {
+        next_expression();
+    }
     SharedPtr<Node> true_expr = parse_if_body(locals);
     SharedPtr<Node> false_expr;
     if (current_token().is_elsif_keyword()) {
@@ -1207,20 +1211,23 @@ SharedPtr<Node> Parser::parse_if_body(LocalsHashmap &locals) {
     SharedPtr<BlockNode> body = new BlockNode { current_token() };
     validate_current_token();
     skip_newlines();
-    while (!current_token().is_eof() && !current_token().is_elsif_keyword() && !current_token().is_else_keyword() && !current_token().is_end_keyword()) {
+    auto is_divider = [&]() {
+        auto token = current_token();
+        return token.is_elsif_keyword() || token.is_else_keyword() || token.is_end_keyword();
+    };
+    while (!current_token().is_eof() && !is_divider()) {
         auto exp = parse_expression(Precedence::LOWEST, locals);
         body->add_node(exp);
         validate_current_token();
-        next_expression();
+        if (!is_divider())
+            next_expression();
     }
-    if (!current_token().is_elsif_keyword() && !current_token().is_else_keyword() && !current_token().is_end_keyword())
+    if (!is_divider())
         throw_unexpected("if end");
-    if (body->has_one_node()) {
-        auto node = body->take_first_node();
-        return node;
-    } else {
+    if (body->has_one_node())
+        return body->take_first_node();
+    else
         return body.static_cast_as<Node>();
-    }
 }
 
 void Parser::parse_interpolated_body(LocalsHashmap &locals, InterpolatedNode &node, Token::Type end_token) {

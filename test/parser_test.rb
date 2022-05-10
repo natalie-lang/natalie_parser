@@ -857,6 +857,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('if false; 1; else; 2; end')).must_equal s(:block, s(:if, s(:false), s(:lit, 1), s(:lit, 2)))
         expect(parse('if false; 1; elsif 1 + 1 == 2; 2; else; 3; end')).must_equal s(:block, s(:if, s(:false), s(:lit, 1), s(:if, s(:call, s(:call, s(:lit, 1), :+, s(:lit, 1)), :==, s(:lit, 2)), s(:lit, 2), s(:lit, 3))))
         expect(parse("if false; 1; elsif 1 + 1 == 0; 2; 3; elsif false; 4; elsif foo() == 'bar'; 5; 6; else; 7; end")).must_equal s(:block, s(:if, s(:false), s(:lit, 1), s(:if, s(:call, s(:call, s(:lit, 1), :+, s(:lit, 1)), :==, s(:lit, 0)), s(:block, s(:lit, 2), s(:lit, 3)), s(:if, s(:false), s(:lit, 4), s(:if, s(:call, s(:call, nil, :foo), :==, s(:str, 'bar')), s(:block, s(:lit, 5), s(:lit, 6)), s(:lit, 7))))))
+        expect(parse("if true then 'foo'\nend")).must_equal s(:block, s(:if, s(:true), s(:str, "foo"), nil))
+        expect(parse("if true then 'foo' else 'bar'\nend")).must_equal s(:block, s(:if, s(:true), s(:str, "foo"), s(:str, "bar")))
       end
 
       it 'parses unless' do
