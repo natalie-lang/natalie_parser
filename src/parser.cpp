@@ -235,12 +235,8 @@ SharedPtr<Node> Parser::tree() {
         validate_current_token();
         next_expression();
     }
-    if (tree->as_block_node().has_one_node()) {
-        auto node = tree->as_block_node().take_first_node();
-        node->set_line(tree->line());
-        node->set_column(tree->column());
-        tree = node;
-    }
+    if (tree->as_block_node().has_one_node())
+        tree = tree->as_block_node().take_first_node();
     return tree;
 }
 

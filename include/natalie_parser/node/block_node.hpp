@@ -36,7 +36,7 @@ public:
     bool has_one_node() const { return m_nodes.size() == 1; }
     SharedPtr<Node> first() const { return m_nodes.at(0); }
 
-    const Node &without_unnecessary_nesting() {
+    const Node &without_unnecessary_nesting() const {
         if (has_one_node())
             return *first();
         else

@@ -996,6 +996,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('# comment')).must_equal s(:block)
         expect(parse("# comment\n#comment 2")).must_equal s(:block)
         expect(parse('1 + 1 # comment')).must_equal s(:block, s(:call, s(:lit, 1), :+, s(:lit, 1)))
+        node = parse("# comment 1\n# comment 2\n\nfoo\n")[1]
+        expect(node.line).must_equal(4)
       end
 
       it 'parses range' do
@@ -1354,7 +1356,7 @@ END
         ast = parse("1 +\n\n    2", 'foo.rb', wrap_in_block: false)
         expect(ast.file).must_equal('foo.rb')
         expect(ast.line).must_equal(1)
-        expect(ast.column).must_equal(1) if parser == 'NatalieParser'
+        expect(ast.column).must_equal(3) if parser == 'NatalieParser'
 
         two = ast.last
         expect(two).must_equal s(:lit, 2)
