@@ -626,6 +626,7 @@ public:
     bool is_end_of_expression() const { return m_type == Type::EndKeyword || m_type == Type::RCurlyBrace || m_type == Type::Eol || m_type == Type::Eof || is_expression_modifier(); }
     bool is_eof() const { return m_type == Type::Eof; }
     bool is_eol() const { return m_type == Type::Eol; }
+    bool is_equal() const { return m_type == Type::Equal; }
     bool is_expression_modifier() const { return m_type == Type::IfKeyword || m_type == Type::UnlessKeyword || m_type == Type::WhileKeyword || m_type == Type::UntilKeyword; }
     bool is_hash_rocket() const { return m_type == Type::HashRocket; }
     bool is_lparen() const { return m_type == Type::LParen; }

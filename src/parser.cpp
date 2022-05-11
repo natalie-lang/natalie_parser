@@ -801,11 +801,13 @@ SharedPtr<Node> Parser::parse_multiple_assignment_expression(SharedPtr<Node> lef
     list->add_node(left);
     while (current_token().is_comma()) {
         advance();
+        if (current_token().is_rparen() || current_token().is_equal()) {
+            // trailing comma with no additional identifier
+            break;
+        }
         auto node = parse_assignment_identifier(true, locals);
         list->add_node(node);
     }
-    if (!current_token().is_rparen())
-        expect(Token::Type::Equal, "assignment =");
     return list.static_cast_as<Node>();
 }
 
@@ -920,7 +922,7 @@ SharedPtr<Node> Parser::parse_def(LocalsHashmap &locals) {
         }
     }
     }
-    if (current_token().type() == Token::Type::Equal && !current_token().whitespace_precedes()) {
+    if (current_token().is_equal() && !current_token().whitespace_precedes()) {
         advance();
         name->append_char('=');
     }
@@ -938,7 +940,7 @@ SharedPtr<Node> Parser::parse_def(LocalsHashmap &locals) {
         parse_def_args(args, our_locals);
     }
     SharedPtr<BlockNode> body;
-    if (current_token().type() == Token::Type::Equal) {
+    if (current_token().is_equal()) {
         advance(); // =
         auto exp = parse_expression(Precedence::LOWEST, our_locals);
         body = new BlockNode { exp->token(), exp };
@@ -978,7 +980,7 @@ SharedPtr<Node> Parser::parse_def_single_arg(LocalsHashmap &locals) {
         SharedPtr<ArgNode> arg = new ArgNode { token, token.literal_string() };
         advance();
         arg->add_to_locals(locals);
-        if (current_token().type() == Token::Type::Equal) {
+        if (current_token().is_equal()) {
             advance();
             arg->set_value(parse_expression(Precedence::DEF_ARG, locals));
         }
@@ -1105,12 +1107,15 @@ SharedPtr<Node> Parser::parse_file_constant(LocalsHashmap &) {
 
 SharedPtr<Node> Parser::parse_group(LocalsHashmap &locals) {
     auto token = current_token();
-    advance();
+    advance(); // (
+
     if (current_token().is_rparen()) {
         advance();
         return new NilSexpNode { token };
     }
+
     SharedPtr<Node> exp = parse_expression(Precedence::LOWEST, locals);
+
     if (current_token().is_end_of_expression()) {
         SharedPtr<BlockNode> block = new BlockNode { token };
         block->add_node(exp);
@@ -1122,7 +1127,22 @@ SharedPtr<Node> Parser::parse_group(LocalsHashmap &locals) {
         exp = block.static_cast_as<Node>();
     }
     expect(Token::Type::RParen, "group closing paren");
-    advance();
+    advance(); // )
+
+    if (current_token().is_equal() && exp->type() != Node::Type::MultipleAssignment) {
+        throw_unexpected("multiple assignment on left-hand-side");
+    }
+
+    if (exp->type() == Node::Type::MultipleAssignment) {
+        auto multiple_assignment_node = exp.static_cast_as<MultipleAssignmentNode>();
+        if (multiple_assignment_node->increment_depth() > 1) {
+            auto wrapper = new MultipleAssignmentNode { token };
+            wrapper->increment_depth();
+            wrapper->add_node(exp);
+            exp = wrapper;
+        }
+    }
+
     return exp;
 };
 

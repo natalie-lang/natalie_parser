@@ -452,6 +452,23 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('Constant = 1')).must_equal s(:block, s(:cdecl, :Constant, s(:lit, 1)))
         expect(parse('x, y = [1, 2]')).must_equal s(:block, s(:masgn, s(:array, s(:lasgn, :x), s(:lasgn, :y)), s(:to_ary, s(:array, s(:lit, 1), s(:lit, 2)))))
         expect(parse('(x, y) = [1, 2]')).must_equal s(:block, s(:masgn, s(:array, s(:lasgn, :x), s(:lasgn, :y)), s(:to_ary, s(:array, s(:lit, 1), s(:lit, 2)))))
+        if parser == 'NatalieParser'
+          expect_raise_with_message(-> { parse('(x) = [1, 2]') }, SyntaxError, "(string)#1: syntax error, unexpected '=' (expected: 'multiple assignment on left-hand-side')")
+          expect_raise_with_message(-> { parse('(x, = [1, 2]') }, SyntaxError, "(string)#1: syntax error, unexpected end-of-input (expected: 'expression')")
+          expect_raise_with_message(-> { parse('x,) = [1, 2]') }, SyntaxError, "(string)#1: syntax error, unexpected ')' (expected: 'end-of-line')")
+        else
+          expect_raise_with_message(-> { parse('(x) = [1, 2]') }, SyntaxError, "(string):1 :: parse error on value \"=\" (tEQL)")
+          expect_raise_with_message(-> { parse('(x, = [1, 2]') }, SyntaxError, "(string):1 :: parse error on value \"$\" ($end)")
+          expect_raise_with_message(-> { parse('x,) = [1, 2]') }, SyntaxError, "(string):1 :: parse error on value \")\" (tRPAREN)")
+        end
+        expect(parse('x, = [1, 2]')).must_equal s(:block, s(:masgn, s(:array, s(:lasgn, :x)), s(:to_ary, s(:array, s(:lit, 1), s(:lit, 2)))))
+        expect(parse('(x,) = [1, 2]')).must_equal s(:block, s(:masgn, s(:array, s(:lasgn, :x)), s(:to_ary, s(:array, s(:lit, 1), s(:lit, 2)))))
+        expect(parse('(x, y, ) = [1, 2]')).must_equal s(:block, s(:masgn, s(:array, s(:lasgn, :x), s(:lasgn, :y)), s(:to_ary, s(:array, s(:lit, 1), s(:lit, 2)))))
+        expect(parse('((x, y)) = [1, 2]')).must_equal s(:block, s(:masgn, s(:array, s(:masgn, s(:array, s(:lasgn, :x), s(:lasgn, :y)))), s(:to_ary, s(:array, s(:lit, 1), s(:lit, 2)))))
+        expect(parse('((x, y),) = [1, 2]')).must_equal s(:block, s(:masgn, s(:array, s(:masgn, s(:array, s(:lasgn, :x), s(:lasgn, :y)))), s(:to_ary, s(:array, s(:lit, 1), s(:lit, 2)))))
+        expect(parse('(((x, y))) = [1, 2]')).must_equal s(:block, s(:masgn, s(:array, s(:masgn, s(:array, s(:masgn, s(:array, s(:lasgn, :x), s(:lasgn, :y)))))), s(:to_ary, s(:array, s(:lit, 1), s(:lit, 2)))))
+        expect(parse('(((x, y),)) = [1, 2]')).must_equal s(:block, s(:masgn, s(:array, s(:masgn, s(:array, s(:masgn, s(:array, s(:lasgn, :x), s(:lasgn, :y)))))), s(:to_ary, s(:array, s(:lit, 1), s(:lit, 2)))))
+        expect(parse('(((x, y)),) = [1, 2]')).must_equal s(:block, s(:masgn, s(:array, s(:masgn, s(:array, s(:masgn, s(:array, s(:lasgn, :x), s(:lasgn, :y)))))), s(:to_ary, s(:array, s(:lit, 1), s(:lit, 2)))))
         expect(parse('@x, $y, Z = foo')).must_equal s(:block, s(:masgn, s(:array, s(:iasgn, :@x), s(:gasgn, :$y), s(:cdecl, :Z)), s(:to_ary, s(:call, nil, :foo))))
         expect(parse('(@x, $y, Z) = foo')).must_equal s(:block, s(:masgn, s(:array, s(:iasgn, :@x), s(:gasgn, :$y), s(:cdecl, :Z)), s(:to_ary, s(:call, nil, :foo))))
         expect(parse('(a, (b, c)) = [1, [2, 3]]')).must_equal s(:block, s(:masgn, s(:array, s(:lasgn, :a), s(:masgn, s(:array, s(:lasgn, :b), s(:lasgn, :c)))), s(:to_ary, s(:array, s(:lit, 1), s(:array, s(:lit, 2), s(:lit, 3))))))
@@ -497,9 +514,9 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('x = 1 && 2 && 3')).must_equal s(:block, s(:lasgn, :x, s(:and, s(:lit, 1), s(:and, s(:lit, 2), s(:lit, 3)))))
         expect(parse('x = 1 and 2 and 3')).must_equal s(:block, s(:and, s(:lasgn, :x, s(:lit, 1)), s(:and, s(:lit, 2), s(:lit, 3))))
         if parser == 'NatalieParser'
-          expect_raise_with_message(-> { parse('x, y+z = 1, 2') }, SyntaxError, "(string)#1: syntax error, unexpected '+' (expected: 'assignment =')")
+          expect_raise_with_message(-> { parse('x, y+z = 1, 2') }, SyntaxError, "(string)#1: syntax error, unexpected '+' (expected: 'left side of assignment')")
           expect_raise_with_message(-> { parse('-x, y = 1, 2') }, SyntaxError, "(string)#1: syntax error, unexpected ',' (expected: 'assignment =')")
-          #expect_raise_with_message(-> { parse('foo, (bar=1, baz) = buz') }, SyntaxError, "(string):1 :: parse error on value \"=\" (tEQL)")
+          expect_raise_with_message(-> { parse('foo, (bar=1, baz) = buz') }, SyntaxError, "(string)#1: syntax error, unexpected '=' (expected: 'closing paren for multiple assignment')")
         else
           expect_raise_with_message(-> { parse('x, y+z = 1, 2') }, SyntaxError, '(string):1 :: parse error on value "+" (tPLUS)')
           expect_raise_with_message(-> { parse('-x, y = 1, 2') }, SyntaxError, "(string):1 :: parse error on value \",\" (tCOMMA)")

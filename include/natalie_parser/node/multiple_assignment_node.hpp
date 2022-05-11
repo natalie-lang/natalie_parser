@@ -27,5 +27,11 @@ public:
             creator->append_array(*this);
         });
     }
+
+    int depth() { return m_depth; }
+    int increment_depth() { return ++m_depth; }
+
+private:
+    int m_depth { 0 };
 };
 }
