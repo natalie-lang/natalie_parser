@@ -10,26 +10,26 @@ namespace NatalieParser {
 class MRICreator : public Creator {
 public:
     MRICreator(const Node &node) {
-        reset();
         m_file = node.file().static_cast_as<const String>();
         m_line = node.line();
         m_column = node.column();
-        rb_ivar_set(m_sexp, rb_intern("@file"), rb_str_new(m_file->c_str(), m_file->length()));
-        rb_ivar_set(m_sexp, rb_intern("@line"), rb_int_new(m_line + 1));
-        rb_ivar_set(m_sexp, rb_intern("@column"), rb_int_new(m_column + 1));
+        reset_sexp();
     }
 
     MRICreator(const MRICreator &other)
         : m_file { other.m_file }
         , m_line { other.m_line }
         , m_column { other.m_column } {
-        reset();
+        reset_sexp();
     }
 
     virtual ~MRICreator() { }
 
-    void reset() {
+    void reset_sexp() {
         m_sexp = rb_class_new_instance(0, nullptr, Sexp);
+        rb_ivar_set(m_sexp, rb_intern("@file"), rb_str_new(m_file->c_str(), m_file->length()));
+        rb_ivar_set(m_sexp, rb_intern("@line"), rb_int_new(m_line + 1));
+        rb_ivar_set(m_sexp, rb_intern("@column"), rb_int_new(m_column + 1));
     }
 
     virtual void set_comments(const TM::String &comments) override {
@@ -110,7 +110,7 @@ public:
 
     virtual void wrap(const char *type) override {
         auto inner = m_sexp;
-        reset();
+        reset_sexp();
         set_type(type);
         rb_ary_push(m_sexp, inner);
     }
