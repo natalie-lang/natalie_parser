@@ -5236,14 +5236,14 @@ module TestRubyParserShared30Plus
   include TestRubyParserShared27Plus
   include TestPatternMatching30
 
-  def test_rhs_asgn
-    rb = "42 => n"
-    pt = s(:case,
-           s(:lit, 42),
-           s(:in, s(:lvar, :n), nil), nil)
+  #def test_rhs_asgn
+    #rb = "42 => n"
+    #pt = s(:case,
+           #s(:lit, 42),
+           #s(:in, s(:lvar, :n), nil), nil)
 
-    assert_parse rb, pt
-  end
+    #assert_parse rb, pt
+  #end
 
   #def test_case_in_find
     #rb = "case :a\n  in *a, :+, *b\nend"
