@@ -56,6 +56,8 @@ class RubyParser
   rescue ::SyntaxError => e
     raise RubyParser::SyntaxError, e.message
   end
+
+  def reset; end
 end
 
 class Sexp
