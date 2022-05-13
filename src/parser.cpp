@@ -2411,12 +2411,6 @@ SharedPtr<Node> Parser::parse_send_expression(SharedPtr<Node> left, LocalsHashma
         name = name_token.literal_string();
         advance();
         break;
-    case Token::Type::ClassKeyword:
-    case Token::Type::BeginKeyword:
-    case Token::Type::EndKeyword:
-        *name = name_token.type_value();
-        advance();
-        break;
     default:
         if (name_token.is_operator() || name_token.is_keyword()) {
             *name = name_token.type_value();

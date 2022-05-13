@@ -781,14 +781,18 @@ describe 'NatalieParser' do
         { type: :'.' },
         { type: :name, literal: :nil? },
       ]
-      expect(tokenize('foo.%(x)')).must_equal [
-        { type: :name, literal: :foo },
-        { type: :'.' },
-        { type: :% },
-        { type: :'(' },
-        { type: :name, literal: :x },
-        { type: :')' },
-      ]
+    end
+
+    it 'parses method names using keywords' do
+      expect(tokenize('def self')).must_equal [{ type: :def }, { type: :name, literal: :self }]
+      expect(tokenize('def self.self')).must_equal [{ type: :def }, { type: :self }, { type: :"." }, { type: :name, literal: :self }]
+      expect(tokenize('foo.self')).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :name, literal: :self }]
+      expect(tokenize('def def')).must_equal [{ type: :def }, { type: :name, literal: :def }]
+      expect(tokenize('def self.def')).must_equal [{ type: :def }, { type: :self }, { type: :"." }, { type: :name, literal: :def }]
+      expect(tokenize('foo.def')).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :name, literal: :def }]
+      expect(tokenize('def while')).must_equal [{ type: :def }, { type: :name, literal: :while }]
+      expect(tokenize('def self.while')).must_equal [{ type: :def }, { type: :self }, { type: :"." }, { type: :name, literal: :while }]
+      expect(tokenize('foo.while')).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :name, literal: :while }]
     end
 
     it 'parses unary method names' do
@@ -798,6 +802,7 @@ describe 'NatalieParser' do
       expect(tokenize('foo.+@')).must_equal [{:type=>:name, :literal=>:foo}, {:type=>:"."}, {:type=>:name, :literal=>:+@}]
       expect(tokenize('foo.+@bar')).must_equal [{:type=>:name, :literal=>:foo}, {:type=>:"."}, {:type=>:name, :literal=>:+@}, {:type=>:name, :literal=>:bar}]
       expect(tokenize('foo.+ @bar')).must_equal [{:type=>:name, :literal=>:foo}, {:type=>:"."}, {:type=>:+}, {:type=>:ivar, :literal=>:@bar}]
+      expect(tokenize('foo.%(x)')).must_equal [{:type=>:name, :literal=>:foo}, {:type=>:"."}, {:type=>:%}, {:type=>:"("}, {:type=>:name, :literal=>:x}, {:type=>:")"}]
     end
 
     it 'tokenizes heredocs' do
