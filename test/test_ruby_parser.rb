@@ -1523,14 +1523,14 @@ module TestRubyParserShared
     assert_parse rb, pt
   end
 
-  def test_op_asgn_command_call
-    rb = "a ||= b.c 2"
-    pt = s(:op_asgn_or,
-           s(:lvar, :a),
-           s(:lasgn, :a, s(:call, s(:call, nil, :b), :c, s(:lit, 2))))
+  #def test_op_asgn_command_call
+    #rb = "a ||= b.c 2"
+    #pt = s(:op_asgn_or,
+           #s(:lvar, :a),
+           #s(:lasgn, :a, s(:call, s(:call, nil, :b), :c, s(:lit, 2))))
 
-    assert_parse rb, pt
-  end
+    #assert_parse rb, pt
+  #end
 
   #def test_op_asgn_dot_ident_command_call
     #rb = "A.B ||= c 1"
@@ -1539,21 +1539,21 @@ module TestRubyParserShared
     #assert_parse rb, pt
   #end
 
-  def test_op_asgn_index_command_call
-    rb = "a[:b] ||= c 1, 2"
-    pt = s(:op_asgn1, s(:call, nil, :a), s(:arglist, s(:lit, :b)),
-           :"||",
-           s(:call, nil, :c, s(:lit, 1), s(:lit, 2)))
+  #def test_op_asgn_index_command_call
+    #rb = "a[:b] ||= c 1, 2"
+    #pt = s(:op_asgn1, s(:call, nil, :a), s(:arglist, s(:lit, :b)),
+           #:"||",
+           #s(:call, nil, :c, s(:lit, 1), s(:lit, 2)))
 
-    assert_parse rb, pt
-  end
+    #assert_parse rb, pt
+  #end
 
-  def test_op_asgn_primary_colon_identifier1
-    rb = "A::b += 1"
-    pt = s(:op_asgn, s(:const, :A), s(:lit, 1), :b, :+) # TODO: check? looks wack
+  #def test_op_asgn_primary_colon_identifier1
+    #rb = "A::b += 1"
+    #pt = s(:op_asgn, s(:const, :A), s(:lit, 1), :b, :+) # TODO: check? looks wack
 
-    assert_parse rb, pt
-  end
+    #assert_parse rb, pt
+  #end
 
   def test_lasgn_middle_splat
     rb = "a = b, *c, d"
@@ -1567,23 +1567,23 @@ module TestRubyParserShared
     assert_parse rb, pt
   end
 
-  def test_op_asgn_primary_colon_const_command_call
-    rb = "A::B *= c d"
-    pt = s(:op_asgn, s(:const, :A),
-           s(:call, nil, :c, s(:call, nil, :d)),
-           :B, :*)
+  #def test_op_asgn_primary_colon_const_command_call
+    #rb = "A::B *= c d"
+    #pt = s(:op_asgn, s(:const, :A),
+           #s(:call, nil, :c, s(:call, nil, :d)),
+           #:B, :*)
 
-    assert_parse rb, pt
-  end
+    #assert_parse rb, pt
+  #end
 
-  def test_op_asgn_primary_colon_identifier_command_call
-    rb = "A::b *= c d"
-    pt = s(:op_asgn, s(:const, :A),
-           s(:call, nil, :c, s(:call, nil, :d)),
-           :b, :*)
+  #def test_op_asgn_primary_colon_identifier_command_call
+    #rb = "A::b *= c d"
+    #pt = s(:op_asgn, s(:const, :A),
+           #s(:call, nil, :c, s(:call, nil, :d)),
+           #:b, :*)
 
-    assert_parse rb, pt
-  end
+    #assert_parse rb, pt
+  #end
 
   #def test_op_asgn_val_dot_ident_command_call
     #rb = "a.b ||= c 1"
@@ -4239,12 +4239,12 @@ module TestRubyParserShared23Plus
     #assert_parse rb, pt
   #end
 
-  def test_const_op_asgn_or
-    rb = "X::Y ||= 1"
-    pt = s(:op_asgn_or, s(:colon2, s(:const, :X), :Y), s(:lit, 1))
+  #def test_const_op_asgn_or
+    #rb = "X::Y ||= 1"
+    #pt = s(:op_asgn_or, s(:colon2, s(:const, :X), :Y), s(:lit, 1))
 
-    assert_parse rb, pt
-  end
+    #assert_parse rb, pt
+  #end
 
   def test_float_with_if_modifier
     rb = "1.0if true"
