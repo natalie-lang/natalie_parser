@@ -14,7 +14,8 @@ void AssignmentNode::transform(Creator *creator) const {
     case Node::Type::Call:
     case Node::Type::Colon2:
     case Node::Type::Colon3:
-    case Node::Type::Identifier: {
+    case Node::Type::Identifier:
+    case Node::Type::SafeCall: {
         creator->with_assignment(true, [&]() {
             identifier()->transform(creator);
         });

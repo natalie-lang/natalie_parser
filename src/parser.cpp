@@ -1933,7 +1933,8 @@ SharedPtr<Node> Parser::parse_assignment_expression(SharedPtr<Node> left, Locals
     }
     case Node::Type::Call:
     case Node::Type::Colon2:
-    case Node::Type::Colon3: {
+    case Node::Type::Colon3:
+    case Node::Type::SafeCall: {
         advance();
         auto value = parse_assignment_expression_value(false, locals, allow_multiple);
         return new AssignmentNode { token, left, value };
@@ -2366,9 +2367,17 @@ SharedPtr<Node> Parser::parse_rescue_expression(SharedPtr<Node> left, LocalsHash
 SharedPtr<Node> Parser::parse_safe_send_expression(SharedPtr<Node> left, LocalsHashmap &) {
     auto token = current_token();
     advance();
-    expect(Token::Type::BareName, "safe navigator method name");
     auto name_token = current_token();
-    advance();
+    SharedPtr<String> name;
+    switch (name_token.type()) {
+    case Token::Type::BareName:
+    case Token::Type::Constant:
+        name = name_token.literal_string();
+        advance();
+        break;
+    default:
+        throw_unexpected("safe navigation method name");
+    }
     return new SafeCallNode {
         token,
         left,

@@ -22,7 +22,10 @@ public:
 
     virtual void transform(Creator *creator) const override {
         CallNode::transform(creator);
-        creator->set_type("safe_call");
+        if (creator->assignment())
+            creator->set_type("safe_attrasgn");
+        else
+            creator->set_type("safe_call");
     }
 };
 }

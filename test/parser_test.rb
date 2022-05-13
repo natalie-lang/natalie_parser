@@ -522,6 +522,8 @@ require_relative '../lib/natalie_parser/sexp'
           expect_raise_with_message(-> { parse('-x, y = 1, 2') }, SyntaxError, "(string):1 :: parse error on value \",\" (tCOMMA)")
           expect_raise_with_message(-> { parse('foo, (bar=1, baz) = buz') }, SyntaxError, "(string):1 :: parse error on value \"=\" (tEQL)")
         end
+        expect(parse('a&.b = 1')).must_equal s(:block, s(:safe_attrasgn, s(:call, nil, :a), :b=, s(:lit, 1)))
+        expect(parse('a&.B = 1')).must_equal s(:block, s(:safe_attrasgn, s(:call, nil, :a), :B=, s(:lit, 1)))
       end
 
       it 'parses attr assignment' do
