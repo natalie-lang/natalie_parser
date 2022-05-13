@@ -37,11 +37,15 @@ public:
         if (*m_message == "[]=") {
             creator->set_type("op_asgn1");
             creator->append(m_receiver.ref());
-            creator->append_sexp([&](Creator *c) {
-                c->set_type("arglist");
-                for (auto arg : args())
-                    c->append(arg);
-            });
+            if (m_args.is_empty()) {
+                creator->append_nil();
+            } else {
+                creator->append_sexp([&](Creator *c) {
+                    c->set_type("arglist");
+                    for (auto arg : m_args)
+                        c->append(arg);
+                });
+            }
             creator->append_symbol(m_op);
             creator->append(m_value.ref());
             return;
