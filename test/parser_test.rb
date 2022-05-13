@@ -683,14 +683,21 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("A *= 2")).must_equal s(:block, s(:cdecl, :A, s(:call, s(:const, :A), :*, s(:lit, 2))))
         expect(parse("::A *= 2")).must_equal s(:block, s(:op_asgn, s(:colon3, :A), :*, s(:lit, 2)))
         expect(parse("A::B *= 2")).must_equal s(:block, s(:op_asgn, s(:colon2, s(:const, :A), :B), :*, s(:lit, 2)))
-        if parser == 'NatalieParser'
-          # NOTE: We choose to handle this differently than RubyParser; this way matches the similar results above
-          expect(parse("A::B *= c d")).must_equal s(:block, s(:op_asgn, s(:colon2, s(:const, :A), :B), :*, s(:call, nil, :c, s(:call, nil, :d))))
-        else
-          expect(parse("A::B *= c d")).must_equal s(:block, s(:op_asgn, s(:const, :A), s(:call, nil, :c, s(:call, nil, :d)), :B, :*))
-        end
+        expect(parse("::A *= c")).must_equal s(:block, s(:op_asgn, s(:colon3, :A), :*, s(:call, nil, :c)))
+        expect(parse("A::B *= c")).must_equal s(:block, s(:op_asgn, s(:colon2, s(:const, :A), :B), :*, s(:call, nil, :c)))
+        expect(parse('x[] *= 2')).must_equal s(:block, s(:op_asgn1, s(:call, nil, :x), nil, :*, s(:lit, 2)))
         expect(parse('x[:y] *= 2')).must_equal s(:block, s(:op_asgn1, s(:call, nil, :x), s(:arglist, s(:lit, :y)), :*, s(:lit, 2)))
         expect(parse('x.y *= 2')).must_equal s(:block, s(:op_asgn2, s(:call, nil, :x), :y=, :*, s(:lit, 2)))
+        expect(parse("a ||= c 1")).must_equal s(:block, s(:op_asgn_or, s(:lvar, :a), s(:lasgn, :a, s(:call, nil, :c, s(:lit, 1)))))
+        if parser == 'NatalieParser'
+          # NOTE: these produce different results in RubyParser, but I don't agree. I'm not sure if it's a bug or just a different choice.
+          expect(parse("::A *= c d")).must_equal s(:block, s(:op_asgn, s(:colon3, :A), :*, s(:call, nil, :c, s(:call, nil, :d))))
+          expect(parse("A::B *= c d")).must_equal s(:block, s(:op_asgn, s(:colon2, s(:const, :A), :B), :*, s(:call, nil, :c, s(:call, nil, :d))))
+          expect(parse("::A &&= 2")).must_equal s(:block, s(:op_asgn_and, s(:colon3, :A), s(:cdecl, s(:colon3, :A), s(:lit, 2))))
+          expect(parse("A::B &&= 2")).must_equal s(:block, s(:op_asgn_and, s(:colon2, s(:const, :A), :B), s(:cdecl, s(:colon2, s(:const, :A), :B), s(:lit, 2))))
+          expect(parse("a.b &&= c 1")).must_equal s(:block, s(:op_asgn_and, s(:call, s(:call, nil, :a), :b), s(:attrasgn, s(:call, nil, :a), :b=, s(:call, nil, :c, s(:lit, 1)))))
+          expect(parse("a.b ||= c 1")).must_equal s(:block, s(:op_asgn_or, s(:call, s(:call, nil, :a), :b), s(:attrasgn, s(:call, nil, :a), :b=, s(:call, nil, :c, s(:lit, 1)))))
+        end
       end
 
       it 'parses constants' do
