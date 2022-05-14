@@ -647,6 +647,7 @@ public:
         case Token::Type::RCurlyBrace:
         case Token::Type::RBracket:
         case Token::Type::RParen:
+        case Token::Type::SafeNavigation:
         case Token::Type::TernaryColon:
             return true;
         default:

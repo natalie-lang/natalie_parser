@@ -152,9 +152,6 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('x >>= 1')).must_equal s(:block, s(:lasgn, :x, s(:call, s(:lvar, :x), :>>, s(:lit, 1))))
         expect(parse('x <<= 1')).must_equal s(:block, s(:lasgn, :x, s(:call, s(:lvar, :x), :<<, s(:lit, 1))))
         expect(parse('n = x += 1')).must_equal s(:block, s(:lasgn, :n, s(:lasgn, :x, s(:call, s(:lvar, :x), :+, s(:lit, 1)))))
-        expect(parse('foo&.bar')).must_equal s(:block, s(:safe_call, s(:call, nil, :foo), :bar))
-        expect(parse('foo&.bar 1')).must_equal s(:block, s(:safe_call, s(:call, nil, :foo), :bar, s(:lit, 1)))
-        expect(parse('foo&.bar x')).must_equal s(:block, s(:safe_call, s(:call, nil, :foo), :bar, s(:call, nil, :x)))
         expect(parse('foo <=> bar')).must_equal s(:block, s(:call, s(:call, nil, :foo), :<=>, s(:call, nil, :bar)))
         expect(parse('1**2')).must_equal s(:block, s(:call, s(:lit, 1), :**, s(:lit, 2)))
       end
@@ -816,6 +813,27 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("foo self: a")).must_equal s(:block, s(:call, nil, :foo, s(:hash, s(:lit, :self), s(:call, nil, :a))))
       end
 
+      it 'parses safe calls' do
+        expect(parse('foo&.bar')).must_equal s(:block, s(:safe_call, s(:call, nil, :foo), :bar))
+        expect(parse("foo&.\nbar")).must_equal s(:block, s(:safe_call, s(:call, nil, :foo), :bar))
+        expect(-> { parse("foo&\n.bar") }).must_raise SyntaxError
+        expect(parse("foo\n&.bar")).must_equal s(:block, s(:safe_call, s(:call, nil, :foo), :bar))
+        expect(parse('foo&.bar 1')).must_equal s(:block, s(:safe_call, s(:call, nil, :foo), :bar, s(:lit, 1)))
+        expect(parse('foo&.bar x')).must_equal s(:block, s(:safe_call, s(:call, nil, :foo), :bar, s(:call, nil, :x)))
+      end
+
+      it 'parses method calls with a receiver' do
+        expect(parse('foo.bar')).must_equal s(:block, s(:call, s(:call, nil, :foo), :bar))
+        expect(parse('foo.bar.baz')).must_equal s(:block, s(:call, s(:call, s(:call, nil, :foo), :bar), :baz))
+        expect(parse('foo.bar 1, 2')).must_equal s(:block, s(:call, s(:call, nil, :foo), :bar, s(:lit, 1), s(:lit, 2)))
+        expect(parse('foo.bar(1, 2)')).must_equal s(:block, s(:call, s(:call, nil, :foo), :bar, s(:lit, 1), s(:lit, 2)))
+        expect(parse('foo.nil?')).must_equal s(:block, s(:call, s(:call, nil, :foo), :nil?))
+        expect(parse('foo.not?')).must_equal s(:block, s(:call, s(:call, nil, :foo), :not?))
+        expect(parse('foo.baz?')).must_equal s(:block, s(:call, s(:call, nil, :foo), :baz?))
+        expect(parse("foo\n  .bar\n  .baz")).must_equal s(:block, s(:call, s(:call, s(:call, nil, :foo), :bar), :baz))
+        expect(parse("foo.\n  bar.\n  baz")).must_equal s(:block, s(:call, s(:call, s(:call, nil, :foo), :bar), :baz))
+      end
+
       it 'parses operator method calls' do
         operators = %w[+ - * ** / % == === != =~ !~ > >= < <= <=> & | ^ ~ << >> [] []=]
         operators.each do |operator|
@@ -870,18 +888,6 @@ require_relative '../lib/natalie_parser/sexp'
           expect(parse("foo.#{keyword}(1)")).must_equal s(:block, s(:call, s(:call, nil, :foo), keyword, s(:lit, 1)))
           expect(parse("foo.#{keyword} 1 ")).must_equal s(:block, s(:call, s(:call, nil, :foo), keyword, s(:lit, 1)))
         end
-      end
-
-      it 'parses method calls with a receiver' do
-        expect(parse('foo.bar')).must_equal s(:block, s(:call, s(:call, nil, :foo), :bar))
-        expect(parse('foo.bar.baz')).must_equal s(:block, s(:call, s(:call, s(:call, nil, :foo), :bar), :baz))
-        expect(parse('foo.bar 1, 2')).must_equal s(:block, s(:call, s(:call, nil, :foo), :bar, s(:lit, 1), s(:lit, 2)))
-        expect(parse('foo.bar(1, 2)')).must_equal s(:block, s(:call, s(:call, nil, :foo), :bar, s(:lit, 1), s(:lit, 2)))
-        expect(parse('foo.nil?')).must_equal s(:block, s(:call, s(:call, nil, :foo), :nil?))
-        expect(parse('foo.not?')).must_equal s(:block, s(:call, s(:call, nil, :foo), :not?))
-        expect(parse('foo.baz?')).must_equal s(:block, s(:call, s(:call, nil, :foo), :baz?))
-        expect(parse("foo\n  .bar\n  .baz")).must_equal s(:block, s(:call, s(:call, s(:call, nil, :foo), :bar), :baz))
-        expect(parse("foo.\n  bar.\n  baz")).must_equal s(:block, s(:call, s(:call, s(:call, nil, :foo), :bar), :baz))
       end
 
       it 'parses ternary expressions' do
