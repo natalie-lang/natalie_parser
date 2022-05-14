@@ -1,4 +1,6 @@
 #include "ruby.h"
+#include "ruby/encoding.h"
+#include "ruby/intern.h"
 
 #include "natalie_parser/creator.hpp"
 #include "natalie_parser/node.hpp"
@@ -96,8 +98,8 @@ public:
     }
 
     virtual void append_symbol(TM::String &name) override {
-        auto str = rb_str_new(name.c_str(), name.length());
-        rb_ary_push(m_sexp, rb_to_symbol(str));
+        auto symbol = ID2SYM(rb_intern3(name.c_str(), name.size(), rb_utf8_encoding()));
+        rb_ary_push(m_sexp, symbol);
     }
 
     virtual void append_true() override {

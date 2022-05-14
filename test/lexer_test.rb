@@ -597,6 +597,11 @@ describe 'NatalieParser' do
       ]
     end
 
+    it 'tokenizes local variables' do
+      expect(tokenize('moo🐄 = 1')).must_equal [{ type: :name, literal: :moo🐄 }, { type: :"=" }, { type: :fixnum, literal: 1 }]
+      expect(tokenize('ootpüt = 1')).must_equal [{ type: :name, literal: :ootpüt }, { type: :"=" }, { type: :fixnum, literal: 1 }]
+    end
+
     it 'tokenizes class variables' do
       expect(tokenize('@@foo')).must_equal [{ type: :cvar, literal: :@@foo }]
     end

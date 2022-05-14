@@ -83,7 +83,7 @@ Token Lexer::next_token() {
 
 bool is_identifier_char(char c) {
     if (!c) return false;
-    return isalnum(c) || c == '_';
+    return isalnum(c) || c == '_' || (unsigned int)c >= 128;
 }
 
 bool is_message_suffix(char c) {
@@ -1206,7 +1206,7 @@ Token Lexer::consume_heredoc() {
         delimiter = '\'';
         break;
     default:
-        heredoc_name = String(consume_word(Token::Type::BareName).literal());
+        delimiter = 0;
     }
 
     if (delimiter) {
@@ -1223,6 +1223,8 @@ Token Lexer::consume_heredoc() {
             }
         }
         advance();
+    } else {
+        heredoc_name = String(consume_word(Token::Type::BareName).literal());
     }
 
     SharedPtr<String> doc = new String("");

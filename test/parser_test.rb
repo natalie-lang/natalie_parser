@@ -387,17 +387,18 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse(':FooBar')).must_equal s(:block, s(:lit, :FooBar))
       end
 
+      # FIXME: how to set proper encoding?
       it 'parses symbols with correct encoding' do
+        skip
         sym = parse(':"\xC3\x9Cber"').last.last
         expect(sym.encoding.name).must_equal 'ASCII-8BIT'
         expect(sym.length).must_equal 5
         sym = parse(':"\xf0\x9f\x90\xae"').last.last
         expect(sym.encoding.name).must_equal 'ASCII-8BIT'
         expect(sym.length).must_equal 4
-        # FIXME: how does RubyParser decide this is UTF-8?
-        #sym = parse(':"🐮"').last.last # "\xf0\x9f\x90\xae"
-        #expect(sym.encoding.name).must_equal 'UTF-8'
-        #expect(sym.length).must_equal 1
+        sym = parse(':"🐮"').last.last # "\xf0\x9f\x90\xae"
+        expect(sym.encoding.name).must_equal 'UTF-8'
+        expect(sym.length).must_equal 1
       end
 
       it 'parses regexps' do
@@ -714,6 +715,10 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('Foo::bar = 1 + 2')).must_equal s(:block, s(:attrasgn, s(:const, :Foo), :bar=, s(:call, s(:lit, 1), :+, s(:lit, 2))))
         expect(parse('Foo::bar x, y')).must_equal s(:block, s(:call, s(:const, :Foo), :bar, s(:call, nil, :x), s(:call, nil, :y)))
         expect(parse('-Foo::BAR')).must_equal s(:block, s(:call, s(:colon2, s(:const, :Foo), :BAR), :-@))
+      end
+
+      it 'parses local variables' do
+        expect(parse('ootpüt = 1')).must_equal s(:block, s(:lasgn, :ootpüt, s(:lit, 1)))
       end
 
       it 'parses global variables' do
@@ -1361,6 +1366,12 @@ FOOBAR
   BAR
 END
         expect(parse(doc4)).must_equal s(:block, s(:str, "FOOBAR\n"))
+        doc5 = <<END
+<<OOTPÜT
+hello unicode
+OOTPÜT
+END
+        expect(parse(doc5)).must_equal s(:block, s(:str, "hello unicode\n"))
       end
 
       it 'parses =begin =end doc blocks' do

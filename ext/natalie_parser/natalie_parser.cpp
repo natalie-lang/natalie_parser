@@ -1,5 +1,6 @@
 #include "extconf.h"
 #include "ruby.h"
+#include "ruby/encoding.h"
 #include "ruby/intern.h"
 #include "stdio.h"
 
@@ -80,9 +81,11 @@ VALUE token_to_ruby(NatalieParser::Token token, bool include_location_info) {
     case NatalieParser::Token::Type::GlobalVariable:
     case NatalieParser::Token::Type::InstanceVariable:
     case NatalieParser::Token::Type::Symbol:
-    case NatalieParser::Token::Type::SymbolKey:
-        rb_hash_aset(hash, ID2SYM(rb_intern("literal")), ID2SYM(rb_intern(lit)));
+    case NatalieParser::Token::Type::SymbolKey: {
+        auto literal = token.literal_string();
+        rb_hash_aset(hash, ID2SYM(rb_intern("literal")), ID2SYM(rb_intern3(literal->c_str(), literal->size(), rb_utf8_encoding())));
         break;
+    }
     case NatalieParser::Token::Type::Fixnum:
     case NatalieParser::Token::Type::NthRef:
         rb_hash_aset(hash, ID2SYM(rb_intern("literal")), rb_int_new(token.get_fixnum()));
