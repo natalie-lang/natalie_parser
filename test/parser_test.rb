@@ -1385,10 +1385,14 @@ END
         nodes = parse("foo # ignored\nbar")[1..-1]
         expect(nodes.map(&:comments)).must_equal [nil, nil]
 
-        # ignores comments prior to other token types
-        node = parse("# ignored\nbar")[1]
-        expect(node.sexp_type).must_equal :call
-        expect(node.comments).must_be_nil
+        # comments skip certain tokens and attach to the next class/module/def token
+        nodes = parse("# goes with class\nbar\n\nclass Foo;end")
+        call = nodes[1]
+        expect(call.sexp_type).must_equal :call
+        expect(call.comments).must_be_nil
+        klass = nodes.last
+        expect(klass.sexp_type).must_equal :class
+        expect(klass.comments).must_equal "# goes with class\n"
       end
 
       it 'tracks file and line/column number' do
