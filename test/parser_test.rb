@@ -746,6 +746,7 @@ require_relative '../lib/natalie_parser/sexp'
 
       it 'parses method calls with parentheses' do
         expect(parse('foo()')).must_equal s(:block, s(:call, nil, :foo))
+        expect(parse("foo ()")).must_equal s(:block, s(:call, nil, :foo, s(:nil)))
         expect(parse('Foo()')).must_equal s(:block, s(:call, nil, :Foo))
         expect(parse('foo() + bar()')).must_equal s(:block, s(:call, s(:call, nil, :foo), :+, s(:call, nil, :bar)))
         expect(parse("foo(1, 'baz')")).must_equal s(:block, s(:call, nil, :foo, s(:lit, 1), s(:str, 'baz')))

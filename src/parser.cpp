@@ -2046,11 +2046,16 @@ SharedPtr<BlockNode> Parser::parse_iter_body(LocalsHashmap &locals, bool curly_b
 }
 
 SharedPtr<Node> Parser::parse_call_expression_with_parens(SharedPtr<Node> left, LocalsHashmap &locals) {
-    auto token = current_token();
+    auto token = current_token(); // (
     SharedPtr<NodeWithArgs> call_node = to_node_with_args(left);
     advance();
-    if (!current_token().is_rparen())
+    if (current_token().is_rparen()) {
+        // foo () vs foo()
+        if (token.whitespace_precedes())
+            call_node->add_arg(new NilSexpNode { current_token() });
+    } else {
         parse_call_args(call_node.ref(), locals, false);
+    }
     expect(Token::Type::RParen, "call rparen");
     advance();
     return call_node.static_cast_as<Node>();
