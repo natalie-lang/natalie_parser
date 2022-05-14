@@ -1228,9 +1228,11 @@ require_relative '../lib/natalie_parser/sexp'
 
       it 'parses case/when/else' do
         expect(parse("case 1\nwhen 1\n:a\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:when, s(:array, s(:lit, 1)), s(:lit, :a)), nil))
+        expect(parse("case 1\nwhen 1\n:a\n:b\n:c\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:when, s(:array, s(:lit, 1)), s(:lit, :a), s(:lit, :b), s(:lit, :c)), nil))
         expect(parse("case 1\nwhen 1 then :a\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:when, s(:array, s(:lit, 1)), s(:lit, :a)), nil))
         expect(parse("case 1\nwhen 1\n:a\n:b\nwhen 2, 3\n:c\nelse\n:d\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:when, s(:array, s(:lit, 1)), s(:lit, :a), s(:lit, :b)), s(:when, s(:array, s(:lit, 2), s(:lit, 3)), s(:lit, :c)), s(:lit, :d)))
         expect(parse("case 1\nwhen 1 then :a\n:b\nwhen 2, 3 then :c\nelse :d\nend")).must_equal s(:block, s(:case, s(:lit, 1), s(:when, s(:array, s(:lit, 1)), s(:lit, :a), s(:lit, :b)), s(:when, s(:array, s(:lit, 2), s(:lit, 3)), s(:lit, :c)), s(:lit, :d)))
+        expect(parse("case 1\nwhen 1 then end")).must_equal s(:block, s(:case, s(:lit, 1), s(:when, s(:array, s(:lit, 1)), nil), nil))
         expect(parse("case\nwhen true\n:a\nelse\n:b\nend")).must_equal s(:block, s(:case, nil, s(:when, s(:array, s(:true)), s(:lit, :a)), s(:lit, :b)))
         expect(parse("case\nwhen true then :a\nelse :b\nend")).must_equal s(:block, s(:case, nil, s(:when, s(:array, s(:true)), s(:lit, :a)), s(:lit, :b)))
         expect(-> { parse("case 1\nelse\n:else\nend") }).must_raise SyntaxError

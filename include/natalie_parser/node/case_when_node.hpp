@@ -29,8 +29,11 @@ public:
     virtual void transform(Creator *creator) const override {
         creator->set_type("when");
         creator->append(m_condition.ref());
-        for (auto node : m_body->nodes())
-            creator->append(node);
+        if (m_body->nodes().is_empty())
+            creator->append_nil();
+        else
+            for (auto node : m_body->nodes())
+                creator->append(node);
     }
 
 protected:
