@@ -269,8 +269,8 @@ module TestRubyParserShared
              s(:lit, 1).line(2),
              s(:resbody, s(:array).line(3),
                s(:lit, 2).line(4)).line(3),
-             s(:lit, 3).line(6)).line(2),
-           s(:lit, 4).line(8)).line(2)
+             s(:lit, 3).line(6)).line(1),
+           s(:lit, 4).line(8)).line(1)
 
     s(:ensure, s(:rescue, s(:resbody, s(:array), nil)), s(:nil))
 
@@ -5629,6 +5629,8 @@ end
 
 class TestRubyParserV30 < RubyParserTestCase
   include TestRubyParserShared30Plus
+
+  #focus :test_bug169
 
   def setup
     super
