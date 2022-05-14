@@ -723,13 +723,13 @@ module TestRubyParserShared
   end
 
   def test_class_comments
-    rb = "# blah 1\n# blah 2\n\nclass X\n  # blah 3\n  def blah\n    # blah 4\n  end\nend"
+    rb = "# blah 1\n# blah 2\nclass X\n  # blah 3\n  def blah\n    # blah 4\n  end\nend"
     pt = s(:class, :X, nil,
-           s(:defn, :blah, s(:args).line(6), s(:nil).line(6)).line(6)).line(4)
+           s(:defn, :blah, s(:args).line(5), s(:nil).line(5)).line(5)).line(3)
 
     assert_parse rb, pt
 
-    assert_equal "# blah 1\n# blah 2\n\n", result.comments
+    assert_equal "# blah 1\n# blah 2\n", result.comments
     assert_equal "# blah 3\n", result.defn.comments
   end
 
