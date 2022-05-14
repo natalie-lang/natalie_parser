@@ -898,6 +898,7 @@ require_relative '../lib/natalie_parser/sexp'
       end
 
       it 'parses if/elsif/else' do
+        expect(parse('if true; end')).must_equal s(:block, s(:if, s(:true), nil, nil))
         expect(parse('if true; 1; end')).must_equal s(:block, s(:if, s(:true), s(:lit, 1), nil))
         expect(parse('if true; 1; 2; end')).must_equal s(:block, s(:if, s(:true), s(:block, s(:lit, 1), s(:lit, 2)), nil))
         expect(parse('if false; 1; else; 2; end')).must_equal s(:block, s(:if, s(:false), s(:lit, 1), s(:lit, 2)))

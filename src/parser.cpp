@@ -1239,7 +1239,9 @@ SharedPtr<Node> Parser::parse_if_body(LocalsHashmap &locals) {
     }
     if (!is_divider())
         throw_unexpected("if end");
-    if (body->has_one_node())
+    if (body->is_empty())
+        return new NilNode { body->token() };
+    else if (body->has_one_node())
         return body->take_first_node();
     else
         return body.static_cast_as<Node>();
