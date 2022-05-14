@@ -526,6 +526,14 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('a&.B = 1')).must_equal s(:block, s(:safe_attrasgn, s(:call, nil, :a), :B=, s(:lit, 1)))
       end
 
+      it 'parses proper line number for multiple assignment' do
+        result = parse("x,\ny = 1")
+        expect(result).must_equal s(:block, s(:masgn, s(:array, s(:lasgn, :x), s(:lasgn, :y)), s(:to_ary, s(:lit, 1))))
+        expect(result[1].sexp_type).must_equal :masgn
+        expect(result[1].line).must_equal 1
+        expect(result[1].column).must_equal 1 if parser == 'NatalieParser'
+      end
+
       it 'parses attr assignment' do
         expect(parse('x.y = 1')).must_equal s(:block, s(:attrasgn, s(:call, nil, :x), :y=, s(:lit, 1)))
         expect(parse('x[y] = 1')).must_equal s(:block, s(:attrasgn, s(:call, nil, :x), :[]=, s(:call, nil, :y), s(:lit, 1)))

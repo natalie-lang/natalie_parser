@@ -9,27 +9,23 @@ namespace NatalieParser {
 
 class MRICreator : public Creator {
 public:
-    MRICreator(const Node &node) {
-        m_file = node.file().static_cast_as<const String>();
-        m_line = node.line();
-        m_column = node.column();
+    MRICreator(const Node &node)
+        : Creator { node.file().static_cast_as<const String>(), node.line(), node.column() } {
         reset_sexp();
     }
 
     MRICreator(const MRICreator &other)
-        : m_file { other.m_file }
-        , m_line { other.m_line }
-        , m_column { other.m_column } {
+        : Creator { other.file(), other.line(), other.column() } {
         reset_sexp();
     }
 
     virtual ~MRICreator() { }
 
-    void reset_sexp() {
+    virtual void reset_sexp() override {
         m_sexp = rb_class_new_instance(0, nullptr, Sexp);
-        rb_ivar_set(m_sexp, rb_intern("@file"), rb_str_new(m_file->c_str(), m_file->length()));
-        rb_ivar_set(m_sexp, rb_intern("@line"), rb_int_new(m_line + 1));
-        rb_ivar_set(m_sexp, rb_intern("@column"), rb_int_new(m_column + 1));
+        rb_ivar_set(m_sexp, rb_intern("@file"), rb_str_new(file()->c_str(), file()->length()));
+        rb_ivar_set(m_sexp, rb_intern("@line"), rb_int_new(line() + 1));
+        rb_ivar_set(m_sexp, rb_intern("@column"), rb_int_new(column() + 1));
     }
 
     virtual void set_comments(const TM::String &comments) override {
@@ -119,8 +115,5 @@ public:
 
 private:
     VALUE m_sexp { Qnil };
-    SharedPtr<const String> m_file {};
-    size_t m_line { 0 };
-    size_t m_column { 0 };
 };
 }

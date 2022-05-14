@@ -4,7 +4,10 @@
 namespace NatalieParser {
 
 void AssignmentNode::transform(Creator *creator) const {
-    switch (identifier()->type()) {
+    creator->set_line(m_identifier->line());
+    creator->set_column(m_identifier->column());
+    creator->reset_sexp();
+    switch (m_identifier->type()) {
     case Node::Type::MultipleAssignment: {
         auto masgn = m_identifier;
         masgn->transform(creator);
@@ -17,7 +20,7 @@ void AssignmentNode::transform(Creator *creator) const {
     case Node::Type::Identifier:
     case Node::Type::SafeCall: {
         creator->with_assignment(true, [&]() {
-            identifier()->transform(creator);
+            m_identifier->transform(creator);
         });
         creator->append(m_value.ref());
         break;

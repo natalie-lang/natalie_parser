@@ -14,6 +14,12 @@ class ArrayNode;
 class Creator {
 public:
     Creator() { }
+
+    Creator(TM::SharedPtr<const TM::String> file, size_t line, size_t column)
+        : m_file { file }
+        , m_line { line }
+        , m_column { column } { }
+
     virtual void set_comments(const TM::String &comments) = 0;
     virtual void set_type(const char *type) = 0;
     virtual void append(const TM::SharedPtr<Node> node) { append(*node); }
@@ -78,8 +84,20 @@ public:
         m_assignment = assignment_was;
     }
 
+    TM::SharedPtr<const TM::String> file() const { return m_file; }
+    size_t line() const { return m_line; }
+    size_t column() const { return m_column; }
+
+    void set_line(size_t line) { m_line = line; }
+    void set_column(size_t column) { m_column = column; }
+
+    virtual void reset_sexp() { }
+
 private:
     bool m_assignment { false };
+    TM::SharedPtr<const TM::String> m_file {};
+    size_t m_line { 0 };
+    size_t m_column { 0 };
 };
 
 }
