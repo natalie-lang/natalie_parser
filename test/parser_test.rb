@@ -1340,6 +1340,7 @@ require_relative '../lib/natalie_parser/sexp'
 
       it 'parses heredocs' do
         expect(parse("<<FOO\nFOO")).must_equal s(:block, s(:str, ""))
+
         doc1 = <<END
 foo = <<FOO_BAR
  1
@@ -1347,6 +1348,7 @@ foo = <<FOO_BAR
 FOO_BAR
 END
         expect(parse(doc1)).must_equal s(:block, s(:lasgn, :foo, s(:str, " 1\n2\n")))
+
         doc2 = <<END
 foo(1, <<-foo, 2)
  1
@@ -1354,24 +1356,47 @@ foo(1, <<-foo, 2)
   foo
 END
         expect(parse(doc2)).must_equal s(:block, s(:call, nil, :foo, s(:lit, 1), s(:str, " 1\n2\n"), s(:lit, 2)))
+
         doc3 = <<END
 <<FOO
   \#{1+1}
 FOO
 END
         expect(parse(doc3)).must_equal s(:block, s(:dstr, '  ', s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), s(:str, "\n")))
+
         doc4 = <<END
 <<-BAR
 FOOBAR
   BAR
 END
         expect(parse(doc4)).must_equal s(:block, s(:str, "FOOBAR\n"))
+
         doc5 = <<END
 <<OOTPÜT
 hello unicode
 OOTPÜT
 END
         expect(parse(doc5)).must_equal s(:block, s(:str, "hello unicode\n"))
+
+        # just a sanity check!
+        ruby_only_counts_literal_tabs_as_indentation = <<~"EOF"
+	\tfoo
+	\tbar
+        EOF
+        expect(ruby_only_counts_literal_tabs_as_indentation).must_equal "\tfoo\n\tbar\n"
+
+        doc6 = <<'END'
+a = <<~"EOF"
+	\tbackslash tabs are ignored
+	\tbackslash tabs don't count
+EOF
+END
+        if parser == 'NatalieParser'
+          expect(parse(doc6)).must_equal s(:block, s(:lasgn, :a, s(:str, "\tbackslash tabs are ignored\n\tbackslash tabs don't count\n")))
+        else
+          # NOTE: this seems like a bug in RubyParser
+          expect(parse(doc6)).must_equal s(:block, s(:lasgn, :a, s(:str, "backslash tabs are ignored\nbackslash tabs don't count\n")))
+        end
       end
 
       it 'parses =begin =end doc blocks' do
