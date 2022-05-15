@@ -4279,6 +4279,7 @@ module TestRubyParserShared23Plus
   end
 
   def test_heredoc_squiggly_tabs
+    skip # MRI handles this differently
     rb = "a = <<~\"EOF\"\n        blah blah\n\t blah blah\n  EOF\n\n"
     pt = s(:lasgn, :a, s(:str, "blah blah\n blah blah\n"))
 
