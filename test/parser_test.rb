@@ -222,6 +222,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse(%q(%Q'1 \' 2'))).must_equal s(:block, s(:str, "1 ' 2"))
         expect(parse(%q(%Q"1 \" 2"))).must_equal s(:block, s(:str, '1 " 2'))
         expect(parse("%q(1 (\\x\\') 2)")).must_equal s(:block, s(:str, "1 (\\x\\') 2"))
+        expect(parse(%Q("foo\\\nbar"))).must_equal s(:block, s(:str, "foobar"))
 
         # escapes
         {
@@ -1397,6 +1398,14 @@ END
           # NOTE: this seems like a bug in RubyParser
           expect(parse(doc6)).must_equal s(:block, s(:lasgn, :a, s(:str, "backslash tabs are ignored\nbackslash tabs don't count\n")))
         end
+
+        doc7 = <<~'END'
+          <<-DESC
+          foo \
+          bar
+          DESC
+        END
+        expect(parse(doc7)).must_equal s(:block, s(:str, "foo bar\n"))
       end
 
       it 'parses =begin =end doc blocks' do

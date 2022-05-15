@@ -139,6 +139,8 @@ Token InterpolatedStringLexer::consume_string() {
                 case 'v':
                     buf->append_char('\v');
                     break;
+                case '\n':
+                    break;
                 default:
                     buf->append_char(c);
                     break;
