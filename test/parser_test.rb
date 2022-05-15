@@ -1358,9 +1358,9 @@ foo(1, <<-foo, 2)
 END
         expect(parse(doc2)).must_equal s(:block, s(:call, nil, :foo, s(:lit, 1), s(:str, " 1\n2\n"), s(:lit, 2)))
 
-        doc3 = <<END
+        doc3 = <<-'END'
 <<FOO
-  \#{1+1}
+  #{1+1}
 FOO
 END
         expect(parse(doc3)).must_equal s(:block, s(:dstr, '  ', s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), s(:str, "\n")))
