@@ -1340,58 +1340,64 @@ require_relative '../lib/natalie_parser/sexp'
       end
 
       it 'parses heredocs' do
+        # empty heredoc
         expect(parse("<<FOO\nFOO")).must_equal s(:block, s(:str, ""))
 
-        doc1 = <<END
-foo = <<FOO_BAR
- 1
-2
-FOO_BAR
-END
+        # underscore in delimiter
+        doc1 = <<~END
+        foo = <<FOO_BAR
+         1
+        2
+        FOO_BAR
+        END
         expect(parse(doc1)).must_equal s(:block, s(:lasgn, :foo, s(:str, " 1\n2\n")))
 
-        doc2 = <<END
-foo(1, <<-foo, 2)
- 1
-2
-  foo
-END
+        # passed as an argument
+        doc2 = <<~END
+        foo(1, <<-foo, 2)
+         1
+        2
+          foo
+        END
         expect(parse(doc2)).must_equal s(:block, s(:call, nil, :foo, s(:lit, 1), s(:str, " 1\n2\n"), s(:lit, 2)))
 
-        doc3 = <<-'END'
-<<FOO
-  #{1+1}
-FOO
-END
+        # interpolation
+        doc3 = <<~'END'
+        <<FOO
+          #{1+1}
+        FOO
+        END
         expect(parse(doc3)).must_equal s(:block, s(:dstr, '  ', s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), s(:str, "\n")))
 
-        doc4 = <<END
-<<-BAR
-FOOBAR
-  BAR
-END
+        # delimiter appears inside body but not by itself
+        doc4 = <<~END
+        <<-BAR
+        FOOBAR
+          BAR
+        END
         expect(parse(doc4)).must_equal s(:block, s(:str, "FOOBAR\n"))
 
-        doc5 = <<END
-<<OOTPÜT
-hello unicode
-OOTPÜT
-END
+        # unicode delimiter
+        doc5 = <<~END
+        <<OOTPÜT
+        hello unicode
+        OOTPÜT
+        END
         expect(parse(doc5)).must_equal s(:block, s(:str, "hello unicode\n"))
 
         # just a sanity check!
         ruby_only_counts_literal_tabs_as_indentation = <<~"EOF"
-	\tfoo
-	\tbar
+        \tfoo
+        \tbar
         EOF
         expect(ruby_only_counts_literal_tabs_as_indentation).must_equal "\tfoo\n\tbar\n"
 
-        doc6 = <<'END'
-a = <<~"EOF"
-	\tbackslash tabs are ignored
-	\tbackslash tabs don't count
-EOF
-END
+        doc6 = <<~'END'
+        a = <<~"EOF"
+          \tbackslash tabs are ignored
+          \tbackslash tabs don't count
+        EOF
+        END
         if parser == 'NatalieParser'
           expect(parse(doc6)).must_equal s(:block, s(:lasgn, :a, s(:str, "\tbackslash tabs are ignored\n\tbackslash tabs don't count\n")))
         else
@@ -1399,13 +1405,28 @@ END
           expect(parse(doc6)).must_equal s(:block, s(:lasgn, :a, s(:str, "backslash tabs are ignored\nbackslash tabs don't count\n")))
         end
 
+        # line continuation
         doc7 = <<~'END'
-          <<-DESC
+          <<-EOF
           foo \
           bar
-          DESC
+          EOF
         END
         expect(parse(doc7)).must_equal s(:block, s(:str, "foo bar\n"))
+
+        # line number of evaluated parts
+        doc8 = <<~'END'
+          # skip a line
+          <<-EOF
+          1
+            #{42}
+          EOF
+        END
+        result = parse(doc8)
+        expect(result).must_equal s(:block, s(:dstr, "1\n  ", s(:evstr, s(:lit, 42)), s(:str, "\n")))
+        dstr = result[1]
+        expect(dstr.line).must_equal(2)
+        expect(dstr[2].line).must_equal(4)
       end
 
       it 'parses =begin =end doc blocks' do

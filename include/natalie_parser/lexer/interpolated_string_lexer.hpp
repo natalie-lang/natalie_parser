@@ -22,6 +22,7 @@ public:
         : Lexer { string_token.literal_string(), parent_lexer.file() }
         , m_end_type { end_type }
         , m_alters_parent_cursor_position { false } {
+        set_cursor_line(parent_lexer.cursor_line() + 1); // the line after the heredoc delimiter
         set_nested_lexer(nullptr);
         set_stop_char(0);
     }

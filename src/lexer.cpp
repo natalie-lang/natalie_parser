@@ -1265,8 +1265,8 @@ Token Lexer::consume_heredoc() {
     if (should_dedent)
         dedent_heredoc(doc);
 
-    // we have to keep tokenizing on the line where the heredoc was started, and then jump to the line after the heredoc
-    // this index is used to do that
+    // We have to keep tokenizing on the line where the heredoc was started, and then jump to the line after the heredoc.
+    // This index is used to jump to the end of the heredoc later.
     m_heredoc_stack.push(heredoc_index);
 
     auto token = Token { Token::Type::String, doc, m_file, m_token_line, m_token_column };

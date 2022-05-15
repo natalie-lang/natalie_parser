@@ -22,6 +22,9 @@ public:
 
     SharedPtr<String> file() const { return m_file; }
 
+    size_t cursor_line() const { return m_cursor_line; }
+    void set_cursor_line(size_t cursor_line) { m_cursor_line = cursor_line; }
+
     void set_nested_lexer(Lexer *lexer) { m_nested_lexer = lexer; }
     void set_start_char(char c) { m_start_char = c; }
     void set_stop_char(char c) { m_stop_char = c; }
