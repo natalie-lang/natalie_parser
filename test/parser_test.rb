@@ -1296,6 +1296,8 @@ require_relative '../lib/natalie_parser/sexp'
       it 'parses inline rescue' do
         expect(parse('foo rescue bar')).must_equal s(:block, s(:rescue, s(:call, nil, :foo), s(:resbody, s(:array), s(:call, nil, :bar))))
         expect(parse('foo(1) { 2 } rescue [1, 2]')).must_equal s(:block, s(:rescue, s(:iter, s(:call, nil, :foo, s(:lit, 1)), 0, s(:lit, 2)), s(:resbody, s(:array), s(:array, s(:lit, 1), s(:lit, 2)))))
+        expect(parse("a = b and c = d(1) rescue 2")).must_equal s(:block, s(:and, s(:lasgn, :a, s(:call, nil, :b)), s(:lasgn, :c, s(:rescue, s(:call, nil, :d, s(:lit, 1)), s(:resbody, s(:array), s(:lit, 2))))))
+        expect(parse("a = b(1) rescue 2")).must_equal s(:block, s(:lasgn, :a, s(:rescue, s(:call, nil, :b, s(:lit, 1)), s(:resbody, s(:array), s(:lit, 2)))))
       end
 
       it 'parses backticks and %x()' do

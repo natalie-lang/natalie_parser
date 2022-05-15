@@ -8,11 +8,12 @@ enum class Parser::Precedence {
     ARRAY, // []
     WORD_ARRAY, // %w[]
     HASH, // {}
-    EXPR_MODIFIER, // if/unless/while/until
     CASE, // case/when/else
     COMPOSITION, // and/or
+    EXPR_MODIFIER, // if/unless/while/until
     TERNARY_FALSE, // _ ? _ : (_)
     ASSIGNMENT_RHS, // a = (_)
+    INLINE_RESCUE, // foo rescue 2
     ITER_BLOCK, // do |n| ... end
     BARE_CALL_ARG, // foo (_), b
     OP_ASSIGNMENT, // += -= *= **= /= %= |= &= ^= >>= <<= ||= &&=
@@ -148,8 +149,9 @@ Parser::Precedence Parser::get_precedence(Token &token, SharedPtr<Node> left) {
     case Token::Type::UnlessKeyword:
     case Token::Type::WhileKeyword:
     case Token::Type::UntilKeyword:
-    case Token::Type::RescueKeyword:
         return Precedence::EXPR_MODIFIER;
+    case Token::Type::RescueKeyword:
+        return Precedence::INLINE_RESCUE;
     case Token::Type::DoKeyword:
         return Precedence::ITER_BLOCK;
     case Token::Type::LCurlyBrace:
@@ -2376,7 +2378,7 @@ SharedPtr<Node> Parser::parse_ref_expression(SharedPtr<Node> left, LocalsHashmap
 
 SharedPtr<Node> Parser::parse_rescue_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
     auto token = current_token();
-    advance();
+    advance(); // rescue
     auto value = parse_expression(Precedence::LOWEST, locals);
     auto body = new BlockNode { left->token(), left };
     auto begin_node = new BeginNode { token, body };
