@@ -285,8 +285,8 @@ module TestRubyParserShared
                # TODO: s(:nil)
                nil
               ).line(3),
-            ).line(3),
-          s(:nil).line(7)).line(3)
+            ).line(1),
+          s(:nil).line(1)).line(1)
 
     s(:ensure, s(:rescue, s(:resbody, s(:array), nil)), s(:nil))
 
