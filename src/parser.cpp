@@ -56,7 +56,7 @@ bool Parser::higher_precedence(Token &token, SharedPtr<Node> left, Precedence cu
         return false;
     }
 
-    if (next_precedence == Precedence::ITER_BLOCK)
+    if (next_precedence == Precedence::ITER_BLOCK) {
         // Simple precedence comparison to the nearest neighbor is not
         // sufficient for block association. For example, the following
         // code, if looking at precedence rules alone, would attach the
@@ -83,6 +83,10 @@ bool Parser::higher_precedence(Token &token, SharedPtr<Node> left, Precedence cu
         // `m_call_that_can_accept_a_block_depth`, but that's a bit long.
         //
         return m_call_depth == 0;
+    }
+
+    if (next_precedence == Precedence::ITER_CURLY)
+        return left->is_callable();
 
     return next_precedence > current_precedence;
 }
@@ -2609,7 +2613,9 @@ Parser::parse_left_fn Parser::left_denotation(Token &token, SharedPtr<Node> left
         else
             return &Parser::parse_assignment_expression;
     case Type::LParen:
-        return &Parser::parse_call_expression_with_parens;
+        if (!token.whitespace_precedes())
+            return &Parser::parse_call_expression_with_parens;
+        break;
     case Type::ConstantResolution:
         return &Parser::parse_constant_resolution_expression;
     case Type::BitwiseAnd:

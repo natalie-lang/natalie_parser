@@ -778,6 +778,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('foo(a = b, c)')).must_equal s(:block, s(:call, nil, :foo, s(:lasgn, :a, s(:call, nil, :b)), s(:call, nil, :c)))
         expect(parse("foo (1 + 2)")).must_equal s(:block, s(:call, nil, :foo, s(:call, s(:lit, 1), :+, s(:lit, 2))))
         expect(parse("a.b (1) {c}")).must_equal s(:block, s(:iter, s(:call, s(:call, nil, :a), :b, s(:lit, 1)), 0, s(:call, nil, :c)))
+        expect(parse("a(b + c).d {e}")).must_equal s(:block, s(:iter, s(:call, s(:call, nil, :a, s(:call, s(:call, nil, :b), :+, s(:call, nil, :c))), :d), 0, s(:call, nil, :e)))
+        expect(parse("a (b + c).d {e}")).must_equal s(:block, s(:call, nil, :a, s(:iter, s(:call, s(:call, s(:call, nil, :b), :+, s(:call, nil, :c)), :d), 0, s(:call, nil, :e))))
         if parser == 'NatalieParser'
           expect_raise_with_message(-> { parse('foo(') }, SyntaxError, "(string)#1: syntax error, unexpected end-of-input (expected: 'expression')")
           expect_raise_with_message(-> { parse('123(') }, SyntaxError, "(string)#1: syntax error, unexpected '(' (error: 'left-hand-side is not callable')")
