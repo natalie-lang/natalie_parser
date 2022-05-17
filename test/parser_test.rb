@@ -1152,6 +1152,10 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("foo 1 < 2 do\n3\nend")).must_equal s(:block, s(:iter, s(:call, nil, :foo, s(:call, s(:lit, 1), :<, s(:lit, 2))), 0, s(:lit, 3)))
         expect(parse("-> *a, b { 1 }")).must_equal s(:block, s(:iter, s(:lambda), s(:args, :"*a", :b), s(:lit, 1)))
         expect(parse("!foo { 1 }")).must_equal s(:block, s(:call, s(:iter, s(:call, nil, :foo), 0, s(:lit, 1)), :!))
+        expect(parse("yield foo(arg) do |bar| end")).must_equal s(:block, s(:yield, s(:iter, s(:call, nil, :foo, s(:call, nil, :arg)), s(:args, :bar))))
+        expect(parse("foo(yield(bar)) do |bar| end")).must_equal s(:block, s(:iter, s(:call, nil, :foo, s(:yield, s(:call, nil, :bar))), s(:args, :bar)))
+        expect(parse("yield foo arg do |bar| end")).must_equal s(:block, s(:yield, s(:iter, s(:call, nil, :foo, s(:call, nil, :arg)), s(:args, :bar))))
+        expect(parse("foo yield bar do |bar| end")).must_equal s(:block, s(:iter, s(:call, nil, :foo, s(:yield, s(:call, nil, :bar))), s(:args, :bar)))
         expect(-> { parse("foo 1 < 2 { 3 }") }).must_raise SyntaxError
         expect(-> { parse("foo 1 | 2 { 3 }") }).must_raise SyntaxError
         expect(-> { parse("foo 1 & 2 { 3 }") }).must_raise SyntaxError

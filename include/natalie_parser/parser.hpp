@@ -205,5 +205,6 @@ private:
     SharedPtr<Vector<Token>> m_tokens {};
 
     Vector<Precedence> m_precedence_stack {};
+    unsigned int m_call_depth { 0 };
 };
 }

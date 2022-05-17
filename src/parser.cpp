@@ -56,12 +56,11 @@ bool Parser::higher_precedence(Token &token, SharedPtr<Node> left, Precedence cu
         return false;
     }
 
-    if (next_precedence == Precedence::ITER_BLOCK && next_precedence <= current_precedence) {
+    if (next_precedence == Precedence::ITER_BLOCK)
         // Simple precedence comparison to the nearest neighbor is not
-        // sufficient when BARE_CALL_ARG (a method call without parentheses)
-        // is in use. For example, the following code, if looking at
-        // precedence rules alone, would attach the block to the '+' op,
-        // which would be incorrect:
+        // sufficient for block association. For example, the following
+        // code, if looking at precedence rules alone, would attach the
+        // block to the '+' op, which would be incorrect:
         //
         //     bar + baz do ... end
         //         ^ block should NOT attach here
@@ -77,17 +76,13 @@ bool Parser::higher_precedence(Token &token, SharedPtr<Node> left, Precedence cu
         //     foo bar + baz do ... end
         //     ^ block attaches here
         //
-        // Thus the answer is to keep a stack of precedences and look
-        // further left to see if BARE_CALL_ARG are in use. If not, then
-        // we should attach the block now, to the nearest call
-        // (which is to say, we should return true).
+        // Thus the answer is to keep track of how many calls deep we are
+        // When our call depth is zero, that's where we attach the block.
         //
-        for (auto precedence : m_precedence_stack) {
-            if (precedence == Precedence::BARE_CALL_ARG)
-                return false;
-        }
-        return true;
-    }
+        // NOTE: `m_call_depth` should probably be called
+        // `m_call_that_can_accept_a_block_depth`, but that's a bit long.
+        //
+        return m_call_depth == 0;
 
     return next_precedence > current_precedence;
 }
@@ -2090,6 +2085,8 @@ SharedPtr<NodeWithArgs> Parser::to_node_with_args(SharedPtr<Node> node) {
 }
 
 void Parser::parse_call_args(NodeWithArgs &node, LocalsHashmap &locals, bool bare) {
+    if (node.can_accept_a_block())
+        m_call_depth++;
     auto arg = parse_expression(bare ? Precedence::BARE_CALL_ARG : Precedence::CALL_ARG, locals);
     if (current_token().type() == Token::Type::HashRocket || arg->is_symbol_key()) {
         node.add_arg(parse_call_hash_args(locals, bare, arg));
@@ -2111,6 +2108,8 @@ void Parser::parse_call_args(NodeWithArgs &node, LocalsHashmap &locals, bool bar
             }
         }
     }
+    if (node.can_accept_a_block())
+        m_call_depth--;
 }
 
 SharedPtr<Node> Parser::parse_call_hash_args(LocalsHashmap &locals, bool bare, SharedPtr<Node> first_arg) {

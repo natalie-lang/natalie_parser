@@ -764,6 +764,7 @@ public:
         case Token::Type::SymbolKey:
         case Token::Type::Tilde:
         case Token::Type::TrueKeyword:
+        case Token::Type::YieldKeyword:
             return true;
         default:
             return false;
