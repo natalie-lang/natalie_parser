@@ -3238,16 +3238,16 @@ module TestRubyParserShared19Plus
     rb = "a\n.b\n#.c\n.d"
     pt = s(:call,
            s(:call,
-             s(:call, nil, :a),
-             :b),
-           :d) # TODO: fix linenos: 1, 2, 4
+             s(:call, nil, :a).line(1),
+             :b).line(2),
+           :d).line(4)
 
     assert_parse rb, pt
   end
 
   def test_call_trailing_dots
     rb = "a.\nb.\nc"
-    pt = s(:call, s(:call, s(:call, nil, :a), :b), :c)
+    pt = s(:call, s(:call, s(:call, nil, :a), :b), :c).line(2)
 
     assert_parse rb, pt
   end
@@ -4371,7 +4371,7 @@ module TestRubyParserShared23Plus
 
   def test_safe_call_after_newline
     rb = "a\n&.b"
-    pt = s(:safe_call, s(:call, nil, :a), :b)
+    pt = s(:safe_call, s(:call, nil, :a), :b).line(2)
 
     assert_parse rb, pt
   end
