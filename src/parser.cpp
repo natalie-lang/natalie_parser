@@ -1625,11 +1625,12 @@ SharedPtr<Node> Parser::parse_stabby_proc(LocalsHashmap &locals) {
     }
     if (current_token().type() != Token::Type::DoKeyword && current_token().type() != Token::Type::LCurlyBrace)
         throw_unexpected("block");
-    return new StabbyProcNode {
+    auto proc = new StabbyProcNode {
         token,
         has_args,
         args
     };
+    return parse_iter_expression(proc, locals);
 };
 
 SharedPtr<Node> Parser::parse_string(LocalsHashmap &locals) {

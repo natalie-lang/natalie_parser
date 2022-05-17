@@ -1230,6 +1230,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('foo = -> x { x }')).must_equal s(:block, s(:lasgn, :foo, s(:iter, s(:lambda), s(:args, :x), s(:lvar, :x))))
         expect(parse('foo(1, &-> a, b { c })')).must_equal s(:block, s(:call, nil, :foo, s(:lit, 1), s(:block_pass, s(:iter, s(:lambda), s(:args, :a, :b), s(:call, nil, :c)))))
         expect(parse('foo(1, &(-> a, b { c }))')).must_equal s(:block, s(:call, nil, :foo, s(:lit, 1), s(:block_pass, s(:iter, s(:lambda), s(:args, :a, :b), s(:call, nil, :c)))))
+        expect(parse('f ->() {}')).must_equal s(:block, s(:call, nil, :f, s(:iter, s(:lambda), s(:args))))
+        expect(parse('f ->() do end')).must_equal s(:block, s(:call, nil, :f, s(:iter, s(:lambda), s(:args))))
       end
 
       it 'parses case/when/else' do
