@@ -488,6 +488,9 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('x, y = 1')).must_equal s(:block, s(:masgn, s(:array, s(:lasgn, :x), s(:lasgn, :y)), s(:to_ary, s(:lit, 1))))
         expect(parse('x = *[1, 2]')).must_equal s(:block, s(:lasgn, :x, s(:svalue, s(:splat, s(:array, s(:lit, 1), s(:lit, 2))))))
         expect(parse('x, y = *[1, 2]')).must_equal s(:block, s(:masgn, s(:array, s(:lasgn, :x), s(:lasgn, :y)), s(:splat, s(:array, s(:lit, 1), s(:lit, 2)))))
+        expect(parse('*, x = f')).must_equal s(:block, s(:masgn, s(:array, s(:splat), s(:lasgn, :x)), s(:to_ary, s(:call, nil, :f))))
+        expect(parse('x, *, y = f')).must_equal s(:block, s(:masgn, s(:array, s(:lasgn, :x), s(:splat), s(:lasgn, :y)), s(:to_ary, s(:call, nil, :f))))
+        expect(parse('x, * = f')).must_equal s(:block, s(:masgn, s(:array, s(:lasgn, :x), s(:splat)), s(:to_ary, s(:call, nil, :f))))
         expect(parse('::FOO = 1')).must_equal s(:block, s(:cdecl, s(:colon3, :FOO), s(:lit, 1)))
         expect(parse('Foo::BAR = 1')).must_equal s(:block, s(:cdecl, s(:colon2, s(:const, :Foo), :BAR), s(:lit, 1)))
         if parser == 'NatalieParser'

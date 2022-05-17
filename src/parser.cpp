@@ -1601,6 +1601,9 @@ SharedPtr<Node> Parser::parse_self(LocalsHashmap &) {
 SharedPtr<Node> Parser::parse_splat(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
+    if (current_token().is_comma())
+        // TODO: there are likely additional tokens other than comma that would trigger this.
+        return new SplatNode { token };
     return new SplatNode { token, parse_expression(Precedence::SPLAT, locals) };
 };
 
