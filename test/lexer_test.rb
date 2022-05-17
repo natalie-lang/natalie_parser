@@ -263,12 +263,10 @@ describe 'NatalieParser' do
         { type: :fixnum, literal: 123 },
         { type: :')' },
       ]
-      expect(-> { tokenize('1x') }).must_raise(SyntaxError)
+      expect(tokenize('1x')).must_equal [{ type: :fixnum, literal: 1 }, { type: :name, literal: :x }]
       expect(-> { tokenize('0bb') }).must_raise(SyntaxError, "1: syntax error, unexpected 'b'")
-      expect(-> { tokenize('0dc') }).must_raise(SyntaxError, "1: syntax error, unexpected 'c'")
-      expect(-> { tokenize('0d2d') }).must_raise(SyntaxError, "1: syntax error, unexpected 'd'")
-      expect(-> { tokenize('0o2e') }).must_raise(SyntaxError, "1: syntax error, unexpected 'e'")
-      expect(-> { tokenize('0x2z') }).must_raise(SyntaxError, "1: syntax error, unexpected 'z'")
+      expect(tokenize('123while')).must_equal [{ type: :fixnum, literal: 123 }, { type: :while }]
+      expect(tokenize('0xefor')).must_equal [{ type: :fixnum, literal: 239 }, { type: :or }]
     end
 
     it 'tokenizes floats' do
@@ -281,7 +279,7 @@ describe 'NatalieParser' do
       expect(tokenize('2e5')).must_equal [{ type: :float, literal: 200000.0 }]
       expect(tokenize('2e+5')).must_equal [{ type: :float, literal: 200000.0 }]
       expect(tokenize('2.1E-5')).must_equal [{ type: :float, literal: 0.000021 }]
-      expect(-> { tokenize('0.1a') }).must_raise(SyntaxError, "1: syntax error, unexpected 'a'")
+      expect(tokenize('1.0if')).must_equal [{ type: :float, literal: 1.0 }, { type: :if }]
       expect(-> { tokenize('0.1e') }).must_raise(SyntaxError, "1: syntax error, unexpected 'e'")
       expect(-> { tokenize('0.1e--') }).must_raise(SyntaxError, "1: syntax error, unexpected '-'")
     end
@@ -324,6 +322,8 @@ describe 'NatalieParser' do
       expect(tokenize('%Q<foo>')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
       expect(tokenize('%Q/foo/')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
       expect(tokenize('%Q|foo|')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
+      expect(tokenize("'foo'if")).must_equal [{ type: :string, literal: 'foo' }, { type: :if }]
+      expect(tokenize('"foo"if')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }, { type: :if }]
       expect(tokenize('"#{:foo} bar #{1 + 1}"')).must_equal [
         { type: :dstr },
         { type: :evstr },

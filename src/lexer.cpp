@@ -800,9 +800,6 @@ Token Lexer::build_next_token() {
     case '8':
     case '9': {
         auto token = consume_numeric();
-        if (isalpha(current_char())) {
-            return Token { Token::Type::Invalid, current_char(), m_file, m_cursor_line, m_cursor_column };
-        }
         return token;
     }
     };
