@@ -1954,7 +1954,7 @@ module TestRubyParserShared
            s(:resbody, s(:array).line(3),
              s(:call, nil, :b).line(4)).line(3),
            s(:resbody, s(:array).line(5),
-             s(:call, nil, :c).line(6)).line(5)).line(2)
+             s(:call, nil, :c).line(6)).line(5)).line(1)
 
     assert_parse rb, pt
   end
