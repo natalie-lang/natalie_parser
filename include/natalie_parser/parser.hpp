@@ -38,6 +38,7 @@ public:
         : m_code { code }
         , m_file { file } {
         m_tokens = Lexer { m_code, m_file }.tokens();
+        m_call_depth.push(0);
     }
 
     ~Parser() {
@@ -205,6 +206,6 @@ private:
     SharedPtr<Vector<Token>> m_tokens {};
 
     Vector<Precedence> m_precedence_stack {};
-    unsigned int m_call_depth { 0 };
+    Vector<unsigned int> m_call_depth {};
 };
 }

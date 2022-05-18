@@ -57,6 +57,7 @@ require_relative '../lib/natalie_parser/sexp'
       it 'parses a group' do
         expect(parse('x = (1 + 1; 3)')).must_equal s(:block, s(:lasgn, :x, s(:block, s(:call, s(:lit, 1), :+, s(:lit, 1)), s(:lit, 3))))
         expect(parse("x = (1 + 1\n3)")).must_equal s(:block, s(:lasgn, :x, s(:block, s(:call, s(:lit, 1), :+, s(:lit, 1)), s(:lit, 3))))
+        expect(parse("foo (bar do\n 1\n end).new")).must_equal s(:block, s(:call, nil, :foo, s(:call, s(:iter, s(:call, nil, :bar), 0, s(:lit, 1)), :new)))
       end
 
       it 'parses line-continuation backslash' do
@@ -453,7 +454,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('(x, y) = [1, 2]')).must_equal s(:block, s(:masgn, s(:array, s(:lasgn, :x), s(:lasgn, :y)), s(:to_ary, s(:array, s(:lit, 1), s(:lit, 2)))))
         if parser == 'NatalieParser'
           expect_raise_with_message(-> { parse('(x) = [1, 2]') }, SyntaxError, "(string)#1: syntax error, unexpected '=' (expected: 'multiple assignment on left-hand-side')")
-          expect_raise_with_message(-> { parse('(x, = [1, 2]') }, SyntaxError, "(string)#1: syntax error, unexpected end-of-input (expected: 'expression')")
+          expect_raise_with_message(-> { parse('(x, = [1, 2]') }, SyntaxError, "(string)#1: syntax error, unexpected end-of-input (expected: 'group closing paren')")
           expect_raise_with_message(-> { parse('x,) = [1, 2]') }, SyntaxError, "(string)#1: syntax error, unexpected ')' (expected: 'end-of-line')")
         else
           expect_raise_with_message(-> { parse('(x) = [1, 2]') }, SyntaxError, "(string):1 :: parse error on value \"=\" (tEQL)")

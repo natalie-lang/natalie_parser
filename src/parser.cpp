@@ -82,7 +82,7 @@ bool Parser::higher_precedence(Token &token, SharedPtr<Node> left, Precedence cu
         // NOTE: `m_call_depth` should probably be called
         // `m_call_that_can_accept_a_block_depth`, but that's a bit long.
         //
-        return m_call_depth == 0;
+        return m_call_depth.last() == 0;
     }
 
     if (next_precedence == Precedence::ITER_CURLY)
@@ -255,6 +255,8 @@ SharedPtr<BlockNode> Parser::parse_body(LocalsHashmap &locals, Precedence preced
         }
         auto exp = parse_expression(precedence, locals);
         body->add_node(exp);
+        if (current_token().type() == end_token_type)
+            break;
         next_expression();
     }
     return body;
@@ -1107,6 +1109,7 @@ SharedPtr<Node> Parser::parse_file_constant(LocalsHashmap &) {
 }
 
 SharedPtr<Node> Parser::parse_group(LocalsHashmap &locals) {
+    m_call_depth.push(0);
     auto token = current_token();
     advance(); // (
 
@@ -1115,18 +1118,13 @@ SharedPtr<Node> Parser::parse_group(LocalsHashmap &locals) {
         return new NilSexpNode { token };
     }
 
-    SharedPtr<Node> exp = parse_expression(Precedence::LOWEST, locals);
+    auto body = parse_body(locals, Precedence::LOWEST, Token::Type::RParen, false);
+    SharedPtr<Node> exp;
+    if (body->has_one_node())
+        exp = body->take_first_node();
+    else
+        exp = body.static_cast_as<Node>();
 
-    if (current_token().is_end_of_expression()) {
-        SharedPtr<BlockNode> block = new BlockNode { token };
-        block->add_node(exp);
-        while (current_token().is_end_of_expression()) {
-            next_expression();
-            auto next_exp = parse_expression(Precedence::LOWEST, locals);
-            block->add_node(next_exp);
-        }
-        exp = block.static_cast_as<Node>();
-    }
     expect(Token::Type::RParen, "group closing paren");
     advance(); // )
 
@@ -1144,6 +1142,7 @@ SharedPtr<Node> Parser::parse_group(LocalsHashmap &locals) {
         }
     }
 
+    m_call_depth.pop();
     return exp;
 };
 
@@ -2090,7 +2089,7 @@ SharedPtr<NodeWithArgs> Parser::to_node_with_args(SharedPtr<Node> node) {
 
 void Parser::parse_call_args(NodeWithArgs &node, LocalsHashmap &locals, bool bare) {
     if (node.can_accept_a_block())
-        m_call_depth++;
+        m_call_depth.last()++;
     auto arg = parse_expression(bare ? Precedence::BARE_CALL_ARG : Precedence::CALL_ARG, locals);
     if (current_token().type() == Token::Type::HashRocket || arg->is_symbol_key()) {
         node.add_arg(parse_call_hash_args(locals, bare, arg));
@@ -2113,7 +2112,7 @@ void Parser::parse_call_args(NodeWithArgs &node, LocalsHashmap &locals, bool bar
         }
     }
     if (node.can_accept_a_block())
-        m_call_depth--;
+        m_call_depth.last()--;
 }
 
 SharedPtr<Node> Parser::parse_call_hash_args(LocalsHashmap &locals, bool bare, SharedPtr<Node> first_arg) {
