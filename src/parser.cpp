@@ -242,6 +242,7 @@ SharedPtr<Node> Parser::tree() {
 }
 
 SharedPtr<BlockNode> Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Token::Type end_token_type, bool allow_rescue) {
+    m_call_depth.push(0);
     SharedPtr<BlockNode> body = new BlockNode { current_token() };
     validate_current_token();
     skip_newlines();
@@ -259,6 +260,7 @@ SharedPtr<BlockNode> Parser::parse_body(LocalsHashmap &locals, Precedence preced
             break;
         next_expression();
     }
+    m_call_depth.pop();
     return body;
 }
 
@@ -1109,7 +1111,6 @@ SharedPtr<Node> Parser::parse_file_constant(LocalsHashmap &) {
 }
 
 SharedPtr<Node> Parser::parse_group(LocalsHashmap &locals) {
-    m_call_depth.push(0);
     auto token = current_token();
     advance(); // (
 
@@ -1142,7 +1143,6 @@ SharedPtr<Node> Parser::parse_group(LocalsHashmap &locals) {
         }
     }
 
-    m_call_depth.pop();
     return exp;
 };
 
@@ -1607,18 +1607,18 @@ SharedPtr<Node> Parser::parse_splat(LocalsHashmap &locals) {
 
 SharedPtr<Node> Parser::parse_stabby_proc(LocalsHashmap &locals) {
     auto token = current_token();
-    advance();
+    advance(); // ->
     bool has_args = false;
     auto args = Vector<SharedPtr<Node>> {};
     if (current_token().is_lparen()) {
         has_args = true;
-        advance();
+        advance(); // (
         if (current_token().is_rparen()) {
-            advance();
+            advance(); // )
         } else {
             parse_def_args(args, locals);
             expect(Token::Type::RParen, "proc args closing paren");
-            advance();
+            advance(); // )
         }
     } else if (current_token().is_bare_name() || current_token().type() == Token::Type::Multiply) {
         has_args = true;
@@ -1998,22 +1998,22 @@ SharedPtr<Node> Parser::parse_iter_expression(SharedPtr<Node> left, LocalsHashma
     bool has_args = false;
     auto args = Vector<SharedPtr<Node>> {};
     if (left->type() == Node::Type::StabbyProc) {
-        advance();
+        advance(); // { or do
         auto stabby_proc_node = left.static_cast_as<StabbyProcNode>();
         has_args = stabby_proc_node->has_args();
         for (auto arg : stabby_proc_node->args())
             args.push(arg);
     } else if (left->can_accept_a_block()) {
-        advance();
+        advance(); // { or do
         if (current_token().type() == Token::Type::Or) {
             has_args = true;
-            advance();
+            advance(); // ||
         } else if (current_token().is_block_arg_delimiter()) {
             has_args = true;
-            advance();
+            advance(); // |
             parse_iter_args(args, our_locals);
             expect(Token::Type::BitwiseOr, "end of block args");
-            advance();
+            advance(); // |
         }
     } else {
         throw_unexpected(left->token(), "call to accept block");
@@ -2046,7 +2046,7 @@ void Parser::parse_iter_args(Vector<SharedPtr<Node>> &args, LocalsHashmap &local
 
 SharedPtr<BlockNode> Parser::parse_iter_body(LocalsHashmap &locals, bool curly_brace) {
     auto end_token_type = curly_brace ? Token::Type::RCurlyBrace : Token::Type::EndKeyword;
-    return parse_body(locals, Precedence::LOWEST, end_token_type, true);
+    return parse_body(locals, Precedence::LOWEST, end_token_type, true); // FIXME: allow_rescue only for do/end
 }
 
 SharedPtr<Node> Parser::parse_call_expression_with_parens(SharedPtr<Node> left, LocalsHashmap &locals) {
