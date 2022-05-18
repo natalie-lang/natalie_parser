@@ -21,6 +21,8 @@ SharedPtr<Node> StringNode::append_string_node(SharedPtr<Node> string2) const {
             auto copy = new StringNode(m_token, m_string);
             string2_node->prepend_node(copy);
         }
+        string2->set_line(line());
+        string2->set_column(column());
         return string2;
     }
     default:
