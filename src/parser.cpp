@@ -1251,14 +1251,17 @@ void Parser::parse_interpolated_body(LocalsHashmap &locals, InterpolatedNode &no
     while (current_token().is_valid() && current_token().type() != end_token) {
         switch (current_token().type()) {
         case Token::Type::EvaluateToStringBegin: {
-            advance();
+            advance(); // #{
+            skip_newlines();
             SharedPtr<BlockNode> block = new BlockNode { current_token() };
             while (current_token().type() != Token::Type::EvaluateToStringEnd) {
                 block->add_node(parse_expression(Precedence::LOWEST, locals));
                 skip_newlines();
             }
-            advance();
-            if (block->has_one_node()) {
+            advance(); // }
+            if (block->is_empty()) {
+                node.add_node(new EvaluateToStringNode { current_token() });
+            } else if (block->has_one_node()) {
                 auto first = block->take_first_node();
                 if (first->type() == Node::Type::String)
                     node.add_node(first);

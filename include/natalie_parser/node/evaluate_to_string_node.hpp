@@ -12,6 +12,9 @@ using namespace TM;
 
 class EvaluateToStringNode : public Node {
 public:
+    EvaluateToStringNode(const Token &token)
+        : Node { token } { }
+
     EvaluateToStringNode(const Token &token, SharedPtr<Node> node)
         : Node { token }
         , m_node { node } {
@@ -24,7 +27,8 @@ public:
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("evstr");
-        creator->append(m_node.ref());
+        if (m_node)
+            creator->append(m_node);
     }
 
 protected:
