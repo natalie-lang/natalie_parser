@@ -1061,7 +1061,7 @@ module TestRubyParserShared
     assert_parse rb, pt
   end
 
-  def test_i_fucking_hate_line_numbers
+  def test_i_flipping_hate_line_numbers
     rb = <<-END.gsub(/^ {6}/, "")
       if true
         p 1
@@ -1102,7 +1102,7 @@ module TestRubyParserShared
     assert_parse rb, pt
   end
 
-  def test_i_fucking_hate_line_numbers2
+  def test_i_flipping_hate_line_numbers2
     rb = <<-EOM.gsub(/^ {6}/, "")
       if true then
         p('a')
@@ -3275,14 +3275,14 @@ module TestRubyParserShared19Plus
     assert_parse rb, pt
   end
 
-  def test_motherfuckin_leading_dots
+  def test_motherflippin_leading_dots
     rb = "a\n.b"
-    pt = s(:call, s(:call, nil, :a), :b)
+    pt = s(:call, s(:call, nil, :a), :b).line(2)
 
     assert_parse rb, pt
   end
 
-  def test_motherfuckin_leading_dots2
+  def test_motherflippin_leading_dots2
     rb = "1\n..3"
     pt = s(:block, s(:lit, 1),
            s(:dot2, nil, s(:lit, 3).line(2)).line(2))
@@ -3860,7 +3860,7 @@ module TestRubyParserShared20Plus
                s(:call, s(:const, :Class), :new),
                0,
                s(:defn, :initialize, s(:args).line(2), s(:nil).line(2)).line(2)),
-             :new),
+             :new).line(4),
            s(:hash, s(:lit, :at).line(4), s(:str, "endpoint").line(4)).line(4))
 
     assert_parse rb, pt
@@ -5658,7 +5658,7 @@ end
 class TestRubyParserV30 < RubyParserTestCase
   include TestRubyParserShared30Plus
 
-  #focus :test_bug169
+  #focus :test_motherflippin_leading_dots2
 
   def setup
     super

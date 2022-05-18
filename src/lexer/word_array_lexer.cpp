@@ -70,8 +70,9 @@ Token WordArrayLexer::consume_array() {
                 return dynamic_string_finish();
             }
             if (!m_buffer->is_empty()) {
+                auto token = Token { Token::Type::String, m_buffer, m_file, m_cursor_line, m_cursor_column };
                 advance();
-                return Token { Token::Type::String, m_buffer, m_file, m_token_line, m_token_column };
+                return token;
             }
             advance(); // space
         } else if (m_interpolated && c == '#' && peek() == '{') {
@@ -102,7 +103,7 @@ Token WordArrayLexer::consume_array() {
 Token WordArrayLexer::in_progress_start_dynamic_string() {
     advance(2); // #{
     m_state = State::DynamicStringBegin;
-    return Token { Token::Type::InterpolatedStringBegin, m_file, m_token_line, m_token_column };
+    return Token { Token::Type::InterpolatedStringBegin, m_file, m_cursor_line, m_cursor_column };
 }
 
 Token WordArrayLexer::start_evaluation() {
@@ -114,7 +115,7 @@ Token WordArrayLexer::start_evaluation() {
 Token WordArrayLexer::dynamic_string_finish() {
     if (!m_buffer->is_empty()) {
         m_state = State::DynamicStringEnd;
-        return Token { Token::Type::String, m_buffer, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::String, m_buffer, m_file, m_cursor_line, m_cursor_column };
     }
     m_state = State::InProgress;
     return Token { Token::Type::InterpolatedStringEnd, m_file, m_token_line, m_token_column };
@@ -124,7 +125,7 @@ Token WordArrayLexer::in_progress_finish() {
     advance(); // ) or ] or } or whatever
     if (!m_buffer->is_empty()) {
         m_state = State::EndToken;
-        return Token { Token::Type::String, m_buffer, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::String, m_buffer, m_file, m_cursor_line, m_cursor_column };
     }
     m_state = State::Done;
     return Token { Token::Type::RBracket, m_file, m_cursor_line, m_cursor_column };
