@@ -1023,6 +1023,9 @@ SharedPtr<Node> Parser::parse_def_single_arg(LocalsHashmap &locals) {
             arg = new ArgNode { token, current_token().literal_string() };
             advance();
             arg->add_to_locals(locals);
+        } else if (current_token().is_keyword()) {
+            arg = new ArgNode { token, new String(current_token().type_value()) };
+            advance();
         } else {
             arg = new ArgNode { token };
         }

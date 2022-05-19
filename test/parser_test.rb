@@ -1229,6 +1229,9 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('def foo(**kwargs); end')).must_equal s(:block, s(:defn, :foo, s(:args, :'**kwargs'), s(:nil)))
         expect(parse('def foo **kwargs; end')).must_equal s(:block, s(:defn, :foo, s(:args, :'**kwargs'), s(:nil)))
         expect(parse('foo(**kwargs)')).must_equal s(:block, s(:call, nil, :foo, s(:hash, s(:kwsplat, s(:call, nil, :kwargs)))))
+        expect(-> { parse('foo { |nil| }') }).must_raise SyntaxError
+        expect(-> { parse('foo { |*nil| }') }).must_raise SyntaxError
+        expect(parse('foo { |**nil| }')).must_equal s(:block, s(:iter, s(:call, nil, :foo), s(:args, :"**nil")))
       end
 
       it 'parses stabby proc' do
