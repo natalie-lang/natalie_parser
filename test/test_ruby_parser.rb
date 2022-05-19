@@ -397,7 +397,7 @@ module TestRubyParserShared
 
   def test_bug179
     rb = "p ()..nil"
-    pt = s(:call, nil, :p, s(:dot2, s(:begin), s(:nil)))
+    pt = s(:call, nil, :p, s(:dot2, s(:nil), s(:nil)))
 
     assert_parse rb, pt
   end
