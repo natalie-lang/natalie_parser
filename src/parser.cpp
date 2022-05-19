@@ -1419,8 +1419,8 @@ SharedPtr<Node> Parser::parse_interpolated_string(LocalsHashmap &locals) {
     if (m_precedence_stack.is_empty() || m_precedence_stack.last() != Precedence::WORD_ARRAY)
         string = concat_adjacent_strings(string, locals, adjacent_strings_were_appended);
 
-    if (!adjacent_strings_were_appended && current_token().type() == Token::Type::TernaryColon && !current_token().whitespace_precedes()) {
-        advance();
+    if (!adjacent_strings_were_appended && current_token().type() == Token::Type::InterpolatedStringSymbolKey) {
+        advance(); // :
         return convert_string_to_symbol_key(string);
     }
 
@@ -1649,8 +1649,8 @@ SharedPtr<Node> Parser::parse_string(LocalsHashmap &locals) {
     if (m_precedence_stack.is_empty() || m_precedence_stack.last() != Precedence::WORD_ARRAY)
         string = concat_adjacent_strings(string, locals, adjacent_strings_were_appended);
 
-    if (!adjacent_strings_were_appended && current_token().type() == Token::Type::TernaryColon && !current_token().whitespace_precedes()) {
-        advance();
+    if (!adjacent_strings_were_appended && current_token().type() == Token::Type::InterpolatedStringSymbolKey) {
+        advance(); // :
         return convert_string_to_symbol_key(string);
     }
 

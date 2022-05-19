@@ -86,6 +86,7 @@ public:
         InterpolatedStringEnd,
         InterpolatedSymbolBegin,
         InterpolatedSymbolEnd,
+        InterpolatedStringSymbolKey,
         LCurlyBrace,
         LBracket,
         LBracketRBracket,
@@ -383,6 +384,8 @@ public:
             return "dsym";
         case Type::InterpolatedSymbolEnd:
             return "dsymend";
+        case Type::InterpolatedStringSymbolKey:
+            return "dstr_symbol_key";
         case Type::Invalid:
         case Type::InvalidCharacterEscape:
         case Type::InvalidUnicodeEscape:

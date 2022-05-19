@@ -595,6 +595,32 @@ describe 'NatalieParser' do
         { type: :symbol_key, literal: :self },
         { type: :name, literal: :a },
       ]
+      expect(tokenize("foo 'a': 'b'")).must_equal [
+        { type: :name, literal: :foo },
+        { type: :symbol_key, literal: :a },
+        { type: :string, literal: 'b' },
+      ]
+      expect(tokenize("foo 'a':'b'")).must_equal [
+        { type: :name, literal: :foo },
+        { type: :symbol_key, literal: :a },
+        { type: :string, literal: 'b' },
+      ]
+      expect(tokenize(%q(foo "a": 'b'))).must_equal [
+        { type: :name, literal: :foo },
+        { type: :dstr },
+        { type: :string, literal: 'a' },
+        { type: :dstrend },
+        { type: :dstr_symbol_key },
+        { type: :string, literal: 'b' },
+      ]
+      expect(tokenize(%q(foo "a":'b'))).must_equal [
+        { type: :name, literal: :foo },
+        { type: :dstr },
+        { type: :string, literal: 'a' },
+        { type: :dstrend },
+        { type: :dstr_symbol_key },
+        { type: :string, literal: 'b' },
+      ]
     end
 
     it 'tokenizes local variables' do

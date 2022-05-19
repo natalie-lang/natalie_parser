@@ -657,6 +657,8 @@ Token Lexer::build_next_token() {
         if (c == ':') {
             advance();
             return Token { Token::Type::ConstantResolution, m_file, m_token_line, m_token_column };
+        } else if (m_last_token.type() == Token::Type::InterpolatedStringBegin && !m_whitespace_precedes) {
+            return Token { Token::Type::InterpolatedStringSymbolKey, m_file, m_token_line, m_token_column };
         } else if (c == '"') {
             advance();
             return consume_double_quoted_string('"', '"', Token::Type::InterpolatedSymbolBegin, Token::Type::InterpolatedSymbolEnd);
@@ -1496,8 +1498,13 @@ Token Lexer::consume_single_quoted_string(char start_char, char stop_char) {
                 pair_depth--;
                 buf->append_char(c);
             } else {
-                advance();
-                return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
+                advance(); // '
+                if (current_char() == ':') {
+                    advance(); // ;
+                    return Token { Token::Type::SymbolKey, buf, m_file, m_token_line, m_token_column };
+                } else {
+                    return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
+                }
             }
         } else {
             buf->append_char(c);
