@@ -116,7 +116,7 @@ describe 'NatalieParser' do
         ]
       end
       expect(tokenize('/foo/')).must_equal [{ type: :dregx }, { type: :string, literal: 'foo' }, { type: :dregxend }]
-      expect(tokenize("# foo\n/bar/")).must_equal [{ type: :"\n" }, { type: :dregx }, { type: :string, literal: 'bar' }, { type: :dregxend }]
+      expect(tokenize("# foo\n/bar/")).must_equal [{ type: :dregx }, { type: :string, literal: 'bar' }, { type: :dregxend }]
       expect(tokenize('/\/\*\/\n/')).must_equal [
         { type: :dregx },
         { type: :string, literal: "/\\*/\\n" }, # eliminates unneeded \\
@@ -718,7 +718,6 @@ describe 'NatalieParser' do
       expect(tokens).must_equal [
         { type: :name, literal: :foo },
         { type: :"\n" },
-        { type: :"\n" },
         { type: :name, literal: :bar },
         { type: :"\n" },
       ]
@@ -1007,7 +1006,6 @@ describe 'NatalieParser' do
         { type: :'+', line: 0, column: 8 },
         { type: :fixnum, literal: 2, line: 0, column: 10 },
         { type: :"\n", line: 0, column: 21 },
-        { type: :"\n", line: 1, column: 9 },
         { type: :name, literal: :bar, line: 2, column: 0 },
         { type: :'.', line: 2, column: 3 },
         { type: :name, literal: :baz, line: 2, column: 4 },

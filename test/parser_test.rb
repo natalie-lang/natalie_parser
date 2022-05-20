@@ -1486,15 +1486,26 @@ require_relative '../lib/natalie_parser/sexp'
           def: :defn,
           module: :module 
         }.each do |keyword, sexp_type|
-          doc = <<-END.gsub(/^\s+/, '')
-            # embedded doc
-            # line 2
-            #{keyword} Foo
-            end
-          END
+          doc = "# embedded doc\n" \
+                "\n" \
+                "# line 2\n" \
+                "\n" \
+                "#{keyword} Foo\n" \
+                "end"
           node = parse(doc)[1]
           expect(node.sexp_type).must_equal sexp_type
-          expect(node.comments).must_equal("# embedded doc\n# line 2\n", "missing doc block on #{sexp_type}")
+          expect(node.comments).must_equal("# embedded doc\n\n# line 2\n\n", "missing doc block on #{sexp_type}")
+
+          # indented
+          doc = "    # embedded doc\n" \
+                "\n" \
+                "    # line 2\n" \
+                "\n" \
+                "    #{keyword} Foo\n" \
+                "    end"
+          node = parse(doc)[1]
+          expect(node.sexp_type).must_equal sexp_type
+          expect(node.comments).must_equal("# embedded doc\n\n# line 2\n\n", "missing doc block on #{sexp_type}")
         end
 
         # ignores inline comments

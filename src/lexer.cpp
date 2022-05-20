@@ -28,10 +28,12 @@ SharedPtr<Vector<Token>> Lexer::tokens() {
         }
 
         // get rid of newlines after certain tokens
-        if (skip_next_newline && token.is_newline())
-            continue;
-        if (skip_next_newline && !token.is_newline())
-            skip_next_newline = false;
+        if (skip_next_newline) {
+            if (token.is_newline())
+                continue;
+            else
+                skip_next_newline = false;
+        }
 
         // get rid of newlines before certain tokens
         while (token.can_follow_collapsible_newline() && !tokens->is_empty() && tokens->last().is_newline())
@@ -252,6 +254,7 @@ Token Lexer::build_next_token() {
             return consume_regexp('/');
         switch (m_last_token.type()) {
         case Token::Type::Comma:
+        case Token::Type::Doc:
         case Token::Type::LBracket:
         case Token::Type::LCurlyBrace:
         case Token::Type::LParen:
@@ -785,12 +788,23 @@ Token Lexer::build_next_token() {
     }
     case '#':
         if (token_is_first_on_line()) {
-            SharedPtr<String> doc = new String("#");
-            char c;
-            do {
+            SharedPtr<String> doc = new String();
+            bool found_comment_marker = true;
+            char c = current_char();
+            while (c) {
+                if (!found_comment_marker) {
+                    if (c == '#')
+                        found_comment_marker = true;
+                    else if (!isspace(c))
+                        break;
+                }
+                if (c == '\n' || c == '\r') {
+                    doc->append_char(c);
+                    found_comment_marker = false;
+                } else if (found_comment_marker)
+                    doc->append_char(c);
                 c = next();
-                doc->append_char(c);
-            } while (c && c != '\n' && c != '\r');
+            }
             return Token { Token::Type::Doc, doc, m_file, m_token_line, m_token_column };
         } else {
             char c;
