@@ -225,6 +225,10 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("%q(1 (\\x\\') 2)")).must_equal s(:block, s(:str, "1 (\\x\\') 2"))
         expect(parse(%Q("foo\\\nbar"))).must_equal s(:block, s(:str, "foobar"))
         expect(parse(%Q(\"a\n#\{\n}\"))).must_equal s(:block, s(:dstr, "a\n", s(:evstr)))
+        expect(parse(%q("#{'a'}#{b}"))).must_equal s(:block, s(:dstr, "a", s(:evstr, s(:call, nil, :b))))
+        expect(parse(%q("#{'a'}#{'b'}"))).must_equal s(:block, s(:str, "ab"))
+        expect(parse(%q("#{'a'} b"))).must_equal s(:block, s(:str, "a b"))
+        expect(parse(%q("a #{1} b #{'c'}"))).must_equal s(:block, s(:dstr, "a ", s(:evstr, s(:lit, 1)), s(:str, " b "), s(:str, "c")))
 
         # escapes
         {
