@@ -155,21 +155,16 @@ describe 'NatalieParser' do
         { type: :string, literal: "\\&\\a\\b" },
         { type: :dregxend },
       ]
-      expect(tokenize("%r{a/b/c}")).must_equal [
-        { type: :dregx },
-        { type: :string, literal: "a/b/c" },
-        { type: :dregxend },
-      ]
-      expect(tokenize("%r(a/b/c)")).must_equal [
-        { type: :dregx },
-        { type: :string, literal: "a/b/c" },
-        { type: :dregxend },
-      ]
-      expect(tokenize("%r|a/b/c|")).must_equal [
-        { type: :dregx },
-        { type: :string, literal: "a/b/c" },
-        { type: :dregxend },
-      ]
+      expect(tokenize("%r/a|b|c/")).must_equal [ { type: :dregx }, { type: :string, literal: "a|b|c" }, { type: :dregxend } ]
+      expect(tokenize("%r{a/b/c}")).must_equal [ { type: :dregx }, { type: :string, literal: "a/b/c" }, { type: :dregxend } ]
+      expect(tokenize("%r(a/b/c)")).must_equal [ { type: :dregx }, { type: :string, literal: "a/b/c" }, { type: :dregxend } ]
+      expect(tokenize("%r[a/b/c]")).must_equal [ { type: :dregx }, { type: :string, literal: "a/b/c" }, { type: :dregxend } ]
+      expect(tokenize("%r<a/b/c>")).must_equal [ { type: :dregx }, { type: :string, literal: "a/b/c" }, { type: :dregxend } ]
+      # TODO: support %r=foo=
+      # TODO: support %r;foo;
+      %w[~ ` | ! @ # $ % ^ & * , . ? : ' " - _ +].each do |sym|
+        expect(tokenize("%r#{sym}a/b/c#{sym}")).must_equal [ { type: :dregx }, { type: :string, literal: "a/b/c" }, { type: :dregxend } ]
+      end
     end
 
     it 'tokenizes operators' do
@@ -312,24 +307,6 @@ describe 'NatalieParser' do
       expect(tokenize("'other escaped chars \\\\ \\n'")).must_equal [
         { type: :string, literal: "other escaped chars \\ \\n" },
       ]
-      expect(tokenize('%(foo)')).must_equal [{ type: :string, literal: 'foo' }]
-      expect(tokenize('%[foo]')).must_equal [{ type: :string, literal: 'foo' }]
-      expect(tokenize('%{foo}')).must_equal [{ type: :string, literal: 'foo' }]
-      expect(tokenize('%<foo>')).must_equal [{ type: :string, literal: 'foo' }]
-      expect(tokenize('%/foo/')).must_equal [{ type: :string, literal: 'foo' }]
-      expect(tokenize('%|foo|')).must_equal [{ type: :string, literal: 'foo' }]
-      expect(tokenize('%q(foo)')).must_equal [{ type: :string, literal: 'foo' }]
-      expect(tokenize('%q[foo]')).must_equal [{ type: :string, literal: 'foo' }]
-      expect(tokenize('%q{foo}')).must_equal [{ type: :string, literal: 'foo' }]
-      expect(tokenize('%q<foo>')).must_equal [{ type: :string, literal: 'foo' }]
-      expect(tokenize('%q/foo/')).must_equal [{ type: :string, literal: 'foo' }]
-      expect(tokenize('%q|foo|')).must_equal [{ type: :string, literal: 'foo' }]
-      expect(tokenize('%Q(foo)')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
-      expect(tokenize('%Q[foo]')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
-      expect(tokenize('%Q{foo}')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
-      expect(tokenize('%Q<foo>')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
-      expect(tokenize('%Q/foo/')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
-      expect(tokenize('%Q|foo|')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
       expect(tokenize("'foo'if")).must_equal [{ type: :string, literal: 'foo' }, { type: :if }]
       expect(tokenize('"foo"if')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }, { type: :if }]
       expect(tokenize('"#{:foo} bar #{1 + 1}"')).must_equal [
@@ -385,6 +362,25 @@ describe 'NatalieParser' do
         { type: :evstrend },
         { type: :dstrend }
       ]
+      expect(tokenize('%(foo)')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
+      expect(tokenize('%[foo]')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
+      expect(tokenize('%{foo}')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
+      expect(tokenize('%<foo>')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
+      expect(tokenize('%q(foo)')).must_equal [{ type: :string, literal: 'foo' }]
+      expect(tokenize('%q[foo]')).must_equal [{ type: :string, literal: 'foo' }]
+      expect(tokenize('%q{foo}')).must_equal [{ type: :string, literal: 'foo' }]
+      expect(tokenize('%q<foo>')).must_equal [{ type: :string, literal: 'foo' }]
+      expect(tokenize('%Q(foo)')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
+      expect(tokenize('%Q[foo]')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
+      expect(tokenize('%Q{foo}')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
+      expect(tokenize('%Q<foo>')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
+      # TODO: support %=foo=
+      # TODO: support %;foo;
+      %w[~ ` | / ! @ # $ % ^ & * , . ? : ' " - _ +].each do |sym|
+        expect(tokenize("%#{sym}foo#{sym}")).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
+        expect(tokenize("%q#{sym}foo#{sym}")).must_equal [{ type: :string, literal: 'foo' }]
+        expect(tokenize("%Q#{sym}foo#{sym}")).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
+      end
     end
 
     it 'parses string character escape sequences' do

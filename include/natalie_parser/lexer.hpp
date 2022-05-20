@@ -82,6 +82,10 @@ protected:
 
     bool token_is_first_on_line() const;
 
+    bool char_can_be_string_or_regexp_delimiter(char c) const {
+        return (c >= '!' && c <= '/') || c == ':' || c == '?' || c == '@' || c == '~' || c == '|' || (c >= '^' && c <= '`');
+    }
+
     SharedPtr<String> m_input;
     SharedPtr<String> m_file;
     size_t m_size { 0 };
