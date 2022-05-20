@@ -649,7 +649,15 @@ Token Lexer::build_next_token() {
             return Token { Token::Type::TernaryQuestion, m_file, m_token_line, m_token_column };
         } else {
             advance();
-            return Token { Token::Type::String, c, m_file, m_token_line, m_token_column };
+            if (c == '\\') {
+                auto buf = new String();
+                auto result = consume_escaped_char(*buf);
+                if (!result.first)
+                    return Token { result.second, current_char(), m_file, m_token_line, m_token_column };
+                return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
+            } else {
+                return Token { Token::Type::String, c, m_file, m_token_line, m_token_column };
+            }
         }
     }
     case ':': {
@@ -1466,6 +1474,126 @@ void Lexer::utf32_codepoint_to_utf8(String &buf, long long codepoint) {
     } else {
         TM_UNREACHABLE();
     }
+}
+
+std::pair<bool, Token::Type> Lexer::consume_escaped_char(String &buf) {
+    auto control_character = [&](bool meta) {
+        char c = next();
+        if (c == '-')
+            c = next();
+        int num = 0;
+        if (!meta && c == '\\' && peek() == 'M') {
+            advance(); // M
+            c = next();
+            if (c != '-')
+                return -1;
+            meta = true;
+            c = next();
+        }
+        if (c == '?')
+            num = 127;
+        else if (c >= ' ' && c <= '>')
+            num = c - ' ';
+        else if (c >= '@' && c <= '_')
+            num = c - '@';
+        else if (c >= '`' && c <= '~')
+            num = c - '`';
+        if (meta)
+            return num + 128;
+        else
+            return num;
+    };
+    auto c = current_char();
+    if (c >= '0' && c <= '7') {
+        auto number = consume_octal_number(3);
+        buf.append_char(number);
+    } else if (c == 'x') {
+        // hex: 1-2 digits
+        advance();
+        auto number = consume_hex_number(2);
+        buf.append_char(number);
+    } else if (c == 'u') {
+        c = next();
+        if (c == '{') {
+            c = next();
+            // unicode characters, space separated, 1-6 hex digits
+            while (c != '}') {
+                if (!isxdigit(c))
+                    return { false, Token::Type::InvalidUnicodeEscape };
+                auto codepoint = consume_hex_number(6);
+                utf32_codepoint_to_utf8(buf, codepoint);
+                c = current_char();
+                while (c == ' ')
+                    c = next();
+            }
+            if (c == '}')
+                advance();
+        } else {
+            // unicode: 4 hex digits
+            auto codepoint = consume_hex_number(4);
+            utf32_codepoint_to_utf8(buf, codepoint);
+        }
+    } else {
+        switch (c) {
+        case 'a':
+            buf.append_char('\a');
+            break;
+        case 'b':
+            buf.append_char('\b');
+            break;
+        case 'c':
+        case 'C': {
+            int num = control_character(false);
+            if (num == -1)
+                return { false, Token::Type::InvalidCharacterEscape };
+            buf.append_char((unsigned char)num);
+            break;
+        }
+        case 'e':
+            buf.append_char('\e');
+            break;
+        case 'f':
+            buf.append_char('\f');
+            break;
+        case 'M': {
+            c = next();
+            if (c != '-')
+                return { false, Token::Type::InvalidCharacterEscape };
+            c = next();
+            int num = 0;
+            if (c == '\\' && (peek() == 'c' || peek() == 'C')) {
+                advance();
+                num = control_character(true);
+            } else {
+                num = (int)c + 128;
+            }
+            buf.append_char((unsigned char)num);
+            break;
+        }
+        case 'n':
+            buf.append_char('\n');
+            break;
+        case 'r':
+            buf.append_char('\r');
+            break;
+        case 's':
+            buf.append_char((unsigned char)32);
+            break;
+        case 't':
+            buf.append_char('\t');
+            break;
+        case 'v':
+            buf.append_char('\v');
+            break;
+        case '\n':
+            break;
+        default:
+            buf.append_char(c);
+            break;
+        }
+        advance();
+    }
+    return { true, Token::Type::String };
 }
 
 bool Lexer::token_is_first_on_line() const {

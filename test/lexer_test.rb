@@ -289,6 +289,14 @@ describe 'NatalieParser' do
       expect(tokenize("?a\n")).must_equal [{ type: :string, literal: 'a' }, { type: :"\n" }]
       expect(tokenize("?? ")).must_equal [{ type: :string, literal: '?' }]
       expect(tokenize("?:")).must_equal [{ type: :string, literal: ':' }]
+      # \nnn       octal bit pattern, where nnn is 1-3 octal digits ([0-7])
+      expect(tokenize('?\7 ?\77 ?\777')).must_equal [{ type: :string, literal: "\7" }, { type: :string, literal: "\77" }, { type: :string, literal: "\777" }]
+      # \xnn       hexadecimal bit pattern, where nn is 1-2 hexadecimal digits ([0-9a-fA-F])
+      expect(tokenize('?\x77 ?\xaB')).must_equal [{ type: :string, literal: "\x77" }, { type: :string, literal: "\xAB" }]
+      # \unnnn     Unicode character, where nnnn is exactly 4 hexadecimal digits ([0-9a-fA-F])
+      expect(tokenize('?\u7777 ?\uabcd')).must_equal [{ type: :string, literal: "\u7777" }, { type: :string, literal: "\uabcd" }]
+      # \u{nnnn}   Unicode character(s), where nnnn is 1-6 hexadecimal digits ([0-9a-fA-F])
+      expect(tokenize('?\u{0066}')).must_equal [{ type: :string, literal: "f" }]
     end
 
     it 'tokenizes strings' do
