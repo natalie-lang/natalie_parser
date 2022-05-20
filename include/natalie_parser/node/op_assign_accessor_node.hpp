@@ -33,6 +33,9 @@ public:
     const SharedPtr<String> message() const { return m_message; }
     const SharedPtr<Node> value() const { return m_value; }
 
+    bool safe() const { return m_safe; }
+    void set_safe(bool safe) { m_safe = safe; }
+
     virtual void transform(Creator *creator) const override {
         if (*m_message == "[]=") {
             creator->set_type("op_asgn1");
@@ -51,7 +54,10 @@ public:
             return;
         }
         assert(args().is_empty());
-        creator->set_type("op_asgn2");
+        if (m_safe)
+            creator->set_type("safe_op_asgn2");
+        else
+            creator->set_type("op_asgn2");
         creator->append(m_receiver.ref());
         creator->append_symbol(m_message);
         creator->append_symbol(m_op);
@@ -63,5 +69,6 @@ protected:
     SharedPtr<Node> m_receiver {};
     SharedPtr<String> m_message {};
     SharedPtr<Node> m_value {};
+    bool m_safe { false };
 };
 }

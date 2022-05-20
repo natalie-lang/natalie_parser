@@ -2262,7 +2262,7 @@ SharedPtr<Node> Parser::parse_not_match_expression(SharedPtr<Node> left, LocalsH
 }
 
 SharedPtr<Node> Parser::parse_op_assign_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
-    if (left->type() == Node::Type::Call)
+    if (left->type() == Node::Type::Call || left->type() == Node::Type::SafeCall)
         return parse_op_attr_assign_expression(left, locals);
     switch (left->type()) {
     case Node::Type::Identifier: {
@@ -2306,7 +2306,7 @@ SharedPtr<Node> Parser::parse_op_assign_expression(SharedPtr<Node> left, LocalsH
 }
 
 SharedPtr<Node> Parser::parse_op_attr_assign_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
-    if (left->type() != Node::Type::Call)
+    if (left->type() != Node::Type::Call && left->type() != Node::Type::SafeCall)
         throw_unexpected(left->token(), "call");
     auto left_call = left.static_cast_as<CallNode>();
     auto token = current_token();
@@ -2330,7 +2330,7 @@ SharedPtr<Node> Parser::parse_op_attr_assign_expression(SharedPtr<Node> left, Lo
         op->chomp();
         SharedPtr<String> message = new String(left_call->message().ref());
         message->append_char('=');
-        return new OpAssignAccessorNode {
+        auto op_node = new OpAssignAccessorNode {
             token,
             op,
             left_call->receiver(),
@@ -2338,6 +2338,9 @@ SharedPtr<Node> Parser::parse_op_attr_assign_expression(SharedPtr<Node> left, Lo
             value,
             left_call->args(),
         };
+        if (left->type() == Node::Type::SafeCall)
+            op_node->set_safe(true);
+        return op_node;
     }
     }
 }
