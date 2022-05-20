@@ -548,11 +548,17 @@ SharedPtr<Node> Parser::parse_break(LocalsHashmap &locals) {
 
 SharedPtr<Node> Parser::parse_case(LocalsHashmap &locals) {
     auto case_token = current_token();
-    advance();
+    advance(); // case
     SharedPtr<Node> subject;
-    if (current_token().type() == Token::Type::WhenKeyword) {
+    switch (current_token().type()) {
+    case Token::Type::WhenKeyword:
         subject = new NilNode { case_token };
-    } else {
+        break;
+    case Token::Type::Eol:
+        advance();
+        subject = new NilNode { case_token };
+        break;
+    default:
         subject = parse_expression(Precedence::CASE, locals);
         next_expression();
     }
