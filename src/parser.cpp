@@ -355,7 +355,8 @@ SharedPtr<Node> Parser::parse_array(LocalsHashmap &locals) {
         advance();
         return array.static_cast_as<Node>();
     }
-    advance();
+    advance(); // [
+    m_call_depth.push(0);
     auto add_node = [&]() -> SharedPtr<Node> {
         auto token = current_token();
         if (token.type() == Token::Type::RBracket) {
@@ -387,7 +388,8 @@ SharedPtr<Node> Parser::parse_array(LocalsHashmap &locals) {
         if (ret) return ret;
     }
     expect(Token::Type::RBracket, "array closing bracket");
-    advance();
+    advance(); // ]
+    m_call_depth.pop();
     return array.static_cast_as<Node>();
 }
 
