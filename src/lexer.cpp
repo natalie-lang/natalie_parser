@@ -646,7 +646,7 @@ Token Lexer::build_next_token() {
             advance();
             if (c == '\\') {
                 auto buf = new String();
-                auto result = consume_escaped_char(*buf);
+                auto result = consume_escaped_byte(*buf);
                 if (!result.first)
                     return Token { result.second, current_char(), m_file, m_token_line, m_token_column };
                 return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
@@ -1482,7 +1482,7 @@ void Lexer::utf32_codepoint_to_utf8(String &buf, long long codepoint) {
     }
 }
 
-std::pair<bool, Token::Type> Lexer::consume_escaped_char(String &buf) {
+std::pair<bool, Token::Type> Lexer::consume_escaped_byte(String &buf) {
     auto control_character = [&](bool meta) {
         char c = next();
         if (c == '-')
@@ -1634,7 +1634,7 @@ Token Lexer::consume_single_quoted_string(char start_char, char stop_char) {
             } else {
                 advance(); // '
                 if (current_char() == ':') {
-                    advance(); // ;
+                    advance(); // :
                     return Token { Token::Type::SymbolKey, buf, m_file, m_token_line, m_token_column };
                 } else {
                     return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };

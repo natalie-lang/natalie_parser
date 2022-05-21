@@ -295,20 +295,29 @@ describe 'NatalieParser' do
     end
 
     it 'tokenizes strings' do
+      # double quotes
       expect(tokenize('"foo"')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
       expect(tokenize('"this is \"quoted\""')).must_equal [
         { type: :dstr },
         { type: :string, literal: "this is \"quoted\"" },
         { type: :dstrend },
       ]
+
+      # single quotes
       expect(tokenize("'foo'")).must_equal [{ type: :string, literal: 'foo' }]
       expect(tokenize("'this is \\'quoted\\''")).must_equal [{ type: :string, literal: "this is 'quoted'" }]
+
+      # escapes
       expect(tokenize('"\t\n"')).must_equal [{ type: :dstr }, { type: :string, literal: "\t\n" }, { type: :dstrend }]
       expect(tokenize("'other escaped chars \\\\ \\n'")).must_equal [
         { type: :string, literal: "other escaped chars \\ \\n" },
       ]
+
+      # no space before next keyword
       expect(tokenize("'foo'if")).must_equal [{ type: :string, literal: 'foo' }, { type: :if }]
       expect(tokenize('"foo"if')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }, { type: :if }]
+
+      # interpolation
       expect(tokenize('"#{:foo} bar #{1 + 1}"')).must_equal [
         { type: :dstr },
         { type: :evstr },

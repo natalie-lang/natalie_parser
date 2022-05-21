@@ -76,7 +76,7 @@ protected:
     SharedPtr<String> consume_non_whitespace();
 
     void utf32_codepoint_to_utf8(String &buf, long long codepoint);
-    std::pair<bool, Token::Type> consume_escaped_char(String &buf);
+    std::pair<bool, Token::Type> consume_escaped_byte(String &buf);
 
     Token chars_to_fixnum_or_bignum_token(SharedPtr<String> chars, int base, int offset);
 

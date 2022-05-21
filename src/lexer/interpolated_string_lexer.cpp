@@ -32,7 +32,7 @@ Token InterpolatedStringLexer::consume_string() {
     while (auto c = current_char()) {
         if (c == '\\') {
             advance(); // backslash
-            auto result = consume_escaped_char(*buf);
+            auto result = consume_escaped_byte(*buf);
             if (!result.first)
                 return Token { result.second, current_char(), m_file, m_cursor_line, m_cursor_column };
         } else if (c == '#' && peek() == '{') {
