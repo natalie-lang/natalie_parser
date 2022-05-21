@@ -483,6 +483,17 @@ void Parser::parse_rest_of_begin(BeginNode &begin_node, LocalsHashmap &locals) {
     advance();
 }
 
+SharedPtr<Node> Parser::parse_begin_block(LocalsHashmap &locals) {
+    bool is_top_level = m_precedence_stack.size() == 1;
+    if (!is_top_level)
+        throw SyntaxError { "BEGIN is permitted only at toplevel" };
+    auto token = current_token();
+    advance(); // BEGIN
+    expect(Token::Type::LCurlyBrace, "BEGIN {}");
+    auto node = new BeginBlockNode { token };
+    return parse_iter_expression(node, locals);
+}
+
 SharedPtr<Node> Parser::parse_beginless_range(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
@@ -1067,6 +1078,14 @@ SharedPtr<Node> Parser::parse_def_single_arg(LocalsHashmap &locals) {
     default:
         throw_unexpected("argument");
     }
+}
+
+SharedPtr<Node> Parser::parse_end_block(LocalsHashmap &locals) {
+    auto token = current_token();
+    advance(); // END
+    expect(Token::Type::LCurlyBrace, "END {}");
+    auto node = new EndBlockNode { token };
+    return parse_iter_expression(node, locals);
 }
 
 SharedPtr<Node> Parser::parse_modifier_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
@@ -2517,6 +2536,8 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
         return &Parser::parse_back_ref;
     case Type::BeginKeyword:
         return &Parser::parse_begin;
+    case Type::BEGINKeyword:
+        return &Parser::parse_begin_block;
     case Type::BitwiseAnd:
         return &Parser::parse_block_pass;
     case Type::TrueKeyword:
@@ -2535,6 +2556,8 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
     case Type::DotDot:
     case Type::DotDotDot:
         return &Parser::parse_beginless_range;
+    case Type::ENDKeyword:
+        return &Parser::parse_end_block;
     case Type::FILEKeyword:
         return &Parser::parse_file_constant;
     case Type::LParen:

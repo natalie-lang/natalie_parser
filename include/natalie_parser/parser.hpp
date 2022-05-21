@@ -71,6 +71,7 @@ private:
     SharedPtr<SymbolNode> parse_alias_arg(LocalsHashmap &, const char *, bool);
     SharedPtr<Node> parse_array(LocalsHashmap &);
     SharedPtr<Node> parse_back_ref(LocalsHashmap &);
+    SharedPtr<Node> parse_begin_block(LocalsHashmap &);
     SharedPtr<Node> parse_begin(LocalsHashmap &);
     void parse_rest_of_begin(BeginNode &, LocalsHashmap &);
     SharedPtr<Node> parse_beginless_range(LocalsHashmap &);
@@ -88,6 +89,7 @@ private:
     SharedPtr<Node> parse_defined(LocalsHashmap &);
     void parse_def_args(Vector<SharedPtr<Node>> &, LocalsHashmap &);
     SharedPtr<Node> parse_def_single_arg(LocalsHashmap &);
+    SharedPtr<Node> parse_end_block(LocalsHashmap &);
     SharedPtr<Node> parse_file_constant(LocalsHashmap &);
     SharedPtr<Node> parse_group(LocalsHashmap &);
     SharedPtr<Node> parse_hash(LocalsHashmap &);

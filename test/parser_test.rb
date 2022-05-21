@@ -1509,6 +1509,22 @@ require_relative '../lib/natalie_parser/sexp'
         end
       end
 
+      it 'parses BEGIN and END' do
+        expect(parse('BEGIN { }')).must_equal s(:block, s(:iter, s(:preexe), 0))
+        expect(parse('BEGIN { 1 }')).must_equal s(:block, s(:iter, s(:preexe), 0, s(:lit, 1)))
+        expect(parse('BEGIN { 1; 2 }')).must_equal s(:block, s(:iter, s(:preexe), 0, s(:block, s(:lit, 1), s(:lit, 2))))
+        expect(parse('END { }')).must_equal s(:block, s(:iter, s(:postexe), 0))
+        expect(parse('END { 1 }')).must_equal s(:block, s(:iter, s(:postexe), 0, s(:lit, 1)))
+        expect(parse('END { 1; 2 }')).must_equal s(:block, s(:iter, s(:postexe), 0, s(:block, s(:lit, 1), s(:lit, 2))))
+        expect(parse('class Foo; END { 1 }; end')).must_equal s(:block, s(:class, :Foo, nil, s(:iter, s(:postexe), 0, s(:lit, 1))))
+
+        expect_raise_with_message(-> { parse('class Foo; BEGIN { 1 }; end') }, SyntaxError, 'BEGIN is permitted only at toplevel')
+        expect(-> { parse('BEGIN 1') }).must_raise SyntaxError
+        expect(-> { parse('BEGIN do 1 end') }).must_raise SyntaxError
+        expect(-> { parse('END 1') }).must_raise SyntaxError
+        expect(-> { parse('END do 1 end') }).must_raise SyntaxError
+      end
+
       it 'parses regular comment doc blocks' do
         {
           class: :class,
