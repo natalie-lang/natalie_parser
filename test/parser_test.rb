@@ -217,6 +217,11 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse(%q("#{'a'} b"))).must_equal s(:block, s(:str, "a b"))
         expect(parse(%q("a #{1} b #{'c'}"))).must_equal s(:block, s(:dstr, "a ", s(:evstr, s(:lit, 1)), s(:str, " b "), s(:str, "c")))
 
+        # encoding
+        expect(parse('"foo"', wrap_in_block: false).last.encoding.name).must_equal 'UTF-8'
+        expect(parse('"🐮"', wrap_in_block: false).last.encoding.name).must_equal 'UTF-8'
+        expect(parse('"\xC3"', wrap_in_block: false).last.encoding.name).must_equal 'ASCII-8BIT'
+
         # escapes
         {
           '\a'      => 7,   # bell, ASCII 07h (BEL)
@@ -381,15 +386,35 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse(':FooBar')).must_equal s(:block, s(:lit, :FooBar))
       end
 
-      # FIXME: how to set proper encoding?
       it 'parses symbols with correct encoding' do
-        skip
-        sym = parse(':"\xC3\x9Cber"').last.last
-        expect(sym.encoding.name).must_equal 'ASCII-8BIT'
-        expect(sym.length).must_equal 5
-        sym = parse(':"\xf0\x9f\x90\xae"').last.last
-        expect(sym.encoding.name).must_equal 'ASCII-8BIT'
-        expect(sym.length).must_equal 4
+        # sanity check with MRI
+        expect(:"\xC3\x9Cber".encoding.name).must_equal 'UTF-8'
+        expect(:"\xf0\x9f\x90\xae".encoding.name).must_equal 'UTF-8'
+
+        sym = parse(':foo').last.last
+        expect(sym.encoding.name).must_equal 'US-ASCII'
+        expect(sym.length).must_equal 3
+
+        sym = parse(':"\xC3\x9Cber"').last.last # :Über
+        if parser == 'NatalieParser'
+          # this is what Ruby does
+          expect(sym.encoding.name).must_equal 'UTF-8'
+          expect(sym.length).must_equal 4
+        else
+          expect(sym.encoding.name).must_equal 'ASCII-8BIT'
+          expect(sym.length).must_equal 5
+        end
+
+        sym = parse(':"\xf0\x9f\x90\xae"').last.last # :🐮
+        if parser == 'NatalieParser'
+          # this is what Ruby does
+          expect(sym.encoding.name).must_equal 'UTF-8'
+          expect(sym.length).must_equal 1
+        else
+          expect(sym.encoding.name).must_equal 'ASCII-8BIT'
+          expect(sym.length).must_equal 4
+        end
+
         sym = parse(':"🐮"').last.last # "\xf0\x9f\x90\xae"
         expect(sym.encoding.name).must_equal 'UTF-8'
         expect(sym.length).must_equal 1
@@ -398,6 +423,8 @@ require_relative '../lib/natalie_parser/sexp'
       it 'parses regexps' do
         expect(parse('/foo/')).must_equal s(:block, s(:lit, /foo/))
         expect(parse('/foo/i')).must_equal s(:block, s(:lit, /foo/i))
+        expect(parse('/abc/').last.last.encoding).must_equal Encoding::US_ASCII
+        expect(parse('/🐄/').last.last.encoding).must_equal Encoding::UTF_8
         expect(parse('//mix')).must_equal s(:block, s(:lit, //mix))
         %w[e s u].each do |flag|
           expect(parse("//#{flag}").last.last.options).must_equal 16

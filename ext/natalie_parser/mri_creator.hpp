@@ -83,7 +83,8 @@ public:
     }
 
     virtual void append_regexp(TM::String &pattern, int options) override {
-        auto regexp = rb_reg_new(pattern.c_str(), pattern.size(), options);
+        auto encoding = pattern.contains_utf8_encoded_multibyte_characters() ? rb_utf8_encoding() : rb_ascii8bit_encoding();
+        auto regexp = rb_enc_reg_new(pattern.c_str(), pattern.size(), encoding, options);
         rb_ary_push(m_sexp, regexp);
     }
 
@@ -94,11 +95,13 @@ public:
     }
 
     virtual void append_string(TM::String &string) override {
-        rb_ary_push(m_sexp, rb_utf8_str_new(string.c_str(), string.length()));
+        auto encoding = string.contains_seemingly_valid_utf8_encoded_characters() ? rb_utf8_encoding() : rb_ascii8bit_encoding();
+        rb_ary_push(m_sexp, rb_enc_str_new(string.c_str(), string.length(), encoding));
     }
 
     virtual void append_symbol(TM::String &name) override {
-        auto symbol = ID2SYM(rb_intern3(name.c_str(), name.size(), rb_utf8_encoding()));
+        auto encoding = name.contains_utf8_encoded_multibyte_characters() ? rb_utf8_encoding() : rb_ascii8bit_encoding();
+        auto symbol = ID2SYM(rb_intern3(name.c_str(), name.size(), encoding));
         rb_ary_push(m_sexp, symbol);
     }
 
