@@ -25,7 +25,7 @@ public:
 
     virtual void reset_sexp() override {
         m_sexp = rb_class_new_instance(0, nullptr, Sexp);
-        rb_ivar_set(m_sexp, rb_intern("@file"), rb_str_new(file()->c_str(), file()->length()));
+        rb_ivar_set(m_sexp, rb_intern("@file"), get_file_string(file()));
         rb_ivar_set(m_sexp, rb_intern("@line"), rb_int_new(line() + 1));
         rb_ivar_set(m_sexp, rb_intern("@column"), rb_int_new(column() + 1));
     }
@@ -120,5 +120,20 @@ public:
 
 private:
     VALUE m_sexp { Qnil };
+
+    static VALUE get_file_string(SharedPtr<const String> file) {
+        auto file_string = s_file_cache.get(*file);
+        if (!file_string) {
+            file_string = rb_str_new(file->c_str(), file->length());
+            // FIXME: Seems there is no way to un-register and object. :-(
+            rb_gc_register_mark_object(file_string);
+            s_file_cache.put(*file, file_string);
+        }
+        return file_string;
+    }
+
+    // TODO: Move this to the Parser object, pass it in, clean it up when finished with it.
+    // (Otherwise we leak memory if the user parses lots of different files in a long-running process.)
+    inline static TM::Hashmap<const String, VALUE> s_file_cache { TM::HashType::TMString };
 };
 }

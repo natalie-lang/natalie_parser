@@ -1562,6 +1562,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(two.file).must_equal('foo.rb')
         expect(two.line).must_equal(3)
         expect(two.column).must_equal(5) if parser == 'NatalieParser'
+
+        expect(ast.file).must_be_same_as(two.file)
       end
 
       it 'does not panic on certain errors' do
