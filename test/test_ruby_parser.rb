@@ -124,6 +124,7 @@ module TestRubyParserShared
   end
 
   def test_alias_gvar_backref
+    skip
     rb = "alias $MATCH $&"
     pt = s(:valias, :$MATCH, :$&)
 
