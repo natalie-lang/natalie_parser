@@ -5188,6 +5188,7 @@ module TestRubyParserShared27Plus
   end
 
   def test_defn_forward_args
+    skip
     rb = "def a(...); b(...); end"
     pt = s(:defn, :a, s(:args, s(:forward_args)),
           s(:call, nil, :b, s(:forward_args)))
@@ -5196,6 +5197,7 @@ module TestRubyParserShared27Plus
   end
 
   def test_defn_arg_forward_args
+    skip
     rb = "def a(x, ...); b(x, ...); end"
     pt = s(:defn, :a, s(:args, :x, s(:forward_args)),
            s(:call, nil, :b, s(:lvar, :x), s(:forward_args)))
@@ -5204,6 +5206,7 @@ module TestRubyParserShared27Plus
   end
 
   def test_defn_args_forward_args
+    skip
     rb = "def a(x, y, z, ...); b(:get, z, ...); end"
     pt = s(:defn, :a, s(:args, :x, :y, :z, s(:forward_args)),
            s(:call, nil, :b, s(:lit, :get), s(:lvar, :z),
@@ -5234,12 +5237,14 @@ module TestRubyParserShared27Plus
   end
 
   def test_call_forward_args_outside_method_definition
+    skip
     rb = "b(...)"
 
     assert_syntax_error rb, "Unexpected ..."
   end
 
   def test_call_arg_forward_args_outside_method_definition
+    skip
     rb = "b(x, ...)"
 
     assert_syntax_error rb, "Unexpected ..."
