@@ -859,6 +859,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("foo\n&.bar")).must_equal s(:safe_call, s(:call, nil, :foo), :bar)
         expect(parse('foo&.bar 1')).must_equal s(:safe_call, s(:call, nil, :foo), :bar, s(:lit, 1))
         expect(parse('foo&.bar x')).must_equal s(:safe_call, s(:call, nil, :foo), :bar, s(:call, nil, :x))
+        expect(parse('foo&.> x')).must_equal s(:safe_call, s(:call, nil, :foo), :>, s(:call, nil, :x))
+        expect(parse('foo&.case x')).must_equal s(:safe_call, s(:call, nil, :foo), :case, s(:call, nil, :x))
       end
 
       it 'parses method calls with a receiver' do

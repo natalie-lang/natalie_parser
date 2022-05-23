@@ -2442,12 +2442,17 @@ SharedPtr<Node> Parser::parse_safe_send_expression(SharedPtr<Node> left, LocalsH
         advance();
         break;
     default:
-        throw_unexpected("safe navigation method name");
+        if (name_token.is_operator() || name_token.is_keyword()) {
+            name = new String(name_token.type_value());
+            advance();
+        } else {
+            throw_unexpected("safe navigation method name");
+        }
     }
     return new SafeCallNode {
         token,
         left,
-        name_token.literal_string(),
+        name,
     };
 }
 
@@ -2455,7 +2460,7 @@ SharedPtr<Node> Parser::parse_send_expression(SharedPtr<Node> left, LocalsHashma
     auto dot_token = current_token();
     advance();
     auto name_token = current_token();
-    SharedPtr<String> name = new String();
+    SharedPtr<String> name;
     switch (name_token.type()) {
     case Token::Type::BareName:
     case Token::Type::Constant:
@@ -2464,7 +2469,7 @@ SharedPtr<Node> Parser::parse_send_expression(SharedPtr<Node> left, LocalsHashma
         break;
     default:
         if (name_token.is_operator() || name_token.is_keyword()) {
-            *name = name_token.type_value();
+            name = new String(name_token.type_value());
             advance();
         } else {
             throw_unexpected("send method name");
