@@ -2370,19 +2370,14 @@ SharedPtr<Node> Parser::parse_op_attr_assign_expression(SharedPtr<Node> left, Lo
     }
 }
 
-SharedPtr<Node> Parser::parse_proc_call_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_proc_call_expression(SharedPtr<Node> left, LocalsHashmap &) {
     auto token = current_token();
-    advance();
-    advance();
-    SharedPtr<CallNode> call_node = new CallNode {
+    advance(); // .
+    SharedPtr<Node> call_node = new CallNode {
         token,
         left,
         new String("call"),
     };
-    if (!current_token().is_rparen())
-        parse_call_args(call_node.ref(), locals, false);
-    expect(Token::Type::RParen, "proc call right paren");
-    advance();
     return call_node.static_cast_as<Node>();
 }
 
@@ -2432,10 +2427,13 @@ SharedPtr<Node> Parser::parse_rescue_expression(SharedPtr<Node> left, LocalsHash
 
 SharedPtr<Node> Parser::parse_safe_send_expression(SharedPtr<Node> left, LocalsHashmap &) {
     auto token = current_token();
-    advance();
+    advance(); // &.
     auto name_token = current_token();
     SharedPtr<String> name;
     switch (name_token.type()) {
+    case Token::Type::LParen:
+        name = new String("call");
+        break;
     case Token::Type::BareName:
     case Token::Type::Constant:
         name = name_token.literal_string();
