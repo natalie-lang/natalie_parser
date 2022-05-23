@@ -535,11 +535,9 @@ Token Lexer::build_next_token() {
                 return Token { Token::Type::LeftShiftEqual, m_file, m_token_line, m_token_column };
             default:
                 if (!m_whitespace_precedes) {
-                    if (m_last_token.is_eol() || m_index == 2) // start of line or start of file
+                    if (token_is_first_on_line())
                         return consume_heredoc();
-                    else if (m_last_token.type() == Token::Type::Equal)
-                        return consume_heredoc();
-                    else if (m_last_token.is_operator())
+                    else if (m_last_token.can_precede_heredoc_that_looks_like_left_shift_operator())
                         return consume_heredoc();
                     else
                         return Token { Token::Type::LeftShift, m_file, m_token_line, m_token_column };

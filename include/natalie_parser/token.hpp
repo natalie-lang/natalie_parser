@@ -774,6 +774,18 @@ public:
         }
     }
 
+    bool can_precede_heredoc_that_looks_like_left_shift_operator() {
+        switch (m_type) {
+        case Token::Type::Equal:
+        case Token::Type::LBracket:
+            return true;
+        default:
+            if (is_operator())
+                return true;
+            return false;
+        }
+    }
+
     void set_literal(const char *literal) { m_literal = new String(literal); }
     void set_literal(SharedPtr<String> literal) { m_literal = literal; }
     void set_literal(String literal) { m_literal = new String(literal); }

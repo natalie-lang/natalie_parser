@@ -1479,6 +1479,20 @@ require_relative '../lib/natalie_parser/sexp'
         expect(result).must_equal s(:dstr, "1\n  ", s(:evstr, s(:lit, 42)), s(:str, "\n"))
         expect(result.line).must_equal(2)
         expect(result[2].line).must_equal(4)
+
+        # inside array
+        doc9 = <<~END
+          [<<-EOF,
+            foo
+            EOF
+            1,
+            2]
+        END
+        expect(parse(doc9)).must_equal s(:array, s(:str, "  foo\n"), s(:lit, 1), s(:lit, 2))
+
+        # FIXME: heredoc inside heredoc interpolation
+        #doc10 = "[<<A,\n\#{<<B}\nb\nB\na\nA\n0]"
+        #expect(parse(doc10)).must_equal s(:array, s(:str, "b\n\na\n"), s(:lit, 0))
       end
 
       it 'parses =begin =end doc blocks' do
