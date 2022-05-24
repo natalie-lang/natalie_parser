@@ -504,9 +504,13 @@ require_relative '../lib/natalie_parser/sexp'
           # We replace :const with :cdecl to be consistent with single-assignment.
           expect(parse('A, B::C = 1, 2')).must_equal s(:masgn, s(:array, s(:cdecl, :A), s(:cdecl, s(:colon2, s(:const, :B), :C))), s(:array, s(:lit, 1), s(:lit, 2)))
           expect(parse('A, ::B = 1, 2')).must_equal s(:masgn, s(:array, s(:cdecl, :A), s(:cdecl, s(:colon3, :B))), s(:array, s(:lit, 1), s(:lit, 2)))
+          expect(parse('::A, ::B = 1, 2')).must_equal s(:masgn, s(:array, s(:cdecl, s(:colon3, :A)), s(:cdecl, s(:colon3, :B))), s(:array, s(:lit, 1), s(:lit, 2)))
+          expect(parse('A::B, ::C = 1, 2')).must_equal s(:masgn, s(:array, s(:cdecl, s(:colon2, s(:const, :A), :B)), s(:cdecl, s(:colon3, :C))), s(:array, s(:lit, 1), s(:lit, 2)))
         else
           expect(parse('A, B::C = 1, 2')).must_equal s(:masgn, s(:array, s(:cdecl, :A), s(:const, s(:colon2, s(:const, :B), :C))), s(:array, s(:lit, 1), s(:lit, 2)))
           expect(parse('A, ::B = 1, 2')).must_equal s(:masgn, s(:array, s(:cdecl, :A), s(:const, s(:colon3, :B))), s(:array, s(:lit, 1), s(:lit, 2)))
+          expect(parse('::A, ::B = 1, 2')).must_equal s(:masgn, s(:array, s(:const, nil, s(:colon3, :A)), s(:const, s(:colon3, :B))), s(:array, s(:lit, 1), s(:lit, 2)))
+          expect(parse('A::B, ::C = 1, 2')).must_equal s(:masgn, s(:array, s(:const, s(:colon2, s(:const, :A), :B), nil), s(:const, s(:colon3, :C))), s(:array, s(:lit, 1), s(:lit, 2)))
         end
         expect(parse('a.b, c = 1, 2')).must_equal s(:masgn, s(:array, s(:attrasgn, s(:call, nil, :a), :b=), s(:lasgn, :c)), s(:array, s(:lit, 1), s(:lit, 2)))
         expect(parse('a, b.c = 1, 2')).must_equal s(:masgn, s(:array, s(:lasgn, :a), s(:attrasgn, s(:call, nil, :b), :c=)), s(:array, s(:lit, 1), s(:lit, 2)))

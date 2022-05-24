@@ -17,6 +17,8 @@ public:
 
     virtual Type type() const override { return Type::Colon3; }
 
+    virtual bool is_assignable() const override { return true; }
+
     SharedPtr<String> name() const { return m_name; }
 
     virtual void transform(Creator *creator) const override {
