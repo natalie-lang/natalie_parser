@@ -425,8 +425,11 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse(%q(%r/foo\nbar/))).must_equal s(:lit, /foo\nbar/)
         expect(parse(%q(%r'foo\nbar'))).must_equal s(:lit, /foo\nbar/)
         expect(parse(%q(%r"foo\nbar"))).must_equal s(:lit, /foo\nbar/)
-        # FIXME:
-        #expect(parse("%r(foo(\\n)bar)")).must_equal s(:lit, /foo(\n)bar/)
+        expect(parse("%r(foo(\\n)bar)")).must_equal s(:lit, /foo(\n)bar/)
+        expect(parse(%(%r'\\\"'))).must_equal s(:lit, /\"/) # %r'\"'
+        expect(parse(%(%r"\\\""))).must_equal s(:lit, /"/) # %r"\""
+        expect(parse(%(%r'\\\''))).must_equal s(:lit, /'/) # %r'\''
+        expect(parse(%(%r"\\\'"))).must_equal s(:lit, /\'/) # %r"\'"
       end
 
       it 'parses multiple expressions' do

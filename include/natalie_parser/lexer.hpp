@@ -72,7 +72,7 @@ protected:
     Token consume_single_quoted_string(char, char);
     Token consume_quoted_array_without_interpolation(char start_char, char stop_char, Token::Type type);
     Token consume_quoted_array_with_interpolation(char start_char, char stop_char, Token::Type type);
-    Token consume_regexp(char delimiter);
+    Token consume_regexp(char start_char, char stop_char);
     SharedPtr<String> consume_non_whitespace();
 
     void utf32_codepoint_to_utf8(String &buf, long long codepoint);

@@ -9,9 +9,10 @@ namespace NatalieParser {
 
 class RegexpLexer : public Lexer {
 public:
-    RegexpLexer(Lexer &parent_lexer, char stop_char)
+    RegexpLexer(Lexer &parent_lexer, char start_char, char stop_char)
         : Lexer { parent_lexer } {
         set_nested_lexer(nullptr);
+        set_start_char(start_char == stop_char ? 0 : start_char);
         set_stop_char(stop_char);
     }
 

@@ -251,7 +251,7 @@ Token Lexer::build_next_token() {
     case '/': {
         advance();
         if (!m_last_token)
-            return consume_regexp('/');
+            return consume_regexp('/', '/');
         switch (m_last_token.type()) {
         case Token::Type::Comma:
         case Token::Type::Doc:
@@ -260,7 +260,7 @@ Token Lexer::build_next_token() {
         case Token::Type::LParen:
         case Token::Type::Match:
         case Token::Type::Eol:
-            return consume_regexp('/');
+            return consume_regexp('/', '/');
         case Token::Type::DefKeyword:
             return Token { Token::Type::Divide, m_file, m_token_line, m_token_column };
         default: {
@@ -272,7 +272,7 @@ Token Lexer::build_next_token() {
                 return Token { Token::Type::DivideEqual, m_file, m_token_line, m_token_column };
             default:
                 if (m_whitespace_precedes) {
-                    return consume_regexp('/');
+                    return consume_regexp('/', '/');
                 } else {
                     return Token { Token::Type::Divide, m_file, m_token_line, m_token_column };
                 }
@@ -338,21 +338,21 @@ Token Lexer::build_next_token() {
             switch (peek()) {
             case '[':
                 advance(2);
-                return consume_regexp(']');
+                return consume_regexp('[', ']');
             case '{':
                 advance(2);
-                return consume_regexp('}');
+                return consume_regexp('{', '}');
             case '(':
                 advance(2);
-                return consume_regexp(')');
+                return consume_regexp('(', ')');
             case '<':
                 advance(2);
-                return consume_regexp('>');
+                return consume_regexp('<', '>');
             default: {
                 char c = peek();
                 if (char_can_be_string_or_regexp_delimiter(c)) {
                     advance(2);
-                    return consume_regexp(c);
+                    return consume_regexp(c, c);
                 } else {
                     return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
                 }
@@ -1656,9 +1656,9 @@ Token Lexer::consume_quoted_array_with_interpolation(char start_char, char stop_
     return Token { type, start_char, m_file, m_token_line, m_token_column };
 }
 
-Token Lexer::consume_regexp(char delimiter) {
-    m_nested_lexer = new RegexpLexer { *this, delimiter };
-    return Token { Token::Type::InterpolatedRegexpBegin, delimiter, m_file, m_token_line, m_token_column };
+Token Lexer::consume_regexp(char start_char, char stop_char) {
+    m_nested_lexer = new RegexpLexer { *this, start_char, stop_char };
+    return Token { Token::Type::InterpolatedRegexpBegin, start_char, m_file, m_token_line, m_token_column };
 }
 
 SharedPtr<String> Lexer::consume_non_whitespace() {

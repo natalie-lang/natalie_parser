@@ -37,8 +37,7 @@ Token RegexpLexer::build_next_token() {
 
 Token RegexpLexer::consume_regexp() {
     SharedPtr<String> buf = new String;
-    char c = current_char();
-    while (c) {
+    while (auto c = current_char()) {
         if (c == '\\') {
             c = next();
             switch (c) {
@@ -46,25 +45,39 @@ Token RegexpLexer::consume_regexp() {
                 buf->append_char(c);
                 break;
             default:
-                buf->append_char('\\');
-                buf->append_char(c);
+                if (c == m_stop_char) {
+                    buf->append_char(c);
+                } else {
+                    buf->append_char('\\');
+                    buf->append_char(c);
+                }
                 break;
             }
+            advance();
         } else if (c == '#' && peek() == '{') {
             auto token = Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
             buf = new String;
             advance(2);
             m_state = State::EvaluateBegin;
             return token;
+        } else if (c == m_start_char && m_start_char != m_stop_char) {
+            m_pair_depth++;
+            advance();
+            buf->append_char(c);
         } else if (c == m_stop_char) {
             advance();
-            m_options = consume_options();
-            m_state = State::EndToken;
-            return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
+            if (m_pair_depth > 0) {
+                m_pair_depth--;
+                buf->append_char(c);
+            } else {
+                m_options = consume_options();
+                m_state = State::EndToken;
+                return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
+            }
         } else {
             buf->append_char(c);
+            advance();
         }
-        c = next();
     }
     return Token { Token::Type::UnterminatedRegexp, buf, m_file, m_token_line, m_token_column };
 }
