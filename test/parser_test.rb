@@ -1196,6 +1196,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("foo yield bar do |bar| end")).must_equal s(:iter, s(:call, nil, :foo, s(:yield, s(:call, nil, :bar))), s(:args, :bar))
         expect(parse("f ->() { g do end }")).must_equal s(:call, nil, :f, s(:iter, s(:lambda), s(:args), s(:iter, s(:call, nil, :g), 0)))
         expect(parse("a [ nil, b do end ]")).must_equal s(:call, nil, :a, s(:array, s(:nil), s(:iter, s(:call, nil, :b), 0)))
+        expect(parse("private def f\na.b do end\nend")).must_equal s(:call, nil, :private, s(:defn, :f, s(:args), s(:iter, s(:call, s(:call, nil, :a), :b), 0)))
         expect(-> { parse("foo 1 < 2 { 3 }") }).must_raise SyntaxError
         expect(-> { parse("foo 1 | 2 { 3 }") }).must_raise SyntaxError
         expect(-> { parse("foo 1 & 2 { 3 }") }).must_raise SyntaxError

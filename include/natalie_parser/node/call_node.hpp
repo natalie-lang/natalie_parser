@@ -36,7 +36,12 @@ public:
     }
 
     virtual bool is_callable() const override { return true; }
-    virtual bool can_accept_a_block() const override { return true; }
+
+    virtual bool can_accept_a_block() const override {
+        if (*m_message == "private" || *m_message == "protected" || *m_message == "public")
+            return false;
+        return true;
+    }
 
     const SharedPtr<Node> receiver() const { return m_receiver; }
     void set_receiver(SharedPtr<Node> receiver) { m_receiver = receiver; }
