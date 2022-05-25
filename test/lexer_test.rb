@@ -481,6 +481,7 @@ describe 'NatalieParser' do
         { type: :evstrend },
         { type: :dsymend },
       ]
+      expect(-> { tokenize(':[1') }).must_raise SyntaxError
     end
 
     it 'tokenizes arrays' do

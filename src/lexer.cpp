@@ -1033,8 +1033,7 @@ Token Lexer::consume_symbol() {
             c = gobble(c);
             if (c == '=') gobble(c);
         } else {
-            // FIXME: is this right????????????????????????????????????
-            return Token { Token::Type::TernaryColon, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Invalid, c, m_file, m_token_line, m_token_column };
         }
         break;
     default:
