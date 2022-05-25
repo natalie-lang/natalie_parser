@@ -138,7 +138,7 @@ private:
     SharedPtr<Node> parse_assignment_identifier(bool, LocalsHashmap &);
     SharedPtr<Node> parse_call_expression_without_parens(SharedPtr<Node>, LocalsHashmap &);
     SharedPtr<Node> parse_call_expression_with_parens(SharedPtr<Node>, LocalsHashmap &);
-    SharedPtr<Node> parse_call_hash_args(LocalsHashmap &, bool, SharedPtr<Node>);
+    SharedPtr<Node> parse_call_hash_args(LocalsHashmap &, bool, Token::Type, SharedPtr<Node>);
     SharedPtr<Node> parse_constant_resolution_expression(SharedPtr<Node>, LocalsHashmap &);
     SharedPtr<Node> parse_infix_expression(SharedPtr<Node>, LocalsHashmap &);
     SharedPtr<Node> parse_proc_call_expression(SharedPtr<Node>, LocalsHashmap &);
@@ -158,7 +158,7 @@ private:
     SharedPtr<Node> parse_send_expression(SharedPtr<Node>, LocalsHashmap &);
     SharedPtr<Node> parse_ternary_expression(SharedPtr<Node>, LocalsHashmap &);
 
-    void parse_call_args(NodeWithArgs &, LocalsHashmap &, bool = false);
+    void parse_call_args(NodeWithArgs &, LocalsHashmap &, bool = false, Token::Type = Token::Type::RParen);
     void parse_iter_args(Vector<SharedPtr<Node>> &, LocalsHashmap &);
 
     using parse_null_fn = SharedPtr<Node> (Parser::*)(LocalsHashmap &);

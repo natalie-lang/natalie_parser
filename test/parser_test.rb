@@ -560,6 +560,9 @@ require_relative '../lib/natalie_parser/sexp'
 
       it 'parses [] as an array vs as a method' do
         expect(parse('foo[1]')).must_equal s(:call, s(:call, nil, :foo), :[], s(:lit, 1))
+        expect(parse('foo[1,]')).must_equal s(:call, s(:call, nil, :foo), :[], s(:lit, 1))
+        expect(parse('foo[1=>2]')).must_equal s(:call, s(:call, nil, :foo), :[], s(:hash, s(:lit, 1), s(:lit, 2)))
+        expect(parse('foo[1=>2,]')).must_equal s(:call, s(:call, nil, :foo), :[], s(:hash, s(:lit, 1), s(:lit, 2)))
         expect(parse('foo [1]')).must_equal s(:call, nil, :foo, s(:array, s(:lit, 1)))
         expect(parse('foo = []; foo[1]')).must_equal s(:block, s(:lasgn, :foo, s(:array)), s(:call, s(:lvar, :foo), :[], s(:lit, 1)))
         expect(parse('foo = [1]; foo[1]')).must_equal s(:block, s(:lasgn, :foo, s(:array, s(:lit, 1))), s(:call, s(:lvar, :foo), :[], s(:lit, 1)))
@@ -1081,6 +1084,7 @@ require_relative '../lib/natalie_parser/sexp'
           expect_raise_with_message(-> { parse('{ , 1 => 2 }') }, SyntaxError, '(string):1 :: parse error on value "," (tCOMMA)')
         end
         expect(parse('[1 => 2]')).must_equal s(:array, s(:hash, s(:lit, 1), s(:lit, 2)))
+        expect(parse('[1 => 2,]')).must_equal s(:array, s(:hash, s(:lit, 1), s(:lit, 2)))
         expect(parse('[0, 1 => 2]')).must_equal s(:array, s(:lit, 0), s(:hash, s(:lit, 1), s(:lit, 2)))
         expect(parse('[0, foo: "bar"]')).must_equal s(:array, s(:lit, 0), s(:hash, s(:lit, :foo), s(:str, 'bar')))
         expect(parse('["foo" => :bar, baz: 42]')).must_equal s(:array, s(:hash, s(:str, "foo"), s(:lit, :bar), s(:lit, :baz), s(:lit, 42)))

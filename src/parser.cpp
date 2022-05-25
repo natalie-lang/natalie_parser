@@ -359,7 +359,7 @@ SharedPtr<Node> Parser::parse_array(LocalsHashmap &locals) {
     m_call_depth.push(0);
     auto add_node = [&]() -> SharedPtr<Node> {
         auto token = current_token();
-        if (token.type() == Token::Type::RBracket) {
+        if (token.is_rbracket()) {
             advance();
             return array.static_cast_as<Node>();
         }
@@ -654,7 +654,7 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         // TODO: might need to keep track of and pass along precedence value?
         advance();
         SharedPtr<ArrayPatternNode> array = new ArrayPatternNode { token };
-        if (current_token().type() == Token::Type::RBracket) {
+        if (current_token().is_rbracket()) {
             advance();
             node = array.static_cast_as<Node>();
             break;
@@ -1190,7 +1190,7 @@ SharedPtr<Node> Parser::parse_hash(LocalsHashmap &locals) {
     return hash;
 }
 
-SharedPtr<Node> Parser::parse_hash_inner(LocalsHashmap &locals, Precedence precedence, Token::Type closing_token, SharedPtr<Node> first_key) {
+SharedPtr<Node> Parser::parse_hash_inner(LocalsHashmap &locals, Precedence precedence, Token::Type closing_token_type, SharedPtr<Node> first_key) {
     auto token = current_token();
     SharedPtr<HashNode> hash = new HashNode { token };
     if (!first_key)
@@ -1203,7 +1203,7 @@ SharedPtr<Node> Parser::parse_hash_inner(LocalsHashmap &locals, Precedence prece
     hash->add_node(parse_expression(precedence, locals));
     while (current_token().type() == Token::Type::Comma) {
         advance();
-        if (current_token().type() == closing_token)
+        if (current_token().type() == closing_token_type)
             break;
         auto key = parse_expression(precedence, locals);
         hash->add_node(key);
@@ -1909,7 +1909,7 @@ SharedPtr<Node> Parser::parse_word_array(LocalsHashmap &locals) {
     auto token = current_token();
     SharedPtr<ArrayNode> array = new ArrayNode { token };
     advance();
-    while (!current_token().is_eof() && current_token().type() != Token::Type::RBracket) {
+    while (!current_token().is_eof() && !current_token().is_rbracket()) {
         if (current_token().type() == Token::Type::UnterminatedWordArray)
             throw_unterminated_thing(current_token(), token);
         array->add_node(parse_expression(Precedence::WORD_ARRAY, locals));
@@ -1923,7 +1923,7 @@ SharedPtr<Node> Parser::parse_word_symbol_array(LocalsHashmap &locals) {
     auto token = current_token();
     SharedPtr<ArrayNode> array = new ArrayNode { token };
     advance();
-    while (!current_token().is_eof() && current_token().type() != Token::Type::RBracket) {
+    while (!current_token().is_eof() && !current_token().is_rbracket()) {
         auto string = parse_expression(Precedence::WORD_ARRAY, locals);
         SharedPtr<Node> symbol_node;
         switch (string->type()) {
@@ -2120,24 +2120,24 @@ SharedPtr<NodeWithArgs> Parser::to_node_with_args(SharedPtr<Node> node) {
     }
 }
 
-void Parser::parse_call_args(NodeWithArgs &node, LocalsHashmap &locals, bool bare) {
+void Parser::parse_call_args(NodeWithArgs &node, LocalsHashmap &locals, bool bare, Token::Type closing_token_type) {
     if (node.can_accept_a_block())
         m_call_depth.last()++;
     auto arg = parse_expression(bare ? Precedence::BARE_CALL_ARG : Precedence::CALL_ARG, locals);
     if (current_token().type() == Token::Type::HashRocket || arg->is_symbol_key()) {
-        node.add_arg(parse_call_hash_args(locals, bare, arg));
+        node.add_arg(parse_call_hash_args(locals, bare, closing_token_type, arg));
     } else {
         node.add_arg(arg);
         while (current_token().is_comma()) {
             advance();
             auto token = current_token();
-            if (token.is_rparen()) {
+            if (token.type() == closing_token_type) {
                 // trailing comma with no additional arg
                 break;
             }
             arg = parse_expression(bare ? Precedence::BARE_CALL_ARG : Precedence::CALL_ARG, locals);
             if (current_token().type() == Token::Type::HashRocket || arg->is_symbol_key()) {
-                node.add_arg(parse_call_hash_args(locals, bare, arg));
+                node.add_arg(parse_call_hash_args(locals, bare, closing_token_type, arg));
                 break;
             } else {
                 node.add_arg(arg);
@@ -2148,11 +2148,11 @@ void Parser::parse_call_args(NodeWithArgs &node, LocalsHashmap &locals, bool bar
         m_call_depth.last()--;
 }
 
-SharedPtr<Node> Parser::parse_call_hash_args(LocalsHashmap &locals, bool bare, SharedPtr<Node> first_arg) {
+SharedPtr<Node> Parser::parse_call_hash_args(LocalsHashmap &locals, bool bare, Token::Type closing_token_type, SharedPtr<Node> first_arg) {
     if (bare)
-        return parse_hash_inner(locals, Precedence::BARE_CALL_ARG, Token::Type::Invalid, first_arg);
+        return parse_hash_inner(locals, Precedence::BARE_CALL_ARG, closing_token_type, first_arg);
     else
-        return parse_hash_inner(locals, Precedence::CALL_ARG, Token::Type::RParen, first_arg);
+        return parse_hash_inner(locals, Precedence::CALL_ARG, closing_token_type, first_arg);
 }
 
 SharedPtr<Node> Parser::parse_call_expression_without_parens(SharedPtr<Node> left, LocalsHashmap &locals) {
@@ -2406,8 +2406,8 @@ SharedPtr<Node> Parser::parse_ref_expression(SharedPtr<Node> left, LocalsHashmap
     if (token.type() == Token::Type::LBracketRBracket) {
         return call_node.static_cast_as<Node>();
     }
-    if (current_token().type() != Token::Type::RBracket)
-        parse_call_args(call_node.ref(), locals, false);
+    if (!current_token().is_rbracket())
+        parse_call_args(call_node.ref(), locals, false, Token::Type::RBracket);
     expect(Token::Type::RBracket, "element reference right bracket");
     advance();
     return call_node.static_cast_as<Node>();

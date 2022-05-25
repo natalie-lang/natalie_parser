@@ -634,6 +634,7 @@ public:
     bool is_hash_rocket() const { return m_type == Type::HashRocket; }
     bool is_lparen() const { return m_type == Type::LParen; }
     bool is_newline() const { return m_type == Type::Eol; }
+    bool is_rbracket() const { return m_type == Type::RBracket; }
     bool is_rparen() const { return m_type == Type::RParen; }
     bool is_semicolon() const { return m_type == Type::Semicolon; }
     bool is_splat() const { return m_type == Type::Multiply || m_type == Type::Exponent; }
