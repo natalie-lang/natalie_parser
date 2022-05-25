@@ -966,7 +966,7 @@ SharedPtr<Node> Parser::parse_def(LocalsHashmap &locals) {
     SharedPtr<BlockNode> body;
     if (current_token().is_equal()) { // one-line method def
         advance(); // =
-        if (name->ends_with("="))
+        if (name->ends_with("=") && !name->ends_with("=="))
             throw SyntaxError { "setter method cannot be defined in an endless method definition" };
         auto exp = parse_expression(Precedence::LOWEST, our_locals);
         body = new BlockNode { exp->token(), exp };
