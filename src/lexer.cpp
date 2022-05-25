@@ -1043,7 +1043,12 @@ Token Lexer::consume_symbol() {
         case '?':
         case '!':
         case '=':
-            gobble(c);
+            switch (peek()) {
+            case '>':
+                break;
+            default:
+                gobble(c);
+            }
         default:
             break;
         }

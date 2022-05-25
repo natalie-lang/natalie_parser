@@ -128,6 +128,20 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('/foo/ !~ x')).must_equal s(:not, s(:match2, s(:lit, /foo/), s(:call, nil, :x)))
         expect(parse('foo <=> bar')).must_equal s(:call, s(:call, nil, :foo), :<=>, s(:call, nil, :bar))
         expect(parse('1**2')).must_equal s(:call, s(:lit, 1), :**, s(:lit, 2))
+        expect(parse('foo :foo?=>:bar?')).must_equal s(:call, nil, :foo, s(:hash, s(:lit, :foo?), s(:lit, :bar?)))
+        expect(parse('foo :foo=>:bar')).must_equal s(:call, nil, :foo, s(:hash, s(:lit, :foo), s(:lit, :bar)))
+        expect(parse(':foo?==:bar?')).must_equal s(:call, s(:lit, :foo?), :==, s(:lit, :bar?))
+        if parser == 'NatalieParser'
+          # FIXME: These work with NatalieParser, but they shouldn't
+          expect(parse('foo?==bar?')).must_equal s(:call, s(:call, nil, :foo?), :==, s(:call, nil, :bar?))
+          expect(parse(':foo!==:bar!')).must_equal s(:call, s(:lit, :foo!), :==, s(:lit, :bar!))
+          expect(parse('foo!==bar!')).must_equal s(:call, s(:call, nil, :foo!), :==, s(:call, nil, :bar!))
+        else
+          # MRI and RubyParser both say the '=' is unexpected
+          expect(-> { parse('foo?==bar?') }).must_raise SyntaxError
+          expect(-> { parse(':foo!==:bar!') }).must_raise SyntaxError
+          expect(-> { parse('foo!==bar!') }).must_raise SyntaxError
+        end
       end
 
       it 'parses and/or' do
@@ -1069,6 +1083,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('{ 1 => 2 }')).must_equal s(:hash, s(:lit, 1), s(:lit, 2))
         expect(parse('{ 1 => 2, }')).must_equal s(:hash, s(:lit, 1), s(:lit, 2))
         expect(parse("{\n 1 => 2,\n }")).must_equal s(:hash, s(:lit, 1), s(:lit, 2))
+        expect(parse('foo :a => 1')).must_equal s(:call, nil, :foo, s(:hash, s(:lit, :a), s(:lit, 1)))
+        expect(parse('foo :a=>1')).must_equal s(:call, nil, :foo, s(:hash, s(:lit, :a), s(:lit, 1)))
         expect(parse("{ foo: 'bar' }")).must_equal s(:hash, s(:lit, :foo), s(:str, 'bar'))
         expect(parse("{ 1 => 2, 'foo' => 'bar' }")).must_equal s(:hash, s(:lit, 1), s(:lit, 2), s(:str, 'foo'), s(:str, 'bar'))
         expect(parse("{\n 1 => \n2,\n 'foo' =>\n'bar'\n}")).must_equal s(:hash, s(:lit, 1), s(:lit, 2), s(:str, 'foo'), s(:str, 'bar'))
