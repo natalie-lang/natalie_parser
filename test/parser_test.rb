@@ -1239,6 +1239,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(-> { parse("foo 1 * 2 { 3 }") }).must_raise SyntaxError
         expect(-> { parse("foo 1 ** 2 { 3 }") }).must_raise SyntaxError
         expect(-> { parse("foo ~1 { 3 }") }).must_raise SyntaxError
+        expect_raise_with_message(-> { parse("m.a 1, &b do end") }, SyntaxError, "Both block arg and actual block given.")
       end
 
       it 'parses block pass (ampersand operator)' do

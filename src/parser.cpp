@@ -2047,6 +2047,8 @@ SharedPtr<Node> Parser::parse_iter_expression(SharedPtr<Node> left, LocalsHashma
         for (auto arg : stabby_proc_node->args())
             args.push(arg);
     } else if (left->can_accept_a_block()) {
+        if (left->has_block_pass())
+            throw SyntaxError { "Both block arg and actual block given." };
         advance(); // { or do
         if (current_token().type() == Token::Type::Or) {
             has_args = true;

@@ -28,7 +28,12 @@ public:
     }
 
     void add_arg(SharedPtr<Node> arg) {
+        // TODO: error if BlockPass already added (must be last)
         m_args.push(arg);
+    }
+
+    bool has_block_pass() const override {
+        return m_args.size() > 0 && m_args.last()->type() == Node::Type::BlockPass;
     }
 
     Vector<SharedPtr<Node>> &args() { return m_args; }
