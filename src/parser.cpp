@@ -1201,9 +1201,11 @@ SharedPtr<Node> Parser::parse_hash_inner(LocalsHashmap &locals, Precedence prece
         advance();
     }
     hash->add_node(parse_expression(precedence, locals));
-    while (current_token().type() == Token::Type::Comma) {
+    while (current_token().is_comma()) {
         advance();
         if (current_token().type() == closing_token_type)
+            break;
+        if (current_token().type() == Token::Type::Exponent) // **kwsplat
             break;
         auto key = parse_expression(precedence, locals);
         hash->add_node(key);
@@ -1495,6 +1497,12 @@ SharedPtr<Node> Parser::parse_keyword_splat(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     return new KeywordSplatNode { token, parse_expression(Precedence::SPLAT, locals) };
+}
+
+SharedPtr<Node> Parser::parse_keyword_splat_wrapped_in_hash(LocalsHashmap &locals) {
+    SharedPtr<HashNode> hash = new HashNode { current_token() };
+    hash->add_node(parse_keyword_splat(locals));
+    return hash.static_cast_as<Node>();
 }
 
 SharedPtr<String> Parser::parse_method_name(LocalsHashmap &) {
@@ -2149,10 +2157,14 @@ void Parser::parse_call_args(NodeWithArgs &node, LocalsHashmap &locals, bool bar
 }
 
 SharedPtr<Node> Parser::parse_call_hash_args(LocalsHashmap &locals, bool bare, Token::Type closing_token_type, SharedPtr<Node> first_arg) {
+    SharedPtr<Node> hash;
     if (bare)
-        return parse_hash_inner(locals, Precedence::BARE_CALL_ARG, closing_token_type, first_arg);
+        hash = parse_hash_inner(locals, Precedence::BARE_CALL_ARG, closing_token_type, first_arg);
     else
-        return parse_hash_inner(locals, Precedence::CALL_ARG, closing_token_type, first_arg);
+        hash = parse_hash_inner(locals, Precedence::CALL_ARG, closing_token_type, first_arg);
+    if (current_token().type() == Token::Type::Exponent)
+        hash.static_cast_as<HashNode>()->add_node(parse_keyword_splat(locals));
+    return hash;
 }
 
 SharedPtr<Node> Parser::parse_call_expression_without_parens(SharedPtr<Node> left, LocalsHashmap &locals) {
@@ -2584,7 +2596,7 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
     case Type::InterpolatedSymbolBegin:
         return &Parser::parse_interpolated_symbol;
     case Type::Exponent:
-        return &Parser::parse_keyword_splat;
+        return &Parser::parse_keyword_splat_wrapped_in_hash;
     case Type::Bignum:
     case Type::Fixnum:
     case Type::Float:

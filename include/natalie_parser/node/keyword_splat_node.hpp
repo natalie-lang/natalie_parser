@@ -26,12 +26,9 @@ public:
     const SharedPtr<Node> node() const { return m_node; }
 
     virtual void transform(Creator *creator) const override {
-        creator->set_type("hash");
-        creator->append_sexp([&](Creator *c) {
-            c->set_type("kwsplat");
-            if (m_node)
-                c->append(m_node.ref());
-        });
+        creator->set_type("kwsplat");
+        if (m_node)
+            creator->append(m_node.ref());
     }
 
 protected:

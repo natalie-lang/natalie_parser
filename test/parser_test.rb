@@ -1272,10 +1272,11 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('foo(*args)')).must_equal s(:call, nil, :foo, s(:splat, s(:call, nil, :args)))
       end
 
-      it 'parses keyword splat *' do
+      it 'parses keyword splat **' do
         expect(parse('def foo(**kwargs); end')).must_equal s(:defn, :foo, s(:args, :'**kwargs'), s(:nil))
         expect(parse('def foo **kwargs; end')).must_equal s(:defn, :foo, s(:args, :'**kwargs'), s(:nil))
         expect(parse('foo(**kwargs)')).must_equal s(:call, nil, :foo, s(:hash, s(:kwsplat, s(:call, nil, :kwargs))))
+        expect(parse('foo(a: :b, **kwargs)')).must_equal s(:call, nil, :foo, s(:hash, s(:lit, :a), s(:lit, :b), s(:kwsplat, s(:call, nil, :kwargs))))
         expect(-> { parse('foo { |nil| }') }).must_raise SyntaxError
         expect(-> { parse('foo { |*nil| }') }).must_raise SyntaxError
         expect(parse('foo { |**nil| }')).must_equal s(:iter, s(:call, nil, :foo), s(:args, :"**nil"))

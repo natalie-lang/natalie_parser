@@ -104,6 +104,7 @@ private:
     SharedPtr<Node> parse_interpolated_symbol(LocalsHashmap &);
     SharedPtr<Node> parse_lit(LocalsHashmap &);
     SharedPtr<Node> parse_keyword_splat(LocalsHashmap &);
+    SharedPtr<Node> parse_keyword_splat_wrapped_in_hash(LocalsHashmap &);
     SharedPtr<String> parse_method_name(LocalsHashmap &);
     SharedPtr<Node> parse_module(LocalsHashmap &);
     SharedPtr<Node> parse_next(LocalsHashmap &);
