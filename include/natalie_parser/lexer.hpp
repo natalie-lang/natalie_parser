@@ -108,6 +108,9 @@ protected:
     // the previously-matched token
     Token m_last_token {};
 
+    // we have an open ternary '?' that needs a matching ':'
+    bool m_open_ternary { false };
+
     Lexer *m_nested_lexer { nullptr };
 
     char m_stop_char { 0 };

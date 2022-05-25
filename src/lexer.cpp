@@ -639,6 +639,7 @@ Token Lexer::build_next_token() {
     case '?': {
         auto c = next();
         if (isspace(c)) {
+            m_open_ternary = true;
             return Token { Token::Type::TernaryQuestion, m_file, m_token_line, m_token_column };
         } else {
             advance();
@@ -658,7 +659,7 @@ Token Lexer::build_next_token() {
         if (c == ':') {
             advance();
             return Token { Token::Type::ConstantResolution, m_file, m_token_line, m_token_column };
-        } else if (m_last_token.type() == Token::Type::InterpolatedStringBegin && !m_whitespace_precedes) {
+        } else if (m_last_token.type() == Token::Type::InterpolatedStringBegin && !m_whitespace_precedes && !m_open_ternary) {
             return Token { Token::Type::InterpolatedStringSymbolKey, m_file, m_token_line, m_token_column };
         } else if (c == '"') {
             advance();
@@ -668,6 +669,7 @@ Token Lexer::build_next_token() {
             auto string = consume_single_quoted_string('\'', '\'');
             return Token { Token::Type::Symbol, string.literal(), m_file, m_token_line, m_token_column };
         } else if (isspace(c)) {
+            m_open_ternary = false;
             auto token = Token { Token::Type::TernaryColon, m_file, m_token_line, m_token_column };
             token.set_whitespace_precedes(m_whitespace_precedes);
             return token;
@@ -1636,7 +1638,7 @@ Token Lexer::consume_single_quoted_string(char start_char, char stop_char) {
                 buf->append_char(c);
             } else {
                 advance(); // '
-                if (current_char() == ':') {
+                if (current_char() == ':' && !m_open_ternary) {
                     advance(); // :
                     return Token { Token::Type::SymbolKey, buf, m_file, m_token_line, m_token_column };
                 } else {

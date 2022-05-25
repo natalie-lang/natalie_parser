@@ -848,6 +848,25 @@ describe 'NatalieParser' do
       expect(tokenize('foo.%(x)')).must_equal [{:type=>:name, :literal=>:foo}, {:type=>:"."}, {:type=>:%}, {:type=>:"("}, {:type=>:name, :literal=>:x}, {:type=>:")"}]
     end
 
+    it 'parses ternary operator' do
+      expect(tokenize("a ? '': b")).must_equal [
+        { type: :name, literal: :a },
+        { type: :"?" },
+        { type: :string, literal: '' },
+        { type: :":" },
+        { type: :name, literal: :b }
+      ]
+      expect(tokenize('a ? "": b')).must_equal [
+        { type: :name, literal: :a },
+        { type: :"?" },
+        { type: :dstr },
+        { type: :string, literal: '' },
+        { type: :dstrend },
+        { type: :":" },
+        { type: :name, literal: :b }
+      ]
+    end
+
     it 'tokenizes heredocs' do
       doc_with_interpolation = <<~END
         foo = <<FOO
