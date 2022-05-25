@@ -1224,6 +1224,7 @@ module TestRubyParserShared
   end
 
   def test_list_append
+    skip
     a = s(:lit, 1)
     b = s(:lit, 2)
     c = s(:lit, 3)
@@ -1247,6 +1248,7 @@ module TestRubyParserShared
   end
 
   def test_list_prepend
+    skip
     a = s(:lit, 1)
     b = s(:lit, 2)
     c = s(:lit, 3)
