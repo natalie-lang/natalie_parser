@@ -628,6 +628,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('def exec(cmd) = system(cmd)')).must_equal s(:defn, :exec, s(:args, :cmd), s(:call, nil, :system, s(:lvar, :cmd)))
         expect(parse('def foo = bar')).must_equal s(:defn, :foo, s(:args), s(:call, nil, :bar))
         expect(-> { parse('def foo a, b = bar') }).must_raise SyntaxError
+        expect_raise_with_message(-> { parse("def self.x=(o) = 42") }, SyntaxError, "setter method cannot be defined in an endless method definition")
+        expect_raise_with_message(-> { parse("def self.[]=(k, v) = 42") }, SyntaxError, "setter method cannot be defined in an endless method definition")
       end
 
       it 'parses method definition keyword args' do
