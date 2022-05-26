@@ -99,24 +99,24 @@ Parser::Precedence Parser::get_precedence(Token &token, SharedPtr<Node> left) {
         return left ? Precedence::SUM : Precedence::UNARY_MINUS;
     case Token::Type::Equal:
         return Precedence::ASSIGNMENT_LHS;
-    case Token::Type::AndEqual:
-    case Token::Type::BitwiseAndEqual:
-    case Token::Type::BitwiseOrEqual:
-    case Token::Type::BitwiseXorEqual:
-    case Token::Type::DivideEqual:
-    case Token::Type::ExponentEqual:
+    case Token::Type::AmpersandAmpersandEqual:
+    case Token::Type::AmpersandEqual:
+    case Token::Type::CaretEqual:
     case Token::Type::LeftShiftEqual:
     case Token::Type::MinusEqual:
-    case Token::Type::ModulusEqual:
-    case Token::Type::MultiplyEqual:
-    case Token::Type::OrEqual:
+    case Token::Type::PipePipeEqual:
+    case Token::Type::PercentEqual:
+    case Token::Type::PipeEqual:
     case Token::Type::PlusEqual:
     case Token::Type::RightShiftEqual:
+    case Token::Type::SlashEqual:
+    case Token::Type::StarEqual:
+    case Token::Type::StarStarEqual:
         return Precedence::OP_ASSIGNMENT;
-    case Token::Type::BitwiseAnd:
+    case Token::Type::Ampersand:
         return Precedence::BITWISE_AND;
-    case Token::Type::BitwiseOr:
-    case Token::Type::BitwiseXor:
+    case Token::Type::Caret:
+    case Token::Type::Pipe:
         return Precedence::BITWISE_OR;
     case Token::Type::Comma:
         // NOTE: the only time this precedence is used is for multiple assignment
@@ -142,7 +142,7 @@ Parser::Precedence Parser::get_precedence(Token &token, SharedPtr<Node> left) {
     case Token::Type::Match:
     case Token::Type::NotMatch:
         return Precedence::EQUALITY;
-    case Token::Type::Exponent:
+    case Token::Type::StarStar:
         return Precedence::EXPONENT;
     case Token::Type::IfKeyword:
     case Token::Type::UnlessKeyword:
@@ -161,15 +161,15 @@ Parser::Precedence Parser::get_precedence(Token &token, SharedPtr<Node> left) {
     case Token::Type::GreaterThan:
     case Token::Type::GreaterThanOrEqual:
         return Precedence::LESS_GREATER;
-    case Token::Type::And:
+    case Token::Type::AmpersandAmpersand:
         return Precedence::LOGICAL_AND;
     case Token::Type::NotKeyword:
         return Precedence::LOGICAL_NOT;
-    case Token::Type::Or:
+    case Token::Type::PipePipe:
         return Precedence::LOGICAL_OR;
-    case Token::Type::Divide:
-    case Token::Type::Modulus:
-    case Token::Type::Multiply:
+    case Token::Type::Percent:
+    case Token::Type::Slash:
+    case Token::Type::Star:
         return Precedence::PRODUCT;
     case Token::Type::DotDot:
     case Token::Type::DotDotDot:
@@ -340,7 +340,7 @@ SharedPtr<SymbolNode> Parser::parse_alias_arg(LocalsHashmap &locals, const char 
                 //     def bar; end
                 //
                 // So, we'll put the newline back.
-                m_tokens->insert(m_index, Token { Token::Type::Eol, token.file(), token.line(), token.column() });
+                m_tokens->insert(m_index, Token { Token::Type::Newline, token.file(), token.line(), token.column() });
             }
             return new SymbolNode { token, new String(token.type_value()) };
         } else {
@@ -565,7 +565,7 @@ SharedPtr<Node> Parser::parse_case(LocalsHashmap &locals) {
     case Token::Type::WhenKeyword:
         subject = new NilNode { case_token };
         break;
-    case Token::Type::Eol:
+    case Token::Type::Newline:
     case Token::Type::Semicolon:
         advance();
         subject = new NilNode { case_token };
@@ -638,7 +638,7 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         advance();
         node = new IdentifierNode { token, true };
         break;
-    case Token::Type::BitwiseXor: // caret (^)
+    case Token::Type::Caret:
         advance();
         expect(Token::Type::BareName, "pinned variable name");
         node = new PinNode { token, new IdentifierNode { current_token(), true } };
@@ -697,7 +697,7 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
     case Token::Type::Float:
         node = parse_lit(locals);
         break;
-    case Token::Type::Multiply: {
+    case Token::Type::Star: {
         auto splat_token = current_token();
         advance();
         SharedPtr<ArrayPatternNode> array = new ArrayPatternNode { token };
@@ -740,7 +740,7 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
 SharedPtr<Node> Parser::parse_case_in_patterns(LocalsHashmap &locals) {
     Vector<SharedPtr<Node>> patterns;
     patterns.push(parse_case_in_pattern(locals));
-    while (current_token().type() == Token::Type::BitwiseOr) {
+    while (current_token().type() == Token::Type::Pipe) {
         advance();
         patterns.push(parse_case_in_pattern(locals));
     }
@@ -860,7 +860,7 @@ SharedPtr<Node> Parser::parse_assignment_identifier(bool allow_splat, LocalsHash
         advance(); // )
         break;
     }
-    case Token::Type::Multiply: {
+    case Token::Type::Star: {
         if (!allow_splat)
             expect(Token::Type::BareName, "assignment identifier");
         auto splat_token = current_token();
@@ -1026,7 +1026,7 @@ SharedPtr<Node> Parser::parse_def_single_arg(LocalsHashmap &locals) {
         }
         return masgn;
     }
-    case Token::Type::Multiply: {
+    case Token::Type::Star: {
         advance();
         SharedPtr<ArgNode> arg;
         if (current_token().is_bare_name()) {
@@ -1039,7 +1039,7 @@ SharedPtr<Node> Parser::parse_def_single_arg(LocalsHashmap &locals) {
         arg->set_splat(true);
         return arg.static_cast_as<Node>();
     }
-    case Token::Type::Exponent: {
+    case Token::Type::StarStar: {
         advance();
         SharedPtr<ArgNode> arg;
         if (current_token().is_bare_name()) {
@@ -1055,7 +1055,7 @@ SharedPtr<Node> Parser::parse_def_single_arg(LocalsHashmap &locals) {
         arg->set_kwsplat(true);
         return arg.static_cast_as<Node>();
     }
-    case Token::Type::BitwiseAnd: {
+    case Token::Type::Ampersand: {
         advance();
         expect(Token::Type::BareName, "block name");
         auto arg = new ArgNode { token, current_token().literal_string() };
@@ -1069,9 +1069,9 @@ SharedPtr<Node> Parser::parse_def_single_arg(LocalsHashmap &locals) {
         advance();
         switch (current_token().type()) {
         case Token::Type::Comma:
+        case Token::Type::Newline:
+        case Token::Type::Pipe:
         case Token::Type::RParen:
-        case Token::Type::Eol:
-        case Token::Type::BitwiseOr:
             break;
         default:
             arg->set_value(parse_expression(Precedence::DEF_ARG, locals));
@@ -1209,7 +1209,7 @@ SharedPtr<Node> Parser::parse_hash_inner(LocalsHashmap &locals, Precedence prece
         advance();
         if (current_token().type() == closing_token_type)
             break;
-        if (current_token().type() == Token::Type::Exponent) // **kwsplat
+        if (current_token().type() == Token::Type::StarStar) // **kwsplat
             break;
         auto key = parse_expression(precedence, locals);
         hash->add_node(key);
@@ -1697,7 +1697,7 @@ SharedPtr<Node> Parser::parse_stabby_proc(LocalsHashmap &locals) {
             expect(Token::Type::RParen, "proc args closing paren");
             advance(); // )
         }
-    } else if (current_token().is_bare_name() || current_token().type() == Token::Type::Multiply) {
+    } else if (current_token().is_bare_name() || current_token().type() == Token::Type::Star) {
         has_args = true;
         parse_proc_args(args, locals);
     }
@@ -2084,14 +2084,14 @@ SharedPtr<Node> Parser::parse_iter_expression(SharedPtr<Node> left, LocalsHashma
         if (left->has_block_pass())
             throw SyntaxError { "Both block arg and actual block given." };
         advance(); // { or do
-        if (current_token().type() == Token::Type::Or) {
+        if (current_token().type() == Token::Type::PipePipe) {
             has_args = true;
             advance(); // ||
         } else if (current_token().is_block_arg_delimiter()) {
             has_args = true;
             advance(); // |
             parse_iter_args(args, our_locals);
-            expect(Token::Type::BitwiseOr, "end of block args");
+            expect(Token::Type::Pipe, "end of block args");
             advance(); // |
         }
     } else {
@@ -2208,7 +2208,7 @@ SharedPtr<Node> Parser::parse_call_hash_args(LocalsHashmap &locals, bool bare, T
         hash = parse_hash_inner(locals, Precedence::BARE_CALL_ARG, closing_token_type, first_arg);
     else
         hash = parse_hash_inner(locals, Precedence::CALL_ARG, closing_token_type, first_arg);
-    if (current_token().type() == Token::Type::Exponent)
+    if (current_token().type() == Token::Type::StarStar)
         hash.static_cast_as<HashNode>()->add_node(parse_keyword_splat(locals));
     return hash;
 }
@@ -2219,7 +2219,7 @@ SharedPtr<Node> Parser::parse_call_expression_without_parens(SharedPtr<Node> lef
     switch (token.type()) {
     case Token::Type::Comma:
     case Token::Type::Eof:
-    case Token::Type::Eol:
+    case Token::Type::Newline:
     case Token::Type::RBracket:
     case Token::Type::RCurlyBrace:
     case Token::Type::RParen:
@@ -2279,7 +2279,7 @@ SharedPtr<Node> Parser::parse_infix_expression(SharedPtr<Node> left, LocalsHashm
 SharedPtr<Node> Parser::parse_logical_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
     auto token = current_token();
     switch (token.type()) {
-    case Token::Type::And: {
+    case Token::Type::AmpersandAmpersand: {
         advance();
         auto right = parse_expression(Precedence::LOGICAL_AND, locals);
         if (left->type() == Node::Type::LogicalAnd) {
@@ -2297,7 +2297,7 @@ SharedPtr<Node> Parser::parse_logical_expression(SharedPtr<Node> left, LocalsHas
             return new LogicalAndNode { token, left, right };
         }
     }
-    case Token::Type::Or: {
+    case Token::Type::PipePipe: {
         advance();
         auto right = parse_expression(Precedence::LOGICAL_OR, locals);
         if (left->type() == Node::Type::LogicalOr) {
@@ -2365,21 +2365,21 @@ SharedPtr<Node> Parser::parse_op_assign_expression(SharedPtr<Node> left, LocalsH
     auto token = current_token();
     advance();
     switch (token.type()) {
-    case Token::Type::AndEqual:
+    case Token::Type::AmpersandAmpersandEqual:
         return new OpAssignAndNode { token, left, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
-    case Token::Type::OrEqual:
+    case Token::Type::PipePipeEqual:
         return new OpAssignOrNode { token, left, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
-    case Token::Type::BitwiseAndEqual:
-    case Token::Type::BitwiseOrEqual:
-    case Token::Type::BitwiseXorEqual:
-    case Token::Type::DivideEqual:
-    case Token::Type::ExponentEqual:
+    case Token::Type::AmpersandEqual:
+    case Token::Type::CaretEqual:
     case Token::Type::LeftShiftEqual:
     case Token::Type::MinusEqual:
-    case Token::Type::ModulusEqual:
-    case Token::Type::MultiplyEqual:
+    case Token::Type::PercentEqual:
+    case Token::Type::PipeEqual:
     case Token::Type::PlusEqual:
-    case Token::Type::RightShiftEqual: {
+    case Token::Type::RightShiftEqual:
+    case Token::Type::SlashEqual:
+    case Token::Type::StarEqual:
+    case Token::Type::StarStarEqual: {
         auto op = new String(token.type_value());
         op->chomp();
         return new OpAssignNode { token, op, left, parse_expression(Precedence::ASSIGNMENT_RHS, locals) };
@@ -2397,13 +2397,13 @@ SharedPtr<Node> Parser::parse_op_attr_assign_expression(SharedPtr<Node> left, Lo
     advance();
     auto value = parse_expression(Precedence::OP_ASSIGNMENT, locals);
     switch (token.type()) {
-    case Token::Type::AndEqual:
+    case Token::Type::AmpersandAmpersandEqual:
         return new OpAssignAndNode {
             token,
             left,
             value,
         };
-    case Token::Type::OrEqual:
+    case Token::Type::PipePipeEqual:
         return new OpAssignOrNode {
             token,
             left,
@@ -2600,7 +2600,7 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
         return &Parser::parse_begin;
     case Type::BEGINKeyword:
         return &Parser::parse_begin_block;
-    case Type::BitwiseAnd:
+    case Type::Ampersand:
         return &Parser::parse_block_pass;
     case Type::TrueKeyword:
     case Type::FalseKeyword:
@@ -2642,7 +2642,7 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
         return &Parser::parse_interpolated_string;
     case Type::InterpolatedSymbolBegin:
         return &Parser::parse_interpolated_symbol;
-    case Type::Exponent:
+    case Type::StarStar:
         return &Parser::parse_keyword_splat_wrapped_in_hash;
     case Type::Bignum:
     case Type::Fixnum:
@@ -2667,7 +2667,7 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
         return &Parser::parse_return;
     case Type::SelfKeyword:
         return &Parser::parse_self;
-    case Type::Multiply:
+    case Type::Star:
         return &Parser::parse_splat;
     case Type::Arrow:
         return &Parser::parse_stabby_proc;
@@ -2719,33 +2719,33 @@ Parser::parse_left_fn Parser::left_denotation(Token &token, SharedPtr<Node> left
         break;
     case Type::ConstantResolution:
         return &Parser::parse_constant_resolution_expression;
-    case Type::BitwiseAnd:
-    case Type::BitwiseOr:
-    case Type::BitwiseXor:
+    case Type::Ampersand:
+    case Type::Caret:
     case Type::Comparison:
-    case Type::Divide:
     case Type::EqualEqual:
     case Type::EqualEqualEqual:
-    case Type::Exponent:
     case Type::GreaterThan:
     case Type::GreaterThanOrEqual:
     case Type::LeftShift:
     case Type::LessThan:
     case Type::LessThanOrEqual:
     case Type::Minus:
-    case Type::Modulus:
-    case Type::Multiply:
     case Type::NotEqual:
+    case Type::Percent:
+    case Type::Pipe:
     case Type::Plus:
     case Type::RightShift:
+    case Type::Slash:
+    case Type::Star:
+    case Type::StarStar:
         return &Parser::parse_infix_expression;
     case Type::DoKeyword:
     case Type::LCurlyBrace:
         return &Parser::parse_iter_expression;
-    case Type::And:
+    case Type::AmpersandAmpersand:
     case Type::AndKeyword:
-    case Type::Or:
     case Type::OrKeyword:
+    case Type::PipePipe:
         return &Parser::parse_logical_expression;
     case Type::Match:
         return &Parser::parse_match_expression;
@@ -2758,19 +2758,19 @@ Parser::parse_left_fn Parser::left_denotation(Token &token, SharedPtr<Node> left
         return &Parser::parse_multiple_assignment_expression;
     case Type::NotMatch:
         return &Parser::parse_not_match_expression;
-    case Type::AndEqual:
-    case Type::BitwiseAndEqual:
-    case Type::BitwiseOrEqual:
-    case Type::BitwiseXorEqual:
-    case Type::DivideEqual:
-    case Type::ExponentEqual:
+    case Type::AmpersandAmpersandEqual:
+    case Type::AmpersandEqual:
+    case Type::CaretEqual:
     case Type::LeftShiftEqual:
     case Type::MinusEqual:
-    case Type::ModulusEqual:
-    case Type::MultiplyEqual:
-    case Type::OrEqual:
+    case Type::PipePipeEqual:
+    case Type::PercentEqual:
+    case Type::PipeEqual:
     case Type::PlusEqual:
     case Type::RightShiftEqual:
+    case Type::SlashEqual:
+    case Type::StarEqual:
+    case Type::StarStarEqual:
         return &Parser::parse_op_assign_expression;
     case Type::DotDot:
     case Type::DotDotDot:

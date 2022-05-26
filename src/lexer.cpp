@@ -29,14 +29,14 @@ SharedPtr<Vector<Token>> Lexer::tokens() {
 
         // get rid of newlines after certain tokens
         if (skip_next_newline) {
-            if (token.is_eol())
+            if (token.is_newline())
                 continue;
             else
                 skip_next_newline = false;
         }
 
         // get rid of newlines before certain tokens
-        while (token.can_follow_collapsible_newline() && !tokens->is_empty() && tokens->last().is_eol())
+        while (token.can_follow_collapsible_newline() && !tokens->is_empty() && tokens->last().is_newline())
             tokens->pop();
 
         if (last_doc_token && token.can_have_doc()) {
@@ -234,15 +234,15 @@ Token Lexer::build_next_token() {
             switch (current_char()) {
             case '=':
                 advance();
-                return Token { Token::Type::ExponentEqual, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::StarStarEqual, m_file, m_token_line, m_token_column };
             default:
-                return Token { Token::Type::Exponent, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::StarStar, m_file, m_token_line, m_token_column };
             }
         case '=':
             advance();
-            return Token { Token::Type::MultiplyEqual, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::StarEqual, m_file, m_token_line, m_token_column };
         default:
-            return Token { Token::Type::Multiply, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Star, m_file, m_token_line, m_token_column };
         }
     case '/': {
         advance();
@@ -255,22 +255,22 @@ Token Lexer::build_next_token() {
         case Token::Type::LCurlyBrace:
         case Token::Type::LParen:
         case Token::Type::Match:
-        case Token::Type::Eol:
+        case Token::Type::Newline:
             return consume_regexp('/', '/');
         case Token::Type::DefKeyword:
-            return Token { Token::Type::Divide, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Slash, m_file, m_token_line, m_token_column };
         default: {
             switch (current_char()) {
             case ' ':
-                return Token { Token::Type::Divide, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Slash, m_file, m_token_line, m_token_column };
             case '=':
                 advance();
-                return Token { Token::Type::DivideEqual, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::SlashEqual, m_file, m_token_line, m_token_column };
             default:
                 if (m_whitespace_precedes) {
                     return consume_regexp('/', '/');
                 } else {
-                    return Token { Token::Type::Divide, m_file, m_token_line, m_token_column };
+                    return Token { Token::Type::Slash, m_file, m_token_line, m_token_column };
                 }
             }
         }
@@ -281,7 +281,7 @@ Token Lexer::build_next_token() {
         switch (current_char()) {
         case '=':
             advance();
-            return Token { Token::Type::ModulusEqual, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::PercentEqual, m_file, m_token_line, m_token_column };
         case 'q':
             switch (peek()) {
             case '[':
@@ -302,7 +302,7 @@ Token Lexer::build_next_token() {
                     advance(2);
                     return consume_single_quoted_string(c, c);
                 } else {
-                    return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
+                    return Token { Token::Type::Percent, m_file, m_token_line, m_token_column };
                 }
             }
             }
@@ -326,7 +326,7 @@ Token Lexer::build_next_token() {
                     advance(2);
                     return consume_double_quoted_string(c, c);
                 } else {
-                    return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
+                    return Token { Token::Type::Percent, m_file, m_token_line, m_token_column };
                 }
             }
             }
@@ -350,7 +350,7 @@ Token Lexer::build_next_token() {
                     advance(2);
                     return consume_regexp(c, c);
                 } else {
-                    return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
+                    return Token { Token::Type::Percent, m_file, m_token_line, m_token_column };
                 }
             }
             }
@@ -373,7 +373,7 @@ Token Lexer::build_next_token() {
                 return consume_double_quoted_string('(', ')', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
             }
             default:
-                return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Percent, m_file, m_token_line, m_token_column };
             }
         case 'w':
             switch (peek()) {
@@ -396,7 +396,7 @@ Token Lexer::build_next_token() {
                 advance(2);
                 return consume_quoted_array_without_interpolation('(', ')', Token::Type::PercentLowerW);
             default:
-                return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Percent, m_file, m_token_line, m_token_column };
             }
         case 'W':
             switch (peek()) {
@@ -419,7 +419,7 @@ Token Lexer::build_next_token() {
                 advance(2);
                 return consume_quoted_array_with_interpolation('(', ')', Token::Type::PercentUpperW);
             default:
-                return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Percent, m_file, m_token_line, m_token_column };
             }
         case 'i':
             switch (peek()) {
@@ -442,7 +442,7 @@ Token Lexer::build_next_token() {
                 advance(2);
                 return consume_quoted_array_without_interpolation('(', ')', Token::Type::PercentLowerI);
             default:
-                return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Percent, m_file, m_token_line, m_token_column };
             }
         case 'I':
             switch (peek()) {
@@ -465,7 +465,7 @@ Token Lexer::build_next_token() {
                 advance(2);
                 return consume_quoted_array_with_interpolation('(', ')', Token::Type::PercentUpperI);
             default:
-                return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Percent, m_file, m_token_line, m_token_column };
             }
         case '[':
             advance();
@@ -492,7 +492,7 @@ Token Lexer::build_next_token() {
             break;
         }
         }
-        return Token { Token::Type::Modulus, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::Percent, m_file, m_token_line, m_token_column };
     case '!':
         advance();
         switch (current_char()) {
@@ -589,18 +589,18 @@ Token Lexer::build_next_token() {
             switch (current_char()) {
             case '=':
                 advance();
-                return Token { Token::Type::AndEqual, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::AmpersandAmpersandEqual, m_file, m_token_line, m_token_column };
             default:
-                return Token { Token::Type::And, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::AmpersandAmpersand, m_file, m_token_line, m_token_column };
             }
         case '=':
             advance();
-            return Token { Token::Type::BitwiseAndEqual, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::AmpersandEqual, m_file, m_token_line, m_token_column };
         case '.':
             advance();
             return Token { Token::Type::SafeNavigation, m_file, m_token_line, m_token_column };
         default:
-            return Token { Token::Type::BitwiseAnd, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Ampersand, m_file, m_token_line, m_token_column };
         }
     case '|':
         advance();
@@ -610,24 +610,24 @@ Token Lexer::build_next_token() {
             switch (current_char()) {
             case '=':
                 advance();
-                return Token { Token::Type::OrEqual, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::PipePipeEqual, m_file, m_token_line, m_token_column };
             default:
-                return Token { Token::Type::Or, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::PipePipe, m_file, m_token_line, m_token_column };
             }
         case '=':
             advance();
-            return Token { Token::Type::BitwiseOrEqual, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::PipeEqual, m_file, m_token_line, m_token_column };
         default:
-            return Token { Token::Type::BitwiseOr, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Pipe, m_file, m_token_line, m_token_column };
         }
     case '^':
         advance();
         switch (current_char()) {
         case '=':
             advance();
-            return Token { Token::Type::BitwiseXorEqual, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::CaretEqual, m_file, m_token_line, m_token_column };
         default:
-            return Token { Token::Type::BitwiseXor, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Caret, m_file, m_token_line, m_token_column };
         }
     case '~':
         advance();
@@ -749,7 +749,7 @@ Token Lexer::build_next_token() {
         return Token { Token::Type::RParen, m_file, m_token_line, m_token_column };
     case '\n': {
         advance();
-        auto token = Token { Token::Type::Eol, m_file, m_token_line, m_token_column };
+        auto token = Token { Token::Type::Newline, m_file, m_token_line, m_token_column };
         if (!m_heredoc_stack.is_empty()) {
             auto new_index = m_heredoc_stack.last();
             while (m_index < new_index)
@@ -1603,7 +1603,7 @@ std::pair<bool, Token::Type> Lexer::consume_escaped_byte(String &buf) {
 }
 
 bool Lexer::token_is_first_on_line() const {
-    return !m_last_token || m_last_token.is_eol();
+    return !m_last_token || m_last_token.is_newline();
 }
 
 Token Lexer::consume_double_quoted_string(char start_char, char stop_char, Token::Type begin_type, Token::Type end_type) {

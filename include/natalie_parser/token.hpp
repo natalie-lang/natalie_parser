@@ -16,8 +16,10 @@ public:
         InvalidCharacterEscape,
         InvalidUnicodeEscape,
         AliasKeyword,
-        And,
-        AndEqual,
+        Ampersand,
+        AmpersandAmpersand,
+        AmpersandEqual,
+        AmpersandAmpersandEqual,
         AndKeyword,
         Arrow,
         BackRef,
@@ -25,13 +27,9 @@ public:
         BeginKeyword,
         BEGINKeyword,
         Bignum,
-        BitwiseAnd,
-        BitwiseAndEqual,
-        BitwiseOr,
-        BitwiseOrEqual,
-        BitwiseXor,
-        BitwiseXorEqual,
         BreakKeyword,
+        Caret,
+        CaretEqual,
         CaseKeyword,
         ClassKeyword,
         ClassVariable,
@@ -42,8 +40,6 @@ public:
         ConstantResolution,
         DefinedKeyword,
         DefKeyword,
-        Divide,
-        DivideEqual,
         Doc,
         DoKeyword,
         Dot,
@@ -56,14 +52,11 @@ public:
         ENDKeyword,
         EnsureKeyword,
         Eof,
-        Eol,
         Equal,
         EqualEqual,
         EqualEqualEqual,
         EvaluateToStringBegin,
         EvaluateToStringEnd,
-        Exponent,
-        ExponentEqual,
         FalseKeyword,
         FILEKeyword,
         Fixnum,
@@ -101,10 +94,7 @@ public:
         Minus,
         MinusEqual,
         ModuleKeyword,
-        Modulus,
-        ModulusEqual,
-        Multiply,
-        MultiplyEqual,
+        Newline,
         NextKeyword,
         NilKeyword,
         Not,
@@ -112,13 +102,17 @@ public:
         NotKeyword,
         NotMatch,
         NthRef,
-        Or,
-        OrEqual,
         OrKeyword,
+        Percent,
+        PercentEqual,
         PercentLowerI,
         PercentLowerW,
         PercentUpperI,
         PercentUpperW,
+        Pipe,
+        PipeEqual,
+        PipePipe,
+        PipePipeEqual,
         Plus,
         PlusEqual,
         RCurlyBrace,
@@ -133,6 +127,12 @@ public:
         SafeNavigation,
         SelfKeyword,
         Semicolon,
+        Slash,
+        SlashEqual,
+        Star,
+        StarEqual,
+        StarStar,
+        StarStarEqual,
         String,
         SuperKeyword,
         Symbol,
@@ -246,10 +246,14 @@ public:
         switch (m_type) {
         case Type::AliasKeyword:
             return "alias";
-        case Type::And:
+        case Type::Ampersand:
+            return "&";
+        case Type::AmpersandAmpersand:
             return "&&";
-        case Type::AndEqual:
+        case Type::AmpersandAmpersandEqual:
             return "&&=";
+        case Type::AmpersandEqual:
+            return "&=";
         case Type::AndKeyword:
             return "and";
         case Type::Arrow:
@@ -264,20 +268,12 @@ public:
             return "BEGIN";
         case Type::Bignum:
             return "bignum";
-        case Type::BitwiseAnd:
-            return "&";
-        case Type::BitwiseAndEqual:
-            return "&=";
-        case Type::BitwiseOr:
-            return "|";
-        case Type::BitwiseOrEqual:
-            return "|=";
-        case Type::BitwiseXor:
-            return "^";
-        case Type::BitwiseXorEqual:
-            return "^=";
         case Type::BreakKeyword:
             return "break";
+        case Type::Caret:
+            return "^";
+        case Type::CaretEqual:
+            return "^=";
         case Type::CaseKeyword:
             return "case";
         case Type::ClassKeyword:
@@ -298,10 +294,6 @@ public:
             return "defined?";
         case Type::DefKeyword:
             return "def";
-        case Type::DivideEqual:
-            return "/=";
-        case Type::Divide:
-            return "/";
         case Type::Doc:
             return "doc";
         case Type::DoKeyword:
@@ -326,7 +318,7 @@ public:
             return "ensure";
         case Type::Eof:
             return "EOF";
-        case Type::Eol:
+        case Type::Newline:
             return "\n";
         case Type::EqualEqualEqual:
             return "===";
@@ -338,10 +330,6 @@ public:
             return "evstr";
         case Type::EvaluateToStringEnd:
             return "evstrend";
-        case Type::Exponent:
-            return "**";
-        case Type::ExponentEqual:
-            return "**=";
         case Type::FalseKeyword:
             return "false";
         case Type::FILEKeyword:
@@ -418,14 +406,6 @@ public:
             return "-";
         case Type::ModuleKeyword:
             return "module";
-        case Type::ModulusEqual:
-            return "%=";
-        case Type::Modulus:
-            return "%";
-        case Type::MultiplyEqual:
-            return "*=";
-        case Type::Multiply:
-            return "*";
         case Type::NextKeyword:
             return "next";
         case Type::NilKeyword:
@@ -440,12 +420,12 @@ public:
             return "!";
         case Type::NthRef:
             return "nth_ref";
-        case Type::Or:
-            return "||";
-        case Type::OrEqual:
-            return "||=";
         case Type::OrKeyword:
             return "or";
+        case Type::Percent:
+            return "%";
+        case Type::PercentEqual:
+            return "%=";
         case Type::PercentLowerI:
             return "%i[";
         case Type::PercentLowerW:
@@ -454,6 +434,14 @@ public:
             return "%I[";
         case Type::PercentUpperW:
             return "%W[";
+        case Type::Pipe:
+            return "|";
+        case Type::PipeEqual:
+            return "|=";
+        case Type::PipePipe:
+            return "||";
+        case Type::PipePipeEqual:
+            return "||=";
         case Type::PlusEqual:
             return "+=";
         case Type::Plus:
@@ -482,6 +470,18 @@ public:
             return "self";
         case Type::Semicolon:
             return ";";
+        case Type::Slash:
+            return "/";
+        case Type::SlashEqual:
+            return "/=";
+        case Type::Star:
+            return "*";
+        case Type::StarEqual:
+            return "*=";
+        case Type::StarStar:
+            return "**";
+        case Type::StarStarEqual:
+            return "**=";
         case Type::String:
             return "string";
         case Type::SuperKeyword:
@@ -585,14 +585,11 @@ public:
 
     bool is_operator() const {
         switch (m_type) {
-        case Token::Type::BitwiseAnd:
-        case Token::Type::BitwiseOr:
-        case Token::Type::BitwiseXor:
+        case Token::Type::Ampersand:
+        case Token::Type::Caret:
         case Token::Type::Comparison:
-        case Token::Type::Divide:
         case Token::Type::EqualEqual:
         case Token::Type::EqualEqualEqual:
-        case Token::Type::Exponent:
         case Token::Type::GreaterThan:
         case Token::Type::GreaterThanOrEqual:
         case Token::Type::LBracketRBracket:
@@ -602,12 +599,15 @@ public:
         case Token::Type::LessThanOrEqual:
         case Token::Type::Match:
         case Token::Type::Minus:
-        case Token::Type::Modulus:
-        case Token::Type::Multiply:
         case Token::Type::NotEqual:
         case Token::Type::NotMatch:
+        case Token::Type::Percent:
+        case Token::Type::Pipe:
         case Token::Type::Plus:
         case Token::Type::RightShift:
+        case Token::Type::Slash:
+        case Token::Type::Star:
+        case Token::Type::StarStar:
         case Token::Type::Tilde:
             return true;
         default:
@@ -616,7 +616,7 @@ public:
     }
 
     bool is_bare_name() const { return m_type == Type::BareName; }
-    bool is_block_arg_delimiter() const { return m_type == Type::BitwiseOr; }
+    bool is_block_arg_delimiter() const { return m_type == Type::Pipe; }
     bool is_closing_token() const { return m_type == Type::RBracket || m_type == Type::RCurlyBrace || m_type == Type::RParen; }
     bool is_comma() const { return m_type == Type::Comma; }
     bool is_comment() const { return m_type == Type::Comment; }
@@ -626,18 +626,18 @@ public:
     bool is_else_keyword() const { return m_type == Type::ElseKeyword; }
     bool is_elsif_keyword() const { return m_type == Type::ElsifKeyword; }
     bool is_end_keyword() const { return m_type == Type::EndKeyword; }
-    bool is_end_of_expression() const { return m_type == Type::EndKeyword || m_type == Type::RCurlyBrace || m_type == Type::Eol || m_type == Type::Semicolon || m_type == Type::Eof || is_expression_modifier(); }
+    bool is_end_of_expression() const { return m_type == Type::EndKeyword || m_type == Type::RCurlyBrace || m_type == Type::Newline || m_type == Type::Semicolon || m_type == Type::Eof || is_expression_modifier(); }
     bool is_eof() const { return m_type == Type::Eof; }
-    bool is_eol() const { return m_type == Type::Eol; }
-    bool is_end_of_line() const { return m_type == Type::Eol || m_type == Type::Semicolon; }
+    bool is_end_of_line() const { return m_type == Type::Newline || m_type == Type::Semicolon; }
     bool is_equal() const { return m_type == Type::Equal; }
     bool is_expression_modifier() const { return m_type == Type::IfKeyword || m_type == Type::UnlessKeyword || m_type == Type::WhileKeyword || m_type == Type::UntilKeyword; }
     bool is_hash_rocket() const { return m_type == Type::HashRocket; }
     bool is_lparen() const { return m_type == Type::LParen; }
+    bool is_newline() const { return m_type == Type::Newline; }
     bool is_rbracket() const { return m_type == Type::RBracket; }
     bool is_rparen() const { return m_type == Type::RParen; }
     bool is_semicolon() const { return m_type == Type::Semicolon; }
-    bool is_splat() const { return m_type == Type::Multiply || m_type == Type::Exponent; }
+    bool is_splat() const { return m_type == Type::Star || m_type == Type::StarStar; }
     bool is_symbol_key() const { return m_type == Type::SymbolKey; }
     bool is_when_keyword() const { return m_type == Type::WhenKeyword; }
 
@@ -661,25 +661,20 @@ public:
 
     bool can_precede_collapsible_newline() {
         switch (m_type) {
-        case Token::Type::And:
+        case Token::Type::AmpersandAmpersand:
         case Token::Type::AndKeyword:
         case Token::Type::Arrow:
-        case Token::Type::BitwiseAnd:
-        case Token::Type::BitwiseOr:
-        case Token::Type::BitwiseXor:
+        case Token::Type::Ampersand:
+        case Token::Type::Caret:
         case Token::Type::CaseKeyword:
         case Token::Type::Comma:
         case Token::Type::Comparison:
         case Token::Type::ConstantResolution:
-        case Token::Type::Divide:
-        case Token::Type::DivideEqual:
         case Token::Type::Dot:
         case Token::Type::DotDot:
         case Token::Type::Equal:
         case Token::Type::EqualEqual:
         case Token::Type::EqualEqualEqual:
-        case Token::Type::Exponent:
-        case Token::Type::ExponentEqual:
         case Token::Type::GreaterThan:
         case Token::Type::GreaterThanOrEqual:
         case Token::Type::HashRocket:
@@ -693,19 +688,24 @@ public:
         case Token::Type::Match:
         case Token::Type::Minus:
         case Token::Type::MinusEqual:
-        case Token::Type::Modulus:
-        case Token::Type::ModulusEqual:
-        case Token::Type::Multiply:
-        case Token::Type::MultiplyEqual:
         case Token::Type::Not:
         case Token::Type::NotEqual:
         case Token::Type::NotMatch:
-        case Token::Type::Or:
         case Token::Type::OrKeyword:
+        case Token::Type::Percent:
+        case Token::Type::PercentEqual:
+        case Token::Type::Pipe:
+        case Token::Type::PipePipe:
         case Token::Type::Plus:
         case Token::Type::PlusEqual:
         case Token::Type::RightShift:
         case Token::Type::SafeNavigation:
+        case Token::Type::Slash:
+        case Token::Type::SlashEqual:
+        case Token::Type::Star:
+        case Token::Type::StarEqual:
+        case Token::Type::StarStar:
+        case Token::Type::StarStarEqual:
         case Token::Type::TernaryColon:
         case Token::Type::TernaryQuestion:
         case Token::Type::Tilde:
@@ -753,7 +753,6 @@ public:
         case Token::Type::LBracketRBracket:
         case Token::Type::LINEKeyword:
         case Token::Type::LParen:
-        case Token::Type::Multiply:
         case Token::Type::NilKeyword:
         case Token::Type::Not:
         case Token::Type::NotKeyword:
@@ -762,6 +761,7 @@ public:
         case Token::Type::PercentUpperI:
         case Token::Type::PercentUpperW:
         case Token::Type::SelfKeyword:
+        case Token::Type::Star:
         case Token::Type::String:
         case Token::Type::SuperKeyword:
         case Token::Type::Symbol:
