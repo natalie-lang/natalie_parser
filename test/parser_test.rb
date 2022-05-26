@@ -1321,6 +1321,23 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('f ->() do end')).must_equal s(:call, nil, :f, s(:iter, s(:lambda), s(:args)))
       end
 
+      it 'parses block-local and proc-local shadow variables' do
+        expect(parse('-> (a; x) { x }')).must_equal s(:iter, s(:lambda), s(:args, :a, s(:shadow, :x)), s(:lvar, :x))
+        expect(parse('-> (; x) { x }')).must_equal s(:iter, s(:lambda), s(:args, s(:shadow, :x)), s(:lvar, :x))
+        expect(parse('lambda { |a; x| x }')).must_equal s(:iter, s(:call, nil, :lambda), s(:args, :a, s(:shadow, :x)), s(:lvar, :x))
+        expect(parse('lambda { |; x| x }')).must_equal s(:iter, s(:call, nil, :lambda), s(:args, s(:shadow, :x)), s(:lvar, :x))
+        expect(parse('foo { |a; x| x }')).must_equal s(:iter, s(:call, nil, :foo), s(:args, :a, s(:shadow, :x)), s(:lvar, :x))
+
+        # just a newline does not make a shadow variable
+        expect(parse("-> (\nx) { x }")).must_equal s(:iter, s(:lambda), s(:args, :x), s(:lvar, :x))
+        expect(parse("lambda { |\nx| x }")).must_equal s(:iter, s(:call, nil, :lambda), s(:args, :x), s(:lvar, :x))
+        expect(-> { parse("-> (a\nx) { x }") }).must_raise SyntaxError
+        expect(-> { parse("lambda { |a\nx| x }") }).must_raise SyntaxError
+
+        # cannot have them in a method
+        expect(-> { parse('def foo(a; x) end') }).must_raise SyntaxError
+      end
+
       it 'parses case/when/else' do
         expect(parse("case 1\nwhen 1\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:when, s(:array, s(:lit, 1)), s(:lit, :a)), nil)
         expect(parse("case 1\nwhen 1\n:a\n:b\n:c\nend")).must_equal s(:case, s(:lit, 1), s(:when, s(:array, s(:lit, 1)), s(:lit, :a), s(:lit, :b), s(:lit, :c)), nil)

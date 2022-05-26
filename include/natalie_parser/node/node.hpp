@@ -79,6 +79,7 @@ public:
         SafeCall,
         Sclass,
         Self,
+        ShadowArg,
         Shell,
         Splat,
         SplatValue,

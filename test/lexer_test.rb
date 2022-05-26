@@ -702,19 +702,6 @@ describe 'NatalieParser' do
       ]
     end
 
-    it 'tokenizes semicolons as newlines' do
-      expect(tokenize('foo;bar')).must_equal [
-        { type: :name, literal: :foo },
-        { type: :"\n" },
-        { type: :name, literal: :bar },
-      ]
-      expect(tokenize('foo ; bar')).must_equal [
-        { type: :name, literal: :foo },
-        { type: :"\n" },
-        { type: :name, literal: :bar },
-      ]
-    end
-
     it 'does not tokenize comments' do
       tokens = tokenize(<<-END)
         foo # comment 1
@@ -1017,7 +1004,7 @@ describe 'NatalieParser' do
         { type: :"\n" },
         { type: :class },
         { type: :constant, literal: :Foo },
-        { type: :"\n" },
+        { type: :";" },
         { type: :end },
       ]
       expect(tokenize("=begin\nstuff")).must_equal []

@@ -69,6 +69,7 @@
 #include "natalie_parser/node/safe_call_node.hpp"
 #include "natalie_parser/node/sclass_node.hpp"
 #include "natalie_parser/node/self_node.hpp"
+#include "natalie_parser/node/shadow_arg_node.hpp"
 #include "natalie_parser/node/shell_node.hpp"
 #include "natalie_parser/node/splat_node.hpp"
 #include "natalie_parser/node/splat_value_node.hpp"

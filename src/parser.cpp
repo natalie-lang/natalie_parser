@@ -432,7 +432,7 @@ void Parser::parse_rest_of_begin(BeginNode &begin_node, LocalsHashmap &locals) {
         case Token::Type::RescueKeyword: {
             SharedPtr<BeginRescueNode> rescue_node = new BeginRescueNode { current_token() };
             advance();
-            if (!current_token().is_eol() && current_token().type() != Token::Type::HashRocket) {
+            if (!current_token().is_end_of_line() && current_token().type() != Token::Type::HashRocket) {
                 auto name = parse_expression(Precedence::BARE_CALL_ARG, locals);
                 rescue_node->add_exception_node(name);
                 while (current_token().is_comma()) {
@@ -566,6 +566,7 @@ SharedPtr<Node> Parser::parse_case(LocalsHashmap &locals) {
         subject = new NilNode { case_token };
         break;
     case Token::Type::Eol:
+    case Token::Type::Semicolon:
         advance();
         subject = new NilNode { case_token };
         break;
@@ -681,7 +682,8 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         hash->add_node(parse_symbol(locals));
         hash->add_node(parse_case_in_pattern(locals));
         while (current_token().is_comma()) {
-            advance();
+            advance(); // ,
+            expect(Token::Type::Symbol, "hash pattern symbol");
             hash->add_node(parse_symbol(locals));
             hash->add_node(parse_case_in_pattern(locals));
         }
@@ -1589,6 +1591,22 @@ SharedPtr<Node> Parser::parse_nth_ref(LocalsHashmap &) {
     return new NthRefNode { token, token.get_fixnum() };
 }
 
+void Parser::parse_proc_args(Vector<SharedPtr<Node>> &args, LocalsHashmap &locals) {
+    if (current_token().is_semicolon()) {
+        parse_shadow_variables_in_args(args, locals);
+        return;
+    }
+    args.push(parse_def_single_arg(locals));
+    while (current_token().is_comma()) {
+        advance();
+        args.push(parse_def_single_arg(locals));
+    }
+    if (current_token().is_semicolon()) {
+        parse_shadow_variables_in_args(args, locals);
+        return;
+    }
+}
+
 SharedPtr<Node> Parser::parse_redo(LocalsHashmap &) {
     auto token = current_token();
     advance();
@@ -1637,7 +1655,23 @@ SharedPtr<Node> Parser::parse_self(LocalsHashmap &) {
     auto token = current_token();
     advance();
     return new SelfNode { token };
-};
+}
+
+void Parser::parse_shadow_variables_in_args(Vector<SharedPtr<Node>> &args, LocalsHashmap &locals) {
+    advance(); // ;
+    auto token = current_token();
+    switch (token.type()) {
+    case Token::Type::BareName: {
+        SharedPtr<ShadowArgNode> arg = new ShadowArgNode { token, token.literal_string() };
+        advance();
+        arg->add_to_locals(locals);
+        args.push(arg.static_cast_as<Node>());
+        break;
+    }
+    default:
+        throw_unexpected("shadow local variable");
+    }
+}
 
 SharedPtr<Node> Parser::parse_splat(LocalsHashmap &locals) {
     auto token = current_token();
@@ -1659,13 +1693,13 @@ SharedPtr<Node> Parser::parse_stabby_proc(LocalsHashmap &locals) {
         if (current_token().is_rparen()) {
             advance(); // )
         } else {
-            parse_def_args(args, locals);
+            parse_proc_args(args, locals);
             expect(Token::Type::RParen, "proc args closing paren");
             advance(); // )
         }
     } else if (current_token().is_bare_name() || current_token().type() == Token::Type::Multiply) {
         has_args = true;
-        parse_def_args(args, locals);
+        parse_proc_args(args, locals);
     }
     if (current_token().type() != Token::Type::DoKeyword && current_token().type() != Token::Type::LCurlyBrace)
         throw_unexpected("block");
@@ -2077,6 +2111,10 @@ SharedPtr<Node> Parser::parse_iter_expression(SharedPtr<Node> left, LocalsHashma
 }
 
 void Parser::parse_iter_args(Vector<SharedPtr<Node>> &args, LocalsHashmap &locals) {
+    if (current_token().is_semicolon()) {
+        parse_shadow_variables_in_args(args, locals);
+        return;
+    }
     args.push(parse_def_single_arg(locals));
     while (current_token().is_comma()) {
         advance();
@@ -2086,6 +2124,10 @@ void Parser::parse_iter_args(Vector<SharedPtr<Node>> &args, LocalsHashmap &local
             break;
         }
         args.push(parse_def_single_arg(locals));
+    }
+    if (current_token().is_semicolon()) {
+        parse_shadow_variables_in_args(args, locals);
+        return;
     }
 }
 
@@ -2181,6 +2223,7 @@ SharedPtr<Node> Parser::parse_call_expression_without_parens(SharedPtr<Node> lef
     case Token::Type::RBracket:
     case Token::Type::RCurlyBrace:
     case Token::Type::RParen:
+    case Token::Type::Semicolon:
         break;
     default:
         parse_call_args(call_node.ref(), locals, true);
@@ -2786,7 +2829,7 @@ void Parser::next_expression() {
 }
 
 void Parser::skip_newlines() {
-    while (current_token().is_eol())
+    while (current_token().is_end_of_line())
         advance();
 }
 

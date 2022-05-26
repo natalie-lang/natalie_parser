@@ -1,5 +1,6 @@
 #include "natalie_parser/node/node_with_args.hpp"
 #include "natalie_parser/node/arg_node.hpp"
+#include "natalie_parser/node/shadow_arg_node.hpp"
 
 namespace NatalieParser {
 
@@ -18,6 +19,7 @@ void NodeWithArgs::append_method_or_block_args(Creator *creator) const {
             }
             case Node::Type::KeywordArg:
             case Node::Type::MultipleAssignmentArg:
+            case Node::Type::ShadowArg:
                 c->append(arg);
                 break;
             case Node::Type::Nil:

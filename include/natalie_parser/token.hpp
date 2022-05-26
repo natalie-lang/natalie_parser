@@ -626,14 +626,14 @@ public:
     bool is_else_keyword() const { return m_type == Type::ElseKeyword; }
     bool is_elsif_keyword() const { return m_type == Type::ElsifKeyword; }
     bool is_end_keyword() const { return m_type == Type::EndKeyword; }
-    bool is_end_of_expression() const { return m_type == Type::EndKeyword || m_type == Type::RCurlyBrace || m_type == Type::Eol || m_type == Type::Eof || is_expression_modifier(); }
+    bool is_end_of_expression() const { return m_type == Type::EndKeyword || m_type == Type::RCurlyBrace || m_type == Type::Eol || m_type == Type::Semicolon || m_type == Type::Eof || is_expression_modifier(); }
     bool is_eof() const { return m_type == Type::Eof; }
     bool is_eol() const { return m_type == Type::Eol; }
+    bool is_end_of_line() const { return m_type == Type::Eol || m_type == Type::Semicolon; }
     bool is_equal() const { return m_type == Type::Equal; }
     bool is_expression_modifier() const { return m_type == Type::IfKeyword || m_type == Type::UnlessKeyword || m_type == Type::WhileKeyword || m_type == Type::UntilKeyword; }
     bool is_hash_rocket() const { return m_type == Type::HashRocket; }
     bool is_lparen() const { return m_type == Type::LParen; }
-    bool is_newline() const { return m_type == Type::Eol; }
     bool is_rbracket() const { return m_type == Type::RBracket; }
     bool is_rparen() const { return m_type == Type::RParen; }
     bool is_semicolon() const { return m_type == Type::Semicolon; }

@@ -111,11 +111,13 @@ private:
     SharedPtr<Node> parse_nil(LocalsHashmap &);
     SharedPtr<Node> parse_not(LocalsHashmap &);
     SharedPtr<Node> parse_nth_ref(LocalsHashmap &);
+    void parse_proc_args(Vector<SharedPtr<Node>> &, LocalsHashmap &);
     SharedPtr<Node> parse_redo(LocalsHashmap &);
     SharedPtr<Node> parse_retry(LocalsHashmap &);
     SharedPtr<Node> parse_return(LocalsHashmap &);
     SharedPtr<Node> parse_sclass(LocalsHashmap &);
     SharedPtr<Node> parse_self(LocalsHashmap &);
+    void parse_shadow_variables_in_args(Vector<SharedPtr<Node>> &, LocalsHashmap &);
     SharedPtr<Node> parse_splat(LocalsHashmap &);
     SharedPtr<Node> parse_stabby_proc(LocalsHashmap &);
     SharedPtr<Node> parse_string(LocalsHashmap &);

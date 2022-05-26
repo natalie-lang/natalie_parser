@@ -29,19 +29,15 @@ SharedPtr<Vector<Token>> Lexer::tokens() {
 
         // get rid of newlines after certain tokens
         if (skip_next_newline) {
-            if (token.is_newline())
+            if (token.is_eol())
                 continue;
             else
                 skip_next_newline = false;
         }
 
         // get rid of newlines before certain tokens
-        while (token.can_follow_collapsible_newline() && !tokens->is_empty() && tokens->last().is_newline())
+        while (token.can_follow_collapsible_newline() && !tokens->is_empty() && tokens->last().is_eol())
             tokens->pop();
-
-        // convert semicolons to eol tokens
-        if (token.is_semicolon())
-            token = Token { Token::Type::Eol, token.file(), token.line(), token.column() };
 
         if (last_doc_token && token.can_have_doc()) {
             token.set_doc(last_doc_token.literal_string());
