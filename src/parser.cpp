@@ -1752,71 +1752,19 @@ SharedPtr<Node> Parser::concat_adjacent_strings(SharedPtr<Node> string, LocalsHa
 }
 
 SharedPtr<Node> Parser::append_string_nodes(SharedPtr<Node> string1, SharedPtr<Node> string2) {
+    if (!string2->can_be_concatenated_to_a_string())
+        throw_unexpected("another string");
     switch (string1->type()) {
     case Node::Type::String: {
         auto string1_node = string1.static_cast_as<StringNode>();
-        switch (string2->type()) {
-        case Node::Type::String: {
-            auto string2_node = string2.static_cast_as<StringNode>();
-            string1_node->string()->append(*string2_node->string());
-            return string1;
-        }
-        case Node::Type::InterpolatedString: {
-            auto string2_node = string2.static_cast_as<InterpolatedStringNode>();
-            assert(!string2_node->is_empty());
-            if (string2_node->nodes().first()->type() == Node::Type::String) {
-                auto n1 = string2_node->nodes().first().static_cast_as<StringNode>();
-                n1->string()->prepend(*string1_node->string());
-            } else {
-                string2_node->prepend_node(string1_node.static_cast_as<Node>());
-            }
-            return string2;
-        }
-        default:
-            TM_UNREACHABLE();
-        }
-        break;
+        return string1_node->append_string_node(string2);
     }
     case Node::Type::InterpolatedString: {
         auto string1_node = string1.static_cast_as<InterpolatedStringNode>();
-        switch (string2->type()) {
-        case Node::Type::String: {
-            auto string2_node = string2.static_cast_as<StringNode>();
-            assert(!string1_node->is_empty());
-            auto last_node = string1_node->nodes().last();
-            switch (last_node->type()) {
-            case Node::Type::String:
-                if (string1_node->nodes().size() > 1) {
-                    // For some reason, RubyParser doesn't append two string nodes
-                    // if there is an evstr present.
-                    string1_node->add_node(string2);
-                } else {
-                    last_node.static_cast_as<StringNode>()->string()->append(*string2_node->string());
-                }
-                return string1;
-            case Node::Type::EvaluateToString:
-                string1_node->add_node(string2);
-                return string1;
-            default:
-                TM_UNREACHABLE();
-            }
-        }
-        case Node::Type::InterpolatedString: {
-            auto string2_node = string2.static_cast_as<InterpolatedStringNode>();
-            assert(!string1_node->is_empty());
-            assert(!string2_node->is_empty());
-            for (auto node : string2_node->nodes()) {
-                string1_node->add_node(node);
-            }
-            return string1;
-        }
-        default:
-            TM_UNREACHABLE();
-        }
-        break;
+        return string1_node->append_string_node(string2);
     }
     default:
-        TM_UNREACHABLE();
+        throw_unexpected("string");
     }
     return string1;
 }

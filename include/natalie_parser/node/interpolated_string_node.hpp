@@ -18,9 +18,13 @@ public:
 
     virtual Type type() const override { return Type::InterpolatedString; }
 
+    virtual bool can_be_concatenated_to_a_string() const override { return true; }
+
     SharedPtr<InterpolatedSymbolNode> to_symbol_node() const {
         return new InterpolatedSymbolNode { *this };
     }
+
+    SharedPtr<Node> append_string_node(SharedPtr<Node> string2) const;
 
     virtual void transform(Creator *creator) const override;
 };

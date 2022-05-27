@@ -114,6 +114,7 @@ public:
     virtual bool is_numeric() const { return false; }
     virtual bool is_symbol_key() const { return false; }
     virtual bool can_accept_a_block() const { return false; }
+    virtual bool can_be_concatenated_to_a_string() const { return false; }
     virtual bool has_block_pass() const { return false; }
 
     BlockNode &as_block_node();

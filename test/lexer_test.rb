@@ -371,6 +371,30 @@ describe 'NatalieParser' do
         { type: :evstrend },
         { type: :dstrend }
       ]
+      expect(tokenize('%{ { #{ 1 } } }')).must_equal [
+        { type: :dstr },
+        { type: :string, literal: " { " },
+        { type: :evstr },
+        { type: :fixnum, literal: 1 },
+        { type: :evstrend },
+        { type: :string, literal: " } " },
+        { type: :dstrend },
+      ]
+      expect(tokenize("%{ { #\{ \"#\{1}\" } } }")).must_equal [
+        { type: :dstr },
+        { type: :string, literal: " { " },
+        { type: :evstr },
+        { type: :dstr },
+        { type: :evstr },
+        { type: :fixnum, literal: 1 },
+        { type: :evstrend },
+        { type: :dstrend },
+        { type: :evstrend },
+        { type: :string, literal: " } " },
+        { type: :dstrend },
+      ]
+
+      # different delimiters
       expect(tokenize('%(foo)')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
       expect(tokenize('%[foo]')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
       expect(tokenize('%{foo}')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]

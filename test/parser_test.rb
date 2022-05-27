@@ -179,22 +179,10 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("'foo'")).must_equal s(:str, 'foo')
         expect(parse("'this is \\'quoted\\''")).must_equal s(:str, "this is 'quoted'")
         expect(parse("'other escaped chars \\\\ \\n'")).must_equal s(:str, "other escaped chars \\ \\n")
-        expect(parse('"#{:foo} bar #{1 + 1}"')).must_equal s(:dstr, '', s(:evstr, s(:lit, :foo)), s(:str, ' bar '), s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))))
-        expect(parse('y = "#{1 + 1} 2"')).must_equal s(:lasgn, :y, s(:dstr, '', s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), s(:str, ' 2')))
-        expect(parse('x.y = "#{1 + 1} 2"')).must_equal s(:attrasgn, s(:call, nil, :x), :y=, s(:dstr, '', s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), s(:str, ' 2')))
-        expect(parse('"#{foo { 1 }}"')).must_equal s(:dstr, "", s(:evstr, s(:iter, s(:call, nil, :foo), 0, s(:lit, 1))))
-        expect(parse(%q("#{1}foo#{''}bar"))).must_equal s(:dstr, '', s(:evstr, s(:lit, 1)), s(:str, 'foo'), s(:str, ''), s(:str, 'bar'))
         expect(parse(%q('foo' 'bar'))).must_equal s(:str, 'foobar')
         expect(parse(%q('foo' "bar"))).must_equal s(:str, 'foobar')
         expect(parse(%q("foo" 'bar'))).must_equal s(:str, 'foobar')
         expect(parse(%q("foo" "bar"))).must_equal s(:str, 'foobar')
-        expect(parse(%q("#{1+1}foo" "bar"))).must_equal s(:dstr, "", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), s(:str, "foo"), s(:str, "bar"))
-        expect(parse(%q("foo#{0+0}" 'bar#{1+1}'))).must_equal s(:dstr, "foo", s(:evstr, s(:call, s(:lit, 0), :+, s(:lit, 0))), s(:str, "bar\#{1+1}"))
-        expect(parse(%q('foo#{0+0}' "bar#{1+1}"))).must_equal s(:dstr, "foo\#{0+0}bar", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))))
-        expect(parse(%q('foo' "#{1+1}"))).must_equal s(:dstr, "foo", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))))
-        expect(parse(%q("foo#{0+0}" "bar#{1+1}"))).must_equal s(:dstr, "foo", s(:evstr, s(:call, s(:lit, 0), :+, s(:lit, 0))), s(:str, "bar"), s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))))
-        expect(parse(%q("#{0+0}foo" "bar#{1+1}"))).must_equal s(:dstr, "", s(:evstr, s(:call, s(:lit, 0), :+, s(:lit, 0))), s(:str, "foo"), s(:str, "bar"), s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))))
-        expect(parse(%q("#{0+0}foo" "#{1+1}bar"))).must_equal s(:dstr, "", s(:evstr, s(:call, s(:lit, 0), :+, s(:lit, 0))), s(:str, "foo"), s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), s(:str, "bar"))
         expect(parse(%q(%Q{1 {2} 3}))).must_equal s(:str, "1 {2} 3")
         expect(parse(%q(%Q/1 {2} 3/))).must_equal s(:str, "1 {2} 3")
         expect(parse(%q(%Q[1 [2] 3]))).must_equal s(:str, "1 [2] 3")
@@ -211,11 +199,27 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse(%q(%Q"1 \" 2"))).must_equal s(:str, '1 " 2')
         expect(parse("%q(1 (\\x\\') 2)")).must_equal s(:str, "1 (\\x\\') 2")
         expect(parse(%Q("foo\\\nbar"))).must_equal s(:str, "foobar")
+
+        # interpolation
+        expect(parse('"#{:foo} bar #{1 + 1}"')).must_equal s(:dstr, '', s(:evstr, s(:lit, :foo)), s(:str, ' bar '), s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))))
+        expect(parse('y = "#{1 + 1} 2"')).must_equal s(:lasgn, :y, s(:dstr, '', s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), s(:str, ' 2')))
+        expect(parse('x.y = "#{1 + 1} 2"')).must_equal s(:attrasgn, s(:call, nil, :x), :y=, s(:dstr, '', s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), s(:str, ' 2')))
+        expect(parse('"#{foo { 1 }}"')).must_equal s(:dstr, "", s(:evstr, s(:iter, s(:call, nil, :foo), 0, s(:lit, 1))))
+        expect(parse(%q("#{1}foo#{''}bar"))).must_equal s(:dstr, '', s(:evstr, s(:lit, 1)), s(:str, 'foo'), s(:str, ''), s(:str, 'bar'))
         expect(parse(%Q(\"a\n#\{\n}\"))).must_equal s(:dstr, "a\n", s(:evstr))
         expect(parse(%q("#{'a'}#{b}"))).must_equal s(:dstr, "a", s(:evstr, s(:call, nil, :b)))
         expect(parse(%q("#{'a'}#{'b'}"))).must_equal s(:str, "ab")
         expect(parse(%q("#{'a'} b"))).must_equal s(:str, "a b")
         expect(parse(%q("a #{1} b #{'c'}"))).must_equal s(:dstr, "a ", s(:evstr, s(:lit, 1)), s(:str, " b "), s(:str, "c"))
+        expect(parse(%q("#{1+1}foo" "bar"))).must_equal s(:dstr, "", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), s(:str, "foo"), s(:str, "bar"))
+        expect(parse(%q("foo#{0+0}" 'bar#{1+1}'))).must_equal s(:dstr, "foo", s(:evstr, s(:call, s(:lit, 0), :+, s(:lit, 0))), s(:str, "bar\#{1+1}"))
+        expect(parse(%q('foo#{0+0}' "bar#{1+1}"))).must_equal s(:dstr, "foo\#{0+0}bar", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))))
+        expect(parse(%q('foo' "#{1+1}"))).must_equal s(:dstr, "foo", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))))
+        expect(parse(%q("foo#{0+0}" "bar#{1+1}"))).must_equal s(:dstr, "foo", s(:evstr, s(:call, s(:lit, 0), :+, s(:lit, 0))), s(:str, "bar"), s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))))
+        expect(parse(%q("#{0+0}foo" "bar#{1+1}"))).must_equal s(:dstr, "", s(:evstr, s(:call, s(:lit, 0), :+, s(:lit, 0))), s(:str, "foo"), s(:str, "bar"), s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))))
+        expect(parse(%q("#{0+0}foo" "#{1+1}bar"))).must_equal s(:dstr, "", s(:evstr, s(:call, s(:lit, 0), :+, s(:lit, 0))), s(:str, "foo"), s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), s(:str, "bar"))
+        expect(parse("%{#\{ \"#\{1}\" }}")).must_equal s(:dstr, "", s(:evstr, s(:lit, 1)))
+        expect(parse("%{ { #\{ \"#\{1}\" } } }")).must_equal s(:dstr, " { ", s(:evstr, s(:lit, 1)), s(:str, " } "))
 
         # encoding
         expect(parse('"foo"').last.encoding.name).must_equal 'UTF-8'
@@ -384,6 +388,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse(':"#{1+1}"')).must_equal s(:dsym, "", s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))))
         expect(parse('foo :"bar"')).must_equal s(:call, nil, :foo, s(:lit, :bar))
         expect(parse(':FooBar')).must_equal s(:lit, :FooBar)
+        expect(-> { parse('"foo" "bar":') }).must_raise SyntaxError
+        expect(-> { parse('"foo": "bar":') }).must_raise SyntaxError
       end
 
       it 'parses symbols with correct encoding' do

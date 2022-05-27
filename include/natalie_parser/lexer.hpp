@@ -13,6 +13,18 @@ public:
         , m_file { file }
         , m_size { input->length() } { }
 
+    Lexer(const Lexer &other, char start_char, char stop_char)
+        : m_input { other.m_input }
+        , m_file { other.m_file }
+        , m_size { other.m_size }
+        , m_index { other.m_index }
+        , m_cursor_line { other.m_cursor_line }
+        , m_cursor_column { other.m_cursor_column }
+        , m_token_line { other.m_token_line }
+        , m_token_column { other.m_token_column }
+        , m_stop_char { stop_char }
+        , m_start_char { start_char } { }
+
     SharedPtr<Vector<Token>> tokens();
     Token next_token();
 

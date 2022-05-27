@@ -14,6 +14,12 @@ public:
     InterpolatedNode(const Token &token)
         : Node { token } { }
 
+    InterpolatedNode(const InterpolatedNode &other)
+        : Node { other.token() } {
+        for (auto node : other.nodes())
+            add_node(node);
+    }
+
     bool is_empty() const { return m_nodes.is_empty(); }
 
     void prepend_node(SharedPtr<Node> node) { m_nodes.push_front(node); };
