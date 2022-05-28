@@ -502,6 +502,14 @@ Token Lexer::build_next_token() {
         case '~':
             advance();
             return Token { Token::Type::NotMatch, m_file, m_token_line, m_token_column };
+        case '@':
+            if (m_last_token.is_def_keyword() || m_last_token.is_dot()) {
+                advance();
+                SharedPtr<String> lit = new String("!@");
+                return Token { Token::Type::BareName, lit, m_file, m_token_line, m_token_column };
+            } else {
+                return Token { Token::Type::Not, m_file, m_token_line, m_token_column };
+            }
         default:
             return Token { Token::Type::Not, m_file, m_token_line, m_token_column };
         }
@@ -631,7 +639,18 @@ Token Lexer::build_next_token() {
         }
     case '~':
         advance();
-        return Token { Token::Type::Tilde, m_file, m_token_line, m_token_column };
+        switch (current_char()) {
+        case '@':
+            if (m_last_token.is_def_keyword() || m_last_token.is_dot()) {
+                advance();
+                SharedPtr<String> lit = new String("~@");
+                return Token { Token::Type::BareName, lit, m_file, m_token_line, m_token_column };
+            } else {
+                return Token { Token::Type::Tilde, m_file, m_token_line, m_token_column };
+            }
+        default:
+            return Token { Token::Type::Tilde, m_file, m_token_line, m_token_column };
+        }
     case '?': {
         auto c = next();
         if (isspace(c)) {

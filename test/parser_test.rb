@@ -631,6 +631,13 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('def (@foo = bar).===(obj); end')).must_equal s(:defs, s(:iasgn, :@foo, s(:call, nil, :bar)), :===, s(:args, :obj), s(:nil))
         expect(parse('def -@; end')).must_equal s(:defn, :-@, s(:args), s(:nil))
         expect(parse('def +@; end')).must_equal s(:defn, :+@, s(:args), s(:nil))
+        if parser == 'NatalieParser'
+          expect(parse('def ~@; end')).must_equal s(:defn, :'~@', s(:args), s(:nil))
+        else
+          # NOTE: RubyParser removes the '@' -- not sure if that's right, but it's hella inconsistent
+          expect(parse('def ~@; end')).must_equal s(:defn, :~, s(:args), s(:nil))
+        end
+        expect(parse('def !@; end')).must_equal s(:defn, :'!@', s(:args), s(:nil))
         expect(parse('def exec(cmd) = system(cmd)')).must_equal s(:defn, :exec, s(:args, :cmd), s(:call, nil, :system, s(:lvar, :cmd)))
         expect(parse('def foo = bar')).must_equal s(:defn, :foo, s(:args), s(:call, nil, :bar))
         expect(parse('def self.exec(cmd) = system(cmd) rescue nil')).must_equal s(:defs, s(:self), :exec, s(:args, :cmd), s(:rescue, s(:call, nil, :system, s(:lvar, :cmd)), s(:resbody, s(:array), s(:nil))))

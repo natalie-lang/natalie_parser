@@ -467,7 +467,6 @@ describe 'NatalieParser' do
         ':!=' => :!=,
         ':!' => :!,
         ':!~' => :!~,
-        ":'!@'" => :'!@',
         ":'='" => :'=',
         ':%' => :%,
         ':$0' => :$0,
@@ -475,6 +474,9 @@ describe 'NatalieParser' do
         ':[]=' => :[]=,
         ':+@' => :+@,
         ':-@' => :-@,
+        ":!@" => :'!@',
+        ":'!@'" => :'!@',
+        ':~@' => :~@,
         ':===' => :===,
         ':=~' => :=~,
         ':>' => :>,
@@ -488,7 +490,6 @@ describe 'NatalieParser' do
         ':|' => :|,
         ':^' => :^,
         ':~' => :~,
-        ':~@' => :~@,
       }.each { |token, symbol| expect(tokenize(token)).must_equal [{ type: :symbol, literal: symbol }] }
       expect(tokenize(':"foo\nbar"')).must_equal [
         { type: :dsym },
@@ -796,7 +797,10 @@ describe 'NatalieParser' do
         { type: :name, literal: :foo },
         { type: :'=' },
       ]
-      expect(tokenize('def /')).must_equal [{ type: :def }, { type: :/ }]
+      expect(tokenize('def /')).must_equal [
+        { type: :def },
+        { type: :/ }
+      ]
       expect(tokenize('def %(x)')).must_equal [
         { type: :def },
         { type: :% },
@@ -850,14 +854,17 @@ describe 'NatalieParser' do
       expect(tokenize('foo.while')).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :name, literal: :while }]
     end
 
-    it 'parses unary method names' do
-      expect(tokenize('def -@')).must_equal [{ type: :def }, { type: :name, literal: :-@ }]
-      expect(tokenize('def +@')).must_equal [{ type: :def }, { type: :name, literal: :+@ }]
-      expect(tokenize('foo.-@')).must_equal [{:type=>:name, :literal=>:foo}, {:type=>:"."}, {:type=>:name, :literal=>:-@}]
-      expect(tokenize('foo.+@')).must_equal [{:type=>:name, :literal=>:foo}, {:type=>:"."}, {:type=>:name, :literal=>:+@}]
-      expect(tokenize('foo.+@bar')).must_equal [{:type=>:name, :literal=>:foo}, {:type=>:"."}, {:type=>:name, :literal=>:+@}, {:type=>:name, :literal=>:bar}]
-      expect(tokenize('foo.+ @bar')).must_equal [{:type=>:name, :literal=>:foo}, {:type=>:"."}, {:type=>:+}, {:type=>:ivar, :literal=>:@bar}]
-      expect(tokenize('foo.%(x)')).must_equal [{:type=>:name, :literal=>:foo}, {:type=>:"."}, {:type=>:%}, {:type=>:"("}, {:type=>:name, :literal=>:x}, {:type=>:")"}]
+    it 'parses unary operator method names' do
+      %w[+ - ~ !].each do |op|
+        expect(tokenize("foo #{op}@bar")).must_equal [{ type: :name, literal: :foo }, { type: op.to_sym }, { type: :ivar, literal: :@bar }]
+        expect(tokenize("foo #{op} @bar")).must_equal [{ type: :name, literal: :foo }, { type: op.to_sym }, { type: :ivar, literal: :@bar }]
+        expect(tokenize("def #{op}@")).must_equal [{ type: :def }, { type: :name, literal: :"#{op}@" }]
+        expect(tokenize("def self.#{op}@")).must_equal [{ type: :def }, { type: :self }, { type: :'.' }, { type: :name, literal: :"#{op}@" }]
+        expect(tokenize("foo.#{op}@")).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :name, literal: :"#{op}@" }]
+        expect(tokenize("foo.#{op}@bar")).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :name, literal: :"#{op}@" }, { type: :name, literal: :bar }]
+        expect(tokenize("foo.#{op} @bar")).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: op.to_sym }, { type: :ivar, literal: :@bar }]
+      end
+      expect(tokenize("foo.%(x)")).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :% }, { type: :"(" }, { type: :name, literal: :x }, { type: :")" }]
     end
 
     it 'parses ternary operator' do
