@@ -39,9 +39,13 @@ SharedPtr<Vector<Token>> Lexer::tokens() {
         while (token.can_follow_collapsible_newline() && !tokens->is_empty() && tokens->last().is_newline())
             tokens->pop();
 
-        if (last_doc_token && token.can_have_doc()) {
-            token.set_doc(last_doc_token.literal_string());
-            last_doc_token = {};
+        if (last_doc_token) {
+            if (token.can_have_doc()) {
+                token.set_doc(last_doc_token.literal_string());
+                last_doc_token = {};
+            } else if (!token.is_end_of_line()) {
+                last_doc_token = {};
+            }
         }
 
         tokens->push(token);

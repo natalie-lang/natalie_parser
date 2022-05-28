@@ -1633,14 +1633,20 @@ require_relative '../lib/natalie_parser/sexp'
         nodes = parse("foo # ignored\nbar")[1..-1]
         expect(nodes.map(&:comments)).must_equal [nil, nil]
 
-        # comments skip certain tokens and attach to the next class/module/def token
-        nodes = parse("# goes with class\nbar\n\nclass Foo;end")
-        call = nodes[1]
-        expect(call.sexp_type).must_equal :call
-        expect(call.comments).must_be_nil
-        klass = nodes.last
-        expect(klass.sexp_type).must_equal :class
-        expect(klass.comments).must_equal "# goes with class\n"
+        # does not include previous ignored comments
+        doc = <<-CODE
+          def foo
+            # foo logic
+          end
+
+          # bar stuff
+          def bar
+            # bar logic
+          end
+        CODE
+        node = parse(doc)
+        bar = node[2]
+        expect(bar.comments).must_equal "# bar stuff\n"
       end
 
       it 'tracks file and line/column number' do
