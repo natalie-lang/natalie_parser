@@ -651,6 +651,7 @@ require_relative '../lib/natalie_parser/sexp'
       it 'parses method definition keyword args' do
         expect(parse('def foo(a, b: :c, d:); end')).must_equal s(:defn, :foo, s(:args, :a, s(:kwarg, :b, s(:lit, :c)), s(:kwarg, :d)), s(:nil))
         expect(parse('def foo bar: 1; end')).must_equal s(:defn, :foo, s(:args, s(:kwarg, :bar, s(:lit, 1))), s(:nil))
+        expect(parse('def foo bar:; end')).must_equal s(:defn, :foo, s(:args, s(:kwarg, :bar)), s(:nil))
         expect(parse('def self.foo bar: 1; end')).must_equal s(:defs, s(:self), :foo, s(:args, s(:kwarg, :bar, s(:lit, 1))), s(:nil))
         expect(parse('def foo Bar: 1; end')).must_equal s(:defn, :foo, s(:args, s(:kwarg, :Bar, s(:lit, 1))), s(:nil))
       end

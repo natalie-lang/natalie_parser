@@ -1072,6 +1072,7 @@ SharedPtr<Node> Parser::parse_def_single_arg(LocalsHashmap &locals) {
         case Token::Type::Newline:
         case Token::Type::Pipe:
         case Token::Type::RParen:
+        case Token::Type::Semicolon:
             break;
         default:
             arg->set_value(parse_expression(Precedence::DEF_ARG, locals));
