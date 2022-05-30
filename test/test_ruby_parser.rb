@@ -386,6 +386,7 @@ module TestRubyParserShared
   end
 
   def test_bug170
+    skip
     rb = '$-'
     pt = s(:gvar, :"$-")
 
