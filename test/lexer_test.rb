@@ -407,6 +407,15 @@ describe 'NatalieParser' do
       expect(tokenize('%Q[foo]')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
       expect(tokenize('%Q{foo}')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
       expect(tokenize('%Q<foo>')).must_equal [{ type: :dstr }, { type: :string, literal: 'foo' }, { type: :dstrend }]
+      expect(tokenize('%Q[foo [#{bar}] baz]')).must_equal [
+        { type: :dstr },
+        { type: :string, literal: 'foo [' },
+        { type: :evstr },
+        { type: :name, literal: :bar },
+        { type: :evstrend },
+        { type: :string, literal: '] baz' },
+        { type: :dstrend },
+      ]
       # TODO: support %=foo=
       # TODO: support %;foo;
       %w[~ ` | / ! @ # $ % ^ & * , . ? : ' " - _ +].each do |sym|
@@ -879,7 +888,6 @@ describe 'NatalieParser' do
         { type: :name, literal: :a },
         { type: :"?" },
         { type: :dstr },
-        { type: :string, literal: '' },
         { type: :dstrend },
         { type: :":" },
         { type: :name, literal: :b }

@@ -98,8 +98,7 @@ Token WordArrayLexer::consume_array() {
 }
 
 Token WordArrayLexer::start_evaluation() {
-    m_nested_lexer = new Lexer { *this };
-    m_nested_lexer->set_stop_char('}');
+    m_nested_lexer = new Lexer { *this, '{', '}' };
     m_state = State::EvaluateEnd;
     return Token { Token::Type::EvaluateToStringBegin, m_file, m_token_line, m_token_column };
 }

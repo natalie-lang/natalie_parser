@@ -11,12 +11,7 @@ Token InterpolatedStringLexer::build_next_token() {
         return start_evaluation();
     case State::EvaluateEnd:
         advance(); // }
-        if (current_char() == m_stop_char) {
-            advance();
-            m_state = State::EndToken;
-        } else {
-            m_state = State::InProgress;
-        }
+        m_state = State::InProgress;
         return Token { Token::Type::EvaluateToStringEnd, m_file, m_token_line, m_token_column };
     case State::EndToken:
         m_state = State::Done;
@@ -53,6 +48,9 @@ Token InterpolatedStringLexer::consume_string() {
             if (m_pair_depth > 0) {
                 m_pair_depth--;
                 buf->append_char(c);
+            } else if (buf->is_empty()) {
+                m_state = State::Done;
+                return Token { m_end_type, m_file, m_token_line, m_token_column };
             } else {
                 m_state = State::EndToken;
                 return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
