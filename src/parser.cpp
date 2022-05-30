@@ -241,12 +241,12 @@ SharedPtr<Node> Parser::tree() {
     return tree;
 }
 
-SharedPtr<BlockNode> Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Token::Type end_token_type, bool allow_rescue) {
+SharedPtr<BlockNode> Parser::parse_body(LocalsHashmap &locals, Precedence precedence, std::function<bool(Token::Type)> is_end, bool allow_rescue) {
     m_call_depth.push(0);
     SharedPtr<BlockNode> body = new BlockNode { current_token() };
     validate_current_token();
     skip_newlines();
-    while (!current_token().is_eof() && current_token().type() != end_token_type) {
+    while (!current_token().is_eof() && !is_end(current_token().type())) {
         if (allow_rescue && current_token().type() == Token::Type::RescueKeyword) {
             auto token = body->token();
             SharedPtr<BeginNode> begin_node = new BeginNode { body->token(), body };
@@ -256,7 +256,7 @@ SharedPtr<BlockNode> Parser::parse_body(LocalsHashmap &locals, Precedence preced
         }
         auto exp = parse_expression(precedence, locals);
         body->add_node(exp);
-        if (current_token().type() == end_token_type)
+        if (is_end(current_token().type()))
             break;
         next_expression();
     }
@@ -264,27 +264,12 @@ SharedPtr<BlockNode> Parser::parse_body(LocalsHashmap &locals, Precedence preced
     return body;
 }
 
-// FIXME: Maybe pass a lambda in that can just compare the two types? (No vector needed.)
-SharedPtr<BlockNode> Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Vector<Token::Type> &end_tokens, const char *expected_message) {
-    SharedPtr<BlockNode> body = new BlockNode { current_token() };
-    validate_current_token();
-    skip_newlines();
-    auto finished = [this, end_tokens] {
-        for (auto end_token : end_tokens) {
-            if (current_token().type() == end_token)
-                return true;
-        }
-        return false;
-    };
-    while (!current_token().is_eof() && !finished()) {
-        auto exp = parse_expression(precedence, locals);
-        body->add_node(exp);
-        validate_current_token();
-        next_expression();
-    }
-    if (!finished())
-        throw_unexpected(expected_message);
-    return body;
+SharedPtr<BlockNode> Parser::parse_body(LocalsHashmap &locals, Precedence precedence, Token::Type end_token_type, bool allow_rescue) {
+    return parse_body(
+        locals,
+        precedence,
+        [&](Token::Type type) { return type == end_token_type; },
+        allow_rescue);
 }
 
 SharedPtr<BlockNode> Parser::parse_def_body(LocalsHashmap &locals) {
@@ -397,22 +382,31 @@ SharedPtr<Node> Parser::parse_begin(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     next_expression();
-    auto begin_ending_tokens = Vector<Token::Type> { { Token::Type::RescueKeyword, Token::Type::ElseKeyword, Token::Type::EnsureKeyword, Token::Type::EndKeyword } };
-    auto body = parse_body(locals, Precedence::LOWEST, begin_ending_tokens, "case: rescue, else, ensure, or end");
+    auto is_end = [&](Token::Type type) { return type == Token::Type::RescueKeyword || type == Token::Type::ElseKeyword || type == Token::Type::EnsureKeyword || type == Token::Type::EndKeyword; };
+    auto body = parse_body(locals, Precedence::LOWEST, is_end, true);
+    if (!is_end(current_token().type()))
+        throw_unexpected("begin: rescue, else, ensure, or end");
 
     SharedPtr<BeginNode> begin_node = new BeginNode { token, body };
     parse_rest_of_begin(begin_node.ref(), locals);
 
     // a begin/end with nothing else just becomes a BlockNode
-    if (begin_node->can_be_simple_block())
-        return begin_node->body().static_cast_as<Node>();
+    if (begin_node->can_be_simple_block()) {
+        auto body = begin_node->body();
+        // if this BlockNode has a single child node, and
+        // there is no trailing if/unless/while/until modifier,
+        // we can just return the one node
+        if (body->has_one_node() && !current_token().is_expression_modifier())
+            return body->take_first_node();
+        return body.static_cast_as<Node>();
+    }
 
     return begin_node.static_cast_as<Node>();
 }
 
 void Parser::parse_rest_of_begin(BeginNode &begin_node, LocalsHashmap &locals) {
-    auto rescue_ending_tokens = Vector<Token::Type> { { Token::Type::RescueKeyword, Token::Type::ElseKeyword, Token::Type::EnsureKeyword, Token::Type::EndKeyword } };
-    auto else_ending_tokens = Vector<Token::Type> { { Token::Type::EnsureKeyword, Token::Type::EndKeyword } };
+    auto is_end_of_rescue = [&](Token::Type type) { return type == Token::Type::RescueKeyword || type == Token::Type::ElseKeyword || type == Token::Type::EnsureKeyword || type == Token::Type::EndKeyword; };
+    auto is_end_of_else = [&](Token::Type type) { return type == Token::Type::EnsureKeyword || type == Token::Type::EndKeyword; };
     while (!current_token().is_eof() && !current_token().is_end_keyword()) {
         switch (current_token().type()) {
         case Token::Type::RescueKeyword: {
@@ -442,7 +436,9 @@ void Parser::parse_rest_of_begin(BeginNode &begin_node, LocalsHashmap &locals) {
                 rescue_node->set_exception_name(name);
             }
             next_expression();
-            auto body = parse_body(locals, Precedence::LOWEST, rescue_ending_tokens, "case: rescue, else, ensure, or end");
+            auto body = parse_body(locals, Precedence::LOWEST, is_end_of_rescue, false);
+            if (!is_end_of_rescue(current_token().type()))
+                throw_unexpected("begin: rescue, else, ensure, or end");
             rescue_node->set_body(body);
             begin_node.add_rescue_node(rescue_node);
             break;
@@ -450,7 +446,9 @@ void Parser::parse_rest_of_begin(BeginNode &begin_node, LocalsHashmap &locals) {
         case Token::Type::ElseKeyword: {
             advance();
             next_expression();
-            auto body = parse_body(locals, Precedence::LOWEST, else_ending_tokens, "case: ensure or end");
+            auto body = parse_body(locals, Precedence::LOWEST, is_end_of_else, false);
+            if (!is_end_of_else(current_token().type()))
+                throw_unexpected("begin: ensure or end");
             begin_node.set_else_body(body);
             break;
         }

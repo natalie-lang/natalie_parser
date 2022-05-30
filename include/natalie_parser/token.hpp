@@ -730,6 +730,7 @@ public:
         switch (m_type) {
         case Token::Type::Arrow:
         case Token::Type::BareName:
+        case Token::Type::BeginKeyword:
         case Token::Type::Bignum:
         case Token::Type::ClassVariable:
         case Token::Type::Constant:

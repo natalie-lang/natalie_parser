@@ -1018,6 +1018,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('until true; end')).must_equal s(:until, s(:true), nil, true)
         expect(parse('until true; 1; end')).must_equal s(:until, s(:true), s(:lit, 1), true)
         expect(parse('until true; 1; 2; end')).must_equal s(:until, s(:true), s(:block, s(:lit, 1), s(:lit, 2)), true)
+        expect(parse('foo while true')).must_equal s(:while, s(:true), s(:call, nil, :foo), true)
+        expect(parse('begin; foo; end while true')).must_equal s(:while, s(:true), s(:call, nil, :foo), false)
         expect(parse('1 while true')).must_equal s(:while, s(:true), s(:lit, 1), true)
         expect(parse('begin; 1; end while true')).must_equal s(:while, s(:true), s(:lit, 1), false)
         expect(parse('begin; 1; 2; end while true')).must_equal s(:while, s(:true), s(:block, s(:lit, 1), s(:lit, 2)), false)
@@ -1426,6 +1428,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("class Foo;rescue;1;else;2;ensure;3;end")).must_equal s(:class, :Foo, nil, s(:ensure, s(:rescue, s(:resbody, s(:array), s(:lit, 1)), s(:lit, 2)), s(:lit, 3)))
         expect(parse("module Foo;rescue;1;else;2;ensure;3;end")).must_equal s(:module, :Foo, s(:ensure, s(:rescue, s(:resbody, s(:array), s(:lit, 1)), s(:lit, 2)), s(:lit, 3)))
         expect(parse("h[k]=begin\n42\nend")).must_equal s(:attrasgn, s(:call, nil, :h), :[]=, s(:call, nil, :k), s(:lit, 42))
+        expect(parse("a begin\nb.c do end\nend")).must_equal s(:call, nil, :a, s(:iter, s(:call, s(:call, nil, :b), :c), 0))
       end
 
       it 'parses inline rescue' do
