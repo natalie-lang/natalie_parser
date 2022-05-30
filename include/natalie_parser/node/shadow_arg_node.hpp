@@ -12,24 +12,29 @@ using namespace TM;
 
 class ShadowArgNode : public Node {
 public:
-    ShadowArgNode(const Token &token, SharedPtr<String> name)
-        : Node { token }
-        , m_name { name } { }
+    ShadowArgNode(const Token &token)
+        : Node { token } { }
 
     virtual Type type() const override { return Type::ShadowArg; }
 
-    const SharedPtr<String> name() const { return m_name; }
+    const Vector<SharedPtr<String>> &names() const { return m_names; }
+
+    void add_name(SharedPtr<String> name) {
+        m_names.push(name);
+    }
 
     void add_to_locals(TM::Hashmap<TM::String> &locals) {
-        locals.set(m_name->c_str());
+        for (auto name : m_names)
+            locals.set(name->c_str());
     }
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("shadow");
-        creator->append_symbol(m_name);
+        for (auto name : m_names)
+            creator->append_symbol(name);
     }
 
 protected:
-    SharedPtr<String> m_name {};
+    Vector<SharedPtr<String>> m_names {};
 };
 }

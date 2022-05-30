@@ -1658,15 +1658,25 @@ SharedPtr<Node> Parser::parse_self(LocalsHashmap &) {
 }
 
 void Parser::parse_shadow_variables_in_args(Vector<SharedPtr<Node>> &args, LocalsHashmap &locals) {
+    auto token = current_token();
     advance(); // ;
+    SharedPtr<ShadowArgNode> shadow_arg = new ShadowArgNode { token };
+    shadow_arg->add_name(parse_shadow_variable_single_arg());
+    while (current_token().is_comma()) {
+        advance(); // ,
+        shadow_arg->add_name(parse_shadow_variable_single_arg());
+    }
+    shadow_arg->add_to_locals(locals);
+    args.push(shadow_arg.static_cast_as<Node>());
+}
+
+SharedPtr<String> Parser::parse_shadow_variable_single_arg() {
     auto token = current_token();
     switch (token.type()) {
     case Token::Type::BareName: {
-        SharedPtr<ShadowArgNode> arg = new ShadowArgNode { token, token.literal_string() };
+        auto name = token.literal_string();
         advance();
-        arg->add_to_locals(locals);
-        args.push(arg.static_cast_as<Node>());
-        break;
+        return name;
     }
     default:
         throw_unexpected("shadow local variable");

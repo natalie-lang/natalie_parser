@@ -1354,7 +1354,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('-> (; x) { x }')).must_equal s(:iter, s(:lambda), s(:args, s(:shadow, :x)), s(:lvar, :x))
         expect(parse('lambda { |a; x| x }')).must_equal s(:iter, s(:call, nil, :lambda), s(:args, :a, s(:shadow, :x)), s(:lvar, :x))
         expect(parse('lambda { |; x| x }')).must_equal s(:iter, s(:call, nil, :lambda), s(:args, s(:shadow, :x)), s(:lvar, :x))
-        expect(parse('foo { |a; x| x }')).must_equal s(:iter, s(:call, nil, :foo), s(:args, :a, s(:shadow, :x)), s(:lvar, :x))
+        expect(parse('foo { |a; x, y| y }')).must_equal s(:iter, s(:call, nil, :foo), s(:args, :a, s(:shadow, :x, :y)), s(:lvar, :y))
 
         # just a newline does not make a shadow variable
         expect(parse("-> (\nx) { x }")).must_equal s(:iter, s(:lambda), s(:args, :x), s(:lvar, :x))
