@@ -629,6 +629,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('def foo(a = nil, b = foo, c = FOO); end')).must_equal s(:defn, :foo, s(:args, s(:lasgn, :a, s(:nil)), s(:lasgn, :b, s(:call, nil, :foo)), s(:lasgn, :c, s(:const, :FOO))), s(:nil))
         expect(parse('bar def foo() end')).must_equal s(:call, nil, :bar, s(:defn, :foo, s(:args), s(:nil)))
         expect(parse('def (@foo = bar).===(obj); end')).must_equal s(:defs, s(:iasgn, :@foo, s(:call, nil, :bar)), :===, s(:args, :obj), s(:nil))
+
+        # operators
         expect(parse('def -@; end')).must_equal s(:defn, :-@, s(:args), s(:nil))
         expect(parse('def +@; end')).must_equal s(:defn, :+@, s(:args), s(:nil))
         if parser == 'NatalieParser'
@@ -638,6 +640,8 @@ require_relative '../lib/natalie_parser/sexp'
           expect(parse('def ~@; end')).must_equal s(:defn, :~, s(:args), s(:nil))
         end
         expect(parse('def !@; end')).must_equal s(:defn, :'!@', s(:args), s(:nil))
+
+        # single-line method defs
         expect(parse('def exec(cmd) = system(cmd)')).must_equal s(:defn, :exec, s(:args, :cmd), s(:call, nil, :system, s(:lvar, :cmd)))
         expect(parse('def foo = bar')).must_equal s(:defn, :foo, s(:args), s(:call, nil, :bar))
         expect(parse('def self.exec(cmd) = system(cmd) rescue nil')).must_equal s(:defs, s(:self), :exec, s(:args, :cmd), s(:rescue, s(:call, nil, :system, s(:lvar, :cmd)), s(:resbody, s(:array), s(:nil))))
@@ -1246,6 +1250,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("f ->() { g do end }")).must_equal s(:call, nil, :f, s(:iter, s(:lambda), s(:args), s(:iter, s(:call, nil, :g), 0)))
         expect(parse("a [ nil, b do end ]")).must_equal s(:call, nil, :a, s(:array, s(:nil), s(:iter, s(:call, nil, :b), 0)))
         expect(parse("private def f\na.b do end\nend")).must_equal s(:call, nil, :private, s(:defn, :f, s(:args), s(:iter, s(:call, s(:call, nil, :a), :b), 0)))
+        expect(parse("foo def bar\n x.y do; end\n end")).must_equal s(:call, nil, :foo, s(:defn, :bar, s(:args), s(:iter, s(:call, s(:call, nil, :x), :y), 0)))
         expect(-> { parse("foo 1 < 2 { 3 }") }).must_raise SyntaxError
         expect(-> { parse("foo 1 | 2 { 3 }") }).must_raise SyntaxError
         expect(-> { parse("foo 1 & 2 { 3 }") }).must_raise SyntaxError

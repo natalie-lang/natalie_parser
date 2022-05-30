@@ -288,21 +288,7 @@ SharedPtr<BlockNode> Parser::parse_body(LocalsHashmap &locals, Precedence preced
 }
 
 SharedPtr<BlockNode> Parser::parse_def_body(LocalsHashmap &locals) {
-    auto token = current_token();
-    SharedPtr<BlockNode> body = new BlockNode { token };
-    skip_newlines();
-    while (!current_token().is_eof() && !current_token().is_end_keyword()) {
-        if (current_token().type() == Token::Type::RescueKeyword) {
-            SharedPtr<BeginNode> begin_node = new BeginNode { token, body };
-            parse_rest_of_begin(begin_node.ref(), locals);
-            rewind(); // so the 'end' keyword can be consumed by parse_def
-            return new BlockNode { token, begin_node.static_cast_as<Node>() };
-        }
-        auto exp = parse_expression(Precedence::LOWEST, locals);
-        body->add_node(exp);
-        next_expression();
-    }
-    return body;
+    return parse_body(locals, Precedence::LOWEST, Token::Type::EndKeyword, true);
 }
 
 SharedPtr<Node> Parser::parse_alias(LocalsHashmap &locals) {
