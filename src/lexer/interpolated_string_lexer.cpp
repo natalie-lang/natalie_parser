@@ -10,12 +10,9 @@ Token InterpolatedStringLexer::build_next_token() {
     case State::EvaluateBegin:
         return start_evaluation();
     case State::EvaluateEnd:
-        advance(); // }
-        m_state = State::InProgress;
-        return Token { Token::Type::EvaluateToStringEnd, m_file, m_token_line, m_token_column };
+        return stop_evaluation();
     case State::EndToken:
-        m_state = State::Done;
-        return Token { m_end_type, m_file, m_cursor_line, m_cursor_column };
+        return finish();
     case State::Done:
         return Token { Token::Type::Eof, m_file, m_cursor_line, m_cursor_column };
     }
@@ -49,8 +46,7 @@ Token InterpolatedStringLexer::consume_string() {
                 m_pair_depth--;
                 buf->append_char(c);
             } else if (buf->is_empty()) {
-                m_state = State::Done;
-                return Token { m_end_type, m_file, m_token_line, m_token_column };
+                return finish();
             } else {
                 m_state = State::EndToken;
                 return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
@@ -76,6 +72,17 @@ Token InterpolatedStringLexer::start_evaluation() {
     m_nested_lexer = new Lexer { *this, '{', '}' };
     m_state = State::EvaluateEnd;
     return Token { Token::Type::EvaluateToStringBegin, m_file, m_token_line, m_token_column };
+}
+
+Token InterpolatedStringLexer::stop_evaluation() {
+    advance(); // }
+    m_state = State::InProgress;
+    return Token { Token::Type::EvaluateToStringEnd, m_file, m_token_line, m_token_column };
+}
+
+Token InterpolatedStringLexer::finish() {
+    m_state = State::Done;
+    return Token { m_end_type, m_file, m_cursor_line, m_cursor_column };
 }
 
 };

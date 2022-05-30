@@ -33,9 +33,22 @@ private:
     virtual Token build_next_token() override;
     Token consume_string();
     Token start_evaluation();
+    Token stop_evaluation();
+    Token finish();
 
     virtual bool skip_whitespace() override { return false; }
 
+    /**
+     * a little state machine
+     * stateDiagram-v2
+     *     [*] --> InProgress
+     *     InProgress --> EvaluateBegin
+     *     InProgress --> EndToken
+     *     EvaluateBegin --> EvaluateEnd
+     *     EvaluateEnd --> InProgress
+     *     EndToken --> Done
+     *     Done --> [*]
+     */
     enum class State {
         InProgress,
         EvaluateBegin,
