@@ -934,7 +934,7 @@ Token Lexer::build_next_token() {
     }
 
     // if a colon comes next, it's not a keyword -- it's a symbol!
-    if (keyword_token && current_char() == ':' && peek() != ':') {
+    if (keyword_token && current_char() == ':' && peek() != ':' && !m_open_ternary) {
         advance(); // :
         auto name = keyword_token.type_value();
         return Token { Token::Type::SymbolKey, name, m_file, m_token_line, m_token_column };

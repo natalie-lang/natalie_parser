@@ -993,6 +993,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("foo && bar && baz ? 1 : 2")).must_equal s(:if, s(:and, s(:call, nil, :foo), s(:and, s(:call, nil, :bar), s(:call, nil, :baz))), s(:lit, 1), s(:lit, 2))
         expect(parse("a ? '': b")).must_equal s(:if, s(:call, nil, :a), s(:str, ""), s(:call, nil, :b))
         expect(parse('a ? "": b')).must_equal s(:if, s(:call, nil, :a), s(:str, ""), s(:call, nil, :b))
+        expect(parse('a=b ? true: false')).must_equal s(:lasgn, :a, s(:if, s(:call, nil, :b), s(:true), s(:false)))
       end
 
       it 'parses if/elsif/else' do
