@@ -22,6 +22,10 @@ public:
 
     virtual Type type() const override { return Type::Begin; }
 
+    bool can_be_simple_block() const {
+        return !has_rescue_nodes() && !has_else_body() && !has_ensure_body();
+    }
+
     void add_rescue_node(SharedPtr<BeginRescueNode> node) { m_rescue_nodes.push(node); }
     bool has_rescue_nodes() const { return !m_rescue_nodes.is_empty(); }
 

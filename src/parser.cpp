@@ -418,7 +418,7 @@ SharedPtr<Node> Parser::parse_begin(LocalsHashmap &locals) {
     parse_rest_of_begin(begin_node.ref(), locals);
 
     // a begin/end with nothing else just becomes a BlockNode
-    if (!(begin_node->has_rescue_nodes() || begin_node->has_else_body() || begin_node->has_ensure_body()))
+    if (begin_node->can_be_simple_block())
         return begin_node->body().static_cast_as<Node>();
 
     return begin_node.static_cast_as<Node>();
@@ -2000,6 +2000,12 @@ SharedPtr<Node> Parser::parse_assignment_expression_value(bool to_array, LocalsH
         is_splat = true;
     } else {
         is_splat = false;
+    }
+
+    if (value->type() == Node::Type::Block) {
+        auto block_node = value.static_cast_as<BlockNode>();
+        if (block_node->has_one_node())
+            value = value.static_cast_as<BlockNode>()->take_first_node();
     }
 
     if (is_splat) {
