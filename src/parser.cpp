@@ -427,7 +427,7 @@ void Parser::parse_rest_of_begin(BeginNode &begin_node, LocalsHashmap &locals) {
                     rescue_node->add_exception_node(name);
                 }
             }
-            if (current_token().type() == Token::Type::HashRocket) {
+            if (current_token().is_hash_rocket()) {
                 advance();
                 SharedPtr<IdentifierNode> name;
                 switch (current_token().type()) {
@@ -1621,12 +1621,21 @@ SharedPtr<Node> Parser::parse_return(LocalsHashmap &locals) {
     } else {
         value = parse_expression(Precedence::BARE_CALL_ARG, locals);
     }
-    if (current_token().is_comma()) {
+    if (value->is_symbol_key())
+        throw_unexpected("argument (no keyword args)");
+    if (current_token().is_hash_rocket()) {
+        value = parse_call_hash_args(locals, true, Token::Type::RParen, value);
+    } else if (current_token().is_comma()) {
         SharedPtr<ArrayNode> array = new ArrayNode { current_token() };
         array->add_node(value);
         while (current_token().is_comma()) {
             advance();
-            array->add_node(parse_expression(Precedence::BARE_CALL_ARG, locals));
+            auto item = parse_expression(Precedence::BARE_CALL_ARG, locals);
+            if (current_token().is_hash_rocket() || item->is_symbol_key()) {
+                array->add_node(parse_call_hash_args(locals, true, Token::Type::RParen, item));
+            } else {
+                array->add_node(item);
+            }
         }
         value = array.static_cast_as<Node>();
     }
@@ -2125,7 +2134,7 @@ void Parser::parse_call_args(NodeWithArgs &node, LocalsHashmap &locals, bool bar
     if (node.can_accept_a_block())
         m_call_depth.last()++;
     auto arg = parse_expression(bare ? Precedence::BARE_CALL_ARG : Precedence::CALL_ARG, locals);
-    if (current_token().type() == Token::Type::HashRocket || arg->is_symbol_key()) {
+    if (current_token().is_hash_rocket() || arg->is_symbol_key()) {
         node.add_arg(parse_call_hash_args(locals, bare, closing_token_type, arg));
     } else {
         node.add_arg(arg);
@@ -2137,7 +2146,7 @@ void Parser::parse_call_args(NodeWithArgs &node, LocalsHashmap &locals, bool bar
                 break;
             }
             arg = parse_expression(bare ? Precedence::BARE_CALL_ARG : Precedence::CALL_ARG, locals);
-            if (current_token().type() == Token::Type::HashRocket || arg->is_symbol_key()) {
+            if (current_token().is_hash_rocket() || arg->is_symbol_key()) {
                 node.add_arg(parse_call_hash_args(locals, bare, closing_token_type, arg));
                 break;
             } else {

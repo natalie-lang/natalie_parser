@@ -1187,6 +1187,11 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('return 1, 2')).must_equal s(:return, s(:array, s(:lit, 1), s(:lit, 2)))
         expect(parse('return foo if true')).must_equal s(:if, s(:true), s(:return, s(:call, nil, :foo)), nil)
         expect(parse('return x = 1')).must_equal s(:return, s(:lasgn, :x, s(:lit, 1)))
+        expect(parse('return :x => 1')).must_equal s(:return, s(:hash, s(:lit, :x), s(:lit, 1)))
+        expect(parse('return 1, :x => 2')).must_equal s(:return, s(:array, s(:lit, 1), s(:hash, s(:lit, :x), s(:lit, 2))))
+        expect(parse('return 1, x: 2')).must_equal s(:return, s(:array, s(:lit, 1), s(:hash, s(:lit, :x), s(:lit, 2))))
+        # why?
+        expect(-> { parse('return x: 1') }).must_raise SyntaxError
       end
 
       it 'parses block iter' do
