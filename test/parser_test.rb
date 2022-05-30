@@ -1609,6 +1609,12 @@ require_relative '../lib/natalie_parser/sexp'
         expect(-> { parse('END do 1 end') }).must_raise SyntaxError
       end
 
+      it 'parses __ENCODING__' do
+        expect(parse('__ENCODING__')).must_equal s(:colon2, s(:const, :Encoding), :UTF_8)
+        expect(-> { parse('__ENCODING__ 1') }).must_raise SyntaxError
+        expect(-> { parse('__ENCODING__ do; end') }).must_raise SyntaxError
+      end
+
       it 'parses regular comment doc blocks' do
         {
           class: :class,

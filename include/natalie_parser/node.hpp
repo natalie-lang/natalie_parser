@@ -24,6 +24,7 @@
 #include "natalie_parser/node/constant_node.hpp"
 #include "natalie_parser/node/def_node.hpp"
 #include "natalie_parser/node/defined_node.hpp"
+#include "natalie_parser/node/encoding_node.hpp"
 #include "natalie_parser/node/end_block_node.hpp"
 #include "natalie_parser/node/evaluate_to_string_node.hpp"
 #include "natalie_parser/node/false_node.hpp"

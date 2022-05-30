@@ -36,6 +36,7 @@ public:
         Constant,
         Def,
         Defined,
+        Encoding,
         EndBlock,
         EvaluateToString,
         False,

@@ -89,6 +89,7 @@ private:
     SharedPtr<Node> parse_defined(LocalsHashmap &);
     void parse_def_args(Vector<SharedPtr<Node>> &, LocalsHashmap &);
     SharedPtr<Node> parse_def_single_arg(LocalsHashmap &);
+    SharedPtr<Node> parse_encoding(LocalsHashmap &);
     SharedPtr<Node> parse_end_block(LocalsHashmap &);
     SharedPtr<Node> parse_file_constant(LocalsHashmap &);
     SharedPtr<Node> parse_group(LocalsHashmap &);

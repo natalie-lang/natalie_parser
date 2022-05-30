@@ -1071,6 +1071,12 @@ SharedPtr<Node> Parser::parse_def_single_arg(LocalsHashmap &locals) {
     }
 }
 
+SharedPtr<Node> Parser::parse_encoding(LocalsHashmap &) {
+    auto token = current_token();
+    advance(); // __ENCODING__
+    return new EncodingNode { token };
+}
+
 SharedPtr<Node> Parser::parse_end_block(LocalsHashmap &locals) {
     auto token = current_token();
     advance(); // END
@@ -2559,6 +2565,8 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
     case Type::DotDot:
     case Type::DotDotDot:
         return &Parser::parse_beginless_range;
+    case Type::ENCODINGKeyword:
+        return &Parser::parse_encoding;
     case Type::ENDKeyword:
         return &Parser::parse_end_block;
     case Type::FILEKeyword:

@@ -66,6 +66,11 @@ public:
         append_string(*string_ptr);
     }
 
+    void append_symbol(const char *symbol) {
+        auto s = TM::String(symbol);
+        append_symbol(s);
+    }
+
     void append_symbol(TM::SharedPtr<TM::String> symbol_ptr) {
         if (!symbol_ptr) {
             auto s = TM::String("");
