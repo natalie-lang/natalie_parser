@@ -2054,9 +2054,13 @@ SharedPtr<Node> Parser::parse_iter_expression(SharedPtr<Node> left, LocalsHashma
         } else if (current_token().is_block_arg_delimiter()) {
             has_args = true;
             advance(); // |
-            parse_iter_args(args, our_locals);
-            expect(Token::Type::Pipe, "end of block args");
-            advance(); // |
+            if (current_token().is_block_arg_delimiter()) {
+                advance(); // |
+            } else {
+                parse_iter_args(args, our_locals);
+                expect(Token::Type::Pipe, "end of block args");
+                advance(); // |
+            }
         }
     } else {
         throw_unexpected(left->token(), "call to accept block");

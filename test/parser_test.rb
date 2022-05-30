@@ -1201,6 +1201,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("foo do\n1\n2\nend")).must_equal s(:iter, s(:call, nil, :foo), 0, s(:block, s(:lit, 1), s(:lit, 2)))
         expect(parse("foo do |x, y|\nx\ny\nend")).must_equal s(:iter, s(:call, nil, :foo), s(:args, :x, :y), s(:block, s(:lvar, :x), s(:lvar, :y)))
         expect(parse("foo do ||\nend")).must_equal s(:iter, s(:call, nil, :foo), s(:args))
+        expect(parse("foo do | |\nend")).must_equal s(:iter, s(:call, nil, :foo), s(:args))
         expect(parse("foo(a, b) do |x, y|\nx\ny\nend")).must_equal s(:iter, s(:call, nil, :foo, s(:call, nil, :a), s(:call, nil, :b)), s(:args, :x, :y), s(:block, s(:lvar, :x), s(:lvar, :y)))
         expect(parse("super do |x| x end")).must_equal s(:iter, s(:zsuper), s(:args, :x), s(:lvar, :x))
         expect(parse("super() do |x| x end")).must_equal s(:iter, s(:super), s(:args, :x), s(:lvar, :x))
