@@ -38,6 +38,8 @@ public:
         creator->append_symbol(n);
     }
 
+    bool splat_or_kwsplat() const { return m_splat || m_kwsplat; }
+
     bool splat() const { return m_splat; }
     void set_splat(bool splat) { m_splat = splat; }
 

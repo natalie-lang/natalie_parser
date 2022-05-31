@@ -631,6 +631,12 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('bar def foo() end')).must_equal s(:call, nil, :bar, s(:defn, :foo, s(:args), s(:nil)))
         expect(parse('def (@foo = bar).===(obj); end')).must_equal s(:defs, s(:iasgn, :@foo, s(:call, nil, :bar)), :===, s(:args, :obj), s(:nil))
 
+        # args in wrong order
+        expect(-> { parse('def foo(a, *b, c = nil) end') }).must_raise SyntaxError
+        expect(-> { parse('def foo(a, **b, c = nil) end') }).must_raise SyntaxError
+        expect(-> { parse('def foo(a, **b, *c) end') }).must_raise SyntaxError
+        expect(-> { parse('def foo(b:, a) end') }).must_raise SyntaxError
+
         # operators
         expect(parse('def -@; end')).must_equal s(:defn, :-@, s(:args), s(:nil))
         expect(parse('def +@; end')).must_equal s(:defn, :+@, s(:args), s(:nil))
@@ -1340,6 +1346,7 @@ require_relative '../lib/natalie_parser/sexp'
 
       it 'parses keyword splat **' do
         expect(parse('def foo(**kwargs); end')).must_equal s(:defn, :foo, s(:args, :'**kwargs'), s(:nil))
+        expect(parse('def foo(*args, **kwargs); end')).must_equal s(:defn, :foo, s(:args, :"*args", :"**kwargs"), s(:nil))
         expect(parse('def foo **kwargs; end')).must_equal s(:defn, :foo, s(:args, :'**kwargs'), s(:nil))
         expect(parse('foo(**kwargs)')).must_equal s(:call, nil, :foo, s(:hash, s(:kwsplat, s(:call, nil, :kwargs))))
         expect(parse('foo(a: :b, **kwargs)')).must_equal s(:call, nil, :foo, s(:hash, s(:lit, :a), s(:lit, :b), s(:kwsplat, s(:call, nil, :kwargs))))

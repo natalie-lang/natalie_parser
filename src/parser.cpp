@@ -978,25 +978,33 @@ SharedPtr<Node> Parser::parse_defined(LocalsHashmap &locals) {
 }
 
 void Parser::parse_def_args(Vector<SharedPtr<Node>> &args, LocalsHashmap &locals) {
-    args.push(parse_def_single_arg(locals));
+    parse_def_single_arg(args, locals);
     while (current_token().is_comma()) {
         advance();
-        args.push(parse_def_single_arg(locals));
+        parse_def_single_arg(args, locals);
     }
 }
 
-SharedPtr<Node> Parser::parse_def_single_arg(LocalsHashmap &locals) {
+void Parser::parse_def_single_arg(Vector<SharedPtr<Node>> &args, LocalsHashmap &locals) {
+    auto args_have_any_splat = [&]() { return !args.is_empty() && args.last()->type() == Node::Type::Arg && args.last().static_cast_as<ArgNode>()->splat_or_kwsplat(); };
+    auto args_have_keyword = [&]() { return !args.is_empty() && args.last()->type() == Node::Type::KeywordArg; };
+
     auto token = current_token();
     switch (token.type()) {
     case Token::Type::BareName: {
+        if (args_have_keyword())
+            throw_unexpected(token, nullptr, "normal arg after keyword arg");
         SharedPtr<ArgNode> arg = new ArgNode { token, token.literal_string() };
         advance();
         arg->add_to_locals(locals);
         if (current_token().is_equal()) {
-            advance();
+            if (args_have_any_splat())
+                throw_unexpected(token, nullptr, "default value after splat");
+            advance(); // =
             arg->set_value(parse_expression(Precedence::DEF_ARG, locals));
         }
-        return arg.static_cast_as<Node>();
+        args.push(arg.static_cast_as<Node>());
+        return;
     }
     case Token::Type::LParen: {
         advance();
@@ -1008,9 +1016,12 @@ SharedPtr<Node> Parser::parse_def_single_arg(LocalsHashmap &locals) {
         for (auto arg : sub_args) {
             masgn->add_node(arg);
         }
-        return masgn;
+        args.push(masgn);
+        return;
     }
     case Token::Type::Star: {
+        if (args_have_any_splat())
+            throw_unexpected(token, nullptr, "splat after keyword splat");
         advance();
         SharedPtr<ArgNode> arg;
         if (current_token().is_bare_name()) {
@@ -1021,7 +1032,8 @@ SharedPtr<Node> Parser::parse_def_single_arg(LocalsHashmap &locals) {
             arg = new ArgNode { token };
         }
         arg->set_splat(true);
-        return arg.static_cast_as<Node>();
+        args.push(arg.static_cast_as<Node>());
+        return;
     }
     case Token::Type::StarStar: {
         advance();
@@ -1037,7 +1049,8 @@ SharedPtr<Node> Parser::parse_def_single_arg(LocalsHashmap &locals) {
             arg = new ArgNode { token };
         }
         arg->set_kwsplat(true);
-        return arg.static_cast_as<Node>();
+        args.push(arg.static_cast_as<Node>());
+        return;
     }
     case Token::Type::Ampersand: {
         advance();
@@ -1046,7 +1059,8 @@ SharedPtr<Node> Parser::parse_def_single_arg(LocalsHashmap &locals) {
         advance();
         arg->add_to_locals(locals);
         arg->set_block_arg(true);
-        return arg;
+        args.push(arg);
+        return;
     }
     case Token::Type::SymbolKey: {
         SharedPtr<KeywordArgNode> arg = new KeywordArgNode { token, current_token().literal_string() };
@@ -1062,7 +1076,8 @@ SharedPtr<Node> Parser::parse_def_single_arg(LocalsHashmap &locals) {
             arg->set_value(parse_expression(Precedence::DEF_ARG, locals));
         }
         arg->add_to_locals(locals);
-        return arg.static_cast_as<Node>();
+        args.push(arg.static_cast_as<Node>());
+        return;
     }
     default:
         throw_unexpected("argument");
@@ -1587,10 +1602,10 @@ void Parser::parse_proc_args(Vector<SharedPtr<Node>> &args, LocalsHashmap &local
         parse_shadow_variables_in_args(args, locals);
         return;
     }
-    args.push(parse_def_single_arg(locals));
+    parse_def_single_arg(args, locals);
     while (current_token().is_comma()) {
         advance();
-        args.push(parse_def_single_arg(locals));
+        parse_def_single_arg(args, locals);
     }
     if (current_token().is_semicolon()) {
         parse_shadow_variables_in_args(args, locals);
@@ -2083,7 +2098,7 @@ void Parser::parse_iter_args(Vector<SharedPtr<Node>> &args, LocalsHashmap &local
         parse_shadow_variables_in_args(args, locals);
         return;
     }
-    args.push(parse_def_single_arg(locals));
+    parse_def_single_arg(args, locals);
     while (current_token().is_comma()) {
         advance();
         if (current_token().is_block_arg_delimiter()) {
@@ -2091,7 +2106,7 @@ void Parser::parse_iter_args(Vector<SharedPtr<Node>> &args, LocalsHashmap &local
             args.push(new NilNode { current_token() });
             break;
         }
-        args.push(parse_def_single_arg(locals));
+        parse_def_single_arg(args, locals);
     }
     if (current_token().is_semicolon()) {
         parse_shadow_variables_in_args(args, locals);
