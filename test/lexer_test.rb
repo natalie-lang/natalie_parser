@@ -669,6 +669,35 @@ describe 'NatalieParser' do
         { type: :dstr_symbol_key },
         { type: :string, literal: 'b' },
       ]
+      expect(tokenize('foo:bar')).must_equal [
+        { type: :name, literal: :foo },
+        { type: :symbol, literal: :bar },
+      ]
+      expect(tokenize('p foo:bar')).must_equal [
+        { type: :name, literal: :p },
+        { type: :symbol_key, literal: :foo },
+        { type: :name, literal: :bar },
+      ]
+      expect(tokenize("Foo::Bar :baz")).must_equal [
+        { type: :constant, literal: :Foo },
+        { type: :'::' },
+        { type: :constant, literal: :Bar },
+        { type: :symbol, literal: :baz },
+      ]
+      expect(tokenize("Foo::Bar:baz")).must_equal [
+        { type: :constant, literal: :Foo },
+        { type: :'::' },
+        { type: :constant, literal: :Bar },
+        { type: :symbol, literal: :baz },
+      ]
+    end
+
+    it 'tokenizes symbol keys in proper context' do
+      expect(tokenize('p foo:bar')).must_include(type: :symbol_key, literal: :foo)
+      expect(tokenize('p(foo:bar)')).must_include(type: :symbol_key, literal: :foo)
+      expect(tokenize('p{|x|foo:bar}')).must_include(type: :symbol_key, literal: :foo)
+      expect(tokenize('p{||foo:bar}')).must_include(type: :symbol_key, literal: :foo)
+      expect(tokenize("{\nfoo:bar}")).must_include(type: :symbol_key, literal: :foo)
     end
 
     it 'tokenizes local variables' do

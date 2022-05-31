@@ -238,7 +238,7 @@ public:
         return m_literal.value();
     }
 
-    bool has_literal() {
+    bool has_literal() const {
         return !!m_literal;
     }
 
@@ -645,7 +645,7 @@ public:
         return !!type_value();
     }
 
-    bool can_follow_collapsible_newline() {
+    bool can_follow_collapsible_newline() const {
         switch (m_type) {
         case Token::Type::Dot:
         case Token::Type::RCurlyBrace:
@@ -659,7 +659,7 @@ public:
         }
     }
 
-    bool can_precede_collapsible_newline() {
+    bool can_precede_collapsible_newline() const {
         switch (m_type) {
         case Token::Type::AmpersandAmpersand:
         case Token::Type::AndKeyword:
@@ -715,7 +715,7 @@ public:
         }
     }
 
-    bool can_have_doc() {
+    bool can_have_doc() const {
         switch (m_type) {
         case Token::Type::ClassKeyword:
         case Token::Type::DefKeyword:
@@ -726,7 +726,7 @@ public:
         }
     }
 
-    bool can_be_first_arg_of_implicit_call() {
+    bool can_be_first_arg_of_implicit_call() const {
         switch (m_type) {
         case Token::Type::Arrow:
         case Token::Type::BareName:
@@ -776,7 +776,7 @@ public:
         }
     }
 
-    bool can_precede_heredoc_that_looks_like_left_shift_operator() {
+    bool can_precede_heredoc_that_looks_like_left_shift_operator() const {
         switch (m_type) {
         case Token::Type::Equal:
         case Token::Type::LBracket:
@@ -784,6 +784,21 @@ public:
         default:
             if (is_operator())
                 return true;
+            return false;
+        }
+    }
+
+    bool can_precede_symbol_key() const {
+        switch (m_type) {
+        case Type::BareName:
+        case Type::Comma:
+        case Type::Constant:
+        case Type::LCurlyBrace:
+        case Type::Pipe:
+        case Type::PipePipe:
+        case Type::LParen:
+            return true;
+        default:
             return false;
         }
     }

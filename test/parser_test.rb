@@ -220,6 +220,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse(%q("#{0+0}foo" "#{1+1}bar"))).must_equal s(:dstr, "", s(:evstr, s(:call, s(:lit, 0), :+, s(:lit, 0))), s(:str, "foo"), s(:evstr, s(:call, s(:lit, 1), :+, s(:lit, 1))), s(:str, "bar"))
         expect(parse("%{#\{ \"#\{1}\" }}")).must_equal s(:dstr, "", s(:evstr, s(:lit, 1)))
         expect(parse("%{ { #\{ \"#\{1}\" } } }")).must_equal s(:dstr, " { ", s(:evstr, s(:lit, 1)), s(:str, " } "))
+        expect(parse('"#{p:a}"')).must_equal s(:dstr, "", s(:evstr, s(:call, nil, :p, s(:lit, :a))))
 
         # encoding
         expect(parse('"foo"').last.encoding.name).must_equal 'UTF-8'
@@ -897,6 +898,18 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("foo a and b do\n1\nend")).must_equal s(:and, s(:call, nil, :foo, s(:call, nil, :a)), s(:iter, s(:call, nil, :b), 0, s(:lit, 1)))
         expect(parse("foo a == b, c")).must_equal s(:call, nil, :foo, s(:call, s(:call, nil, :a), :==, s(:call, nil, :b)), s(:call, nil, :c))
         expect(parse("foo self: a")).must_equal s(:call, nil, :foo, s(:hash, s(:lit, :self), s(:call, nil, :a)))
+        expect(parse("foo:bar")).must_equal s(:call, nil, :foo, s(:lit, :bar))
+        expect(parse("p foo:bar")).must_equal s(:call, nil, :p, s(:hash, s(:lit, :foo), s(:call, nil, :bar)))
+        expect(parse("p for:bar")).must_equal s(:call, nil, :p, s(:hash, s(:lit, :for), s(:call, nil, :bar)))
+        expect(parse("Foo:bar")).must_equal s(:call, nil, :Foo, s(:lit, :bar))
+        expect(parse("p Foo:bar")).must_equal s(:call, nil, :p, s(:hash, s(:lit, :Foo), s(:call, nil, :bar)))
+        expect(parse("p 'foo':'bar'")).must_equal s(:call, nil, :p, s(:hash, s(:lit, :foo), s(:str, "bar")))
+        expect(parse('p "foo":"bar"')).must_equal s(:call, nil, :p, s(:hash, s(:lit, :foo), s(:str, "bar")))
+        expect(-> { parse("for:bar") }).must_raise SyntaxError # not with a keyword :-)
+        # FIXME: colon2 and colon3 are callable
+        #expect(parse("Foo::Bar :bar")).must_equal s(:call, s(:const, :Foo), :Bar, s(:lit, :bar))
+        #expect(parse("Foo::Bar:bar")).must_equal s(:call, s(:const, :Foo), :Bar, s(:lit, :bar))
+        #expect(parse("p Foo::Bar:bar")).must_equal s(:call, nil, :p, s(:call, s(:const, :Foo), :Bar, s(:lit, :bar)))
       end
 
       it 'parses safe calls' do

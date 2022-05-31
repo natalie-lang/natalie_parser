@@ -50,6 +50,8 @@ SharedPtr<Vector<Token>> Lexer::tokens() {
 
         tokens->push(token);
 
+        m_last_token = token;
+
         if (token.is_eof())
             return tokens;
         if (!token.is_valid())
@@ -78,9 +80,7 @@ Token Lexer::next_token() {
     m_whitespace_precedes = skip_whitespace();
     m_token_line = m_cursor_line;
     m_token_column = m_cursor_column;
-    auto token = build_next_token();
-    m_last_token = token;
-    return token;
+    return build_next_token();
 }
 
 bool is_identifier_char(char c) {
@@ -678,7 +678,7 @@ Token Lexer::build_next_token() {
         if (c == ':') {
             advance();
             return Token { Token::Type::ConstantResolution, m_file, m_token_line, m_token_column };
-        } else if (m_last_token.type() == Token::Type::InterpolatedStringBegin && !m_whitespace_precedes && !m_open_ternary) {
+        } else if (m_last_token.type() == Token::Type::InterpolatedStringEnd && !m_whitespace_precedes && !m_open_ternary) {
             return Token { Token::Type::InterpolatedStringSymbolKey, m_file, m_token_line, m_token_column };
         } else if (c == '"') {
             advance();
@@ -1098,7 +1098,7 @@ Token Lexer::consume_word(Token::Type type) {
 Token Lexer::consume_bare_name() {
     auto token = consume_word(Token::Type::BareName);
     auto c = current_char();
-    if (c == ':' && peek() != ':') {
+    if (c == ':' && peek() != ':' && m_last_token.can_precede_symbol_key()) {
         advance();
         token.set_type(Token::Type::SymbolKey);
     }
@@ -1108,7 +1108,7 @@ Token Lexer::consume_bare_name() {
 Token Lexer::consume_constant() {
     auto token = consume_word(Token::Type::Constant);
     auto c = current_char();
-    if (c == ':' && peek() != ':') {
+    if (c == ':' && peek() != ':' && m_last_token.can_precede_symbol_key()) {
         advance();
         token.set_type(Token::Type::SymbolKey);
     }
