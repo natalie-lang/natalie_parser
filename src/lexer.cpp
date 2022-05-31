@@ -154,6 +154,11 @@ Token Lexer::build_next_token() {
         if (m_pair_depth == 0)
             return Token { Token::Type::Eof, m_file, m_cursor_line, m_cursor_column };
         m_pair_depth--;
+    } else if (m_index == 0 && current_char() == '\xEF') {
+        // UTF-8 BOM
+        advance(); // \xEF
+        if (current_char() == '\xBB') advance();
+        if (current_char() == '\xBF') advance();
     }
     Token token;
     switch (current_char()) {

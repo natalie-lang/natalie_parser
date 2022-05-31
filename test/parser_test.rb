@@ -1709,6 +1709,10 @@ require_relative '../lib/natalie_parser/sexp'
       it 'does not wrap everything in a block' do
         expect(parse('1')).must_equal s(:lit, 1)
       end
+
+      it 'ignores UTF-8 BOM (any other BOM will error)' do
+        expect(parse("\xEF\xBB\xBFfoo")).must_equal s(:call, nil, :foo)
+      end
     end
   end
 end
