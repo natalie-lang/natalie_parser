@@ -20,19 +20,28 @@ public:
 private:
     virtual Token build_next_token() override;
     Token consume_array();
-    Token start_evaluation();
+
+    virtual bool skip_whitespace() override { return false; }
 
     bool interpolated() const { return m_interpolated; }
 
+    // states
     enum class State {
         InProgress,
         DynamicStringBegin,
+        DynamicStringInProgress,
         DynamicStringEnd,
         EvaluateBegin,
         EvaluateEnd,
         EndToken,
         Done,
     };
+
+    // transitions
+    Token in_progress_start_dynamic_string();
+    Token start_evaluation();
+    Token dynamic_string_finish();
+    Token in_progress_finish();
 
     State m_state { State::InProgress };
 

@@ -1319,6 +1319,7 @@ void Parser::parse_interpolated_body(LocalsHashmap &locals, InterpolatedNode &no
             advance();
             break;
         default:
+            printf("token type = %d\n", (int)current_token().type());
             TM_UNREACHABLE();
         }
     }

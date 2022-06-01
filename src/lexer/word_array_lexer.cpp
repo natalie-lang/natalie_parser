@@ -7,6 +7,8 @@ Token WordArrayLexer::build_next_token() {
     switch (m_state) {
     case State::InProgress:
         return consume_array();
+    case State::DynamicStringInProgress:
+        return consume_array();
     case State::DynamicStringBegin:
         m_state = State::EvaluateBegin;
         return Token { Token::Type::String, m_buffer, m_file, m_token_line, m_token_column };
@@ -22,7 +24,7 @@ Token WordArrayLexer::build_next_token() {
         return start_evaluation();
     case State::EvaluateEnd:
         advance(); // }
-        m_state = State::DynamicStringEnd;
+        m_state = State::DynamicStringInProgress;
         return Token { Token::Type::EvaluateToStringEnd, m_file, m_token_line, m_token_column };
     case State::EndToken:
         m_state = State::Done;
@@ -63,30 +65,28 @@ Token WordArrayLexer::consume_array() {
                 }
             }
         } else if (isspace(c)) {
+            if (m_state == State::DynamicStringInProgress)
+                return dynamic_string_finish();
             if (!m_buffer->is_empty()) {
                 advance();
                 return Token { Token::Type::String, m_buffer, m_file, m_token_line, m_token_column };
             }
-            advance();
+            advance(); // space
         } else if (m_interpolated && c == '#' && peek() == '{') {
-            advance(2);
-            m_state = State::DynamicStringBegin;
-            return Token { Token::Type::InterpolatedStringBegin, m_file, m_token_line, m_token_column };
+            return in_progress_start_dynamic_string();
         } else if (c == m_start_char && m_start_char != m_stop_char) {
             m_pair_depth++;
             advance();
             m_buffer->append_char(c);
         } else if (c == m_stop_char) {
-            advance();
             if (m_pair_depth > 0) {
                 m_pair_depth--;
                 m_buffer->append_char(c);
-            } else if (m_buffer->is_empty()) {
-                m_state = State::Done;
-                return Token { Token::Type::RBracket, m_file, m_cursor_line, m_cursor_column };
+                advance();
+            } else if (m_state == State::DynamicStringInProgress) {
+                return dynamic_string_finish();
             } else {
-                m_state = State::EndToken;
-                return Token { Token::Type::String, m_buffer, m_file, m_token_line, m_token_column };
+                return in_progress_finish();
             }
         } else {
             m_buffer->append_char(c);
@@ -97,10 +97,36 @@ Token WordArrayLexer::consume_array() {
     return Token { Token::Type::UnterminatedWordArray, m_buffer, m_file, m_token_line, m_token_column };
 }
 
+Token WordArrayLexer::in_progress_start_dynamic_string() {
+    advance(2); // #{
+    m_state = State::DynamicStringBegin;
+    return Token { Token::Type::InterpolatedStringBegin, m_file, m_token_line, m_token_column };
+}
+
 Token WordArrayLexer::start_evaluation() {
     m_nested_lexer = new Lexer { *this, '{', '}' };
     m_state = State::EvaluateEnd;
     return Token { Token::Type::EvaluateToStringBegin, m_file, m_token_line, m_token_column };
+}
+
+Token WordArrayLexer::dynamic_string_finish() {
+    if (!m_buffer->is_empty()) {
+        advance();
+        m_state = State::DynamicStringEnd;
+        return Token { Token::Type::String, m_buffer, m_file, m_token_line, m_token_column };
+    }
+    m_state = State::InProgress;
+    return Token { Token::Type::InterpolatedStringEnd, m_file, m_token_line, m_token_column };
+}
+
+Token WordArrayLexer::in_progress_finish() {
+    advance(); // ) or ] or } or whatever
+    if (!m_buffer->is_empty()) {
+        m_state = State::EndToken;
+        return Token { Token::Type::String, m_buffer, m_file, m_token_line, m_token_column };
+    }
+    m_state = State::Done;
+    return Token { Token::Type::RBracket, m_file, m_cursor_line, m_cursor_column };
 }
 
 };
