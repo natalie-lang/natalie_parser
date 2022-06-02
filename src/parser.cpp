@@ -226,6 +226,7 @@ SharedPtr<Node> Parser::parse_expression(Parser::Precedence precedence, LocalsHa
 }
 
 SharedPtr<Node> Parser::tree() {
+    skip_newlines();
     SharedPtr<Node> tree = new BlockNode { current_token() };
     validate_current_token();
     LocalsHashmap locals { TM::HashType::TMString };
@@ -1265,6 +1266,7 @@ SharedPtr<Node> Parser::parse_if(LocalsHashmap &locals) {
 }
 
 SharedPtr<Node> Parser::parse_if_body(LocalsHashmap &locals) {
+    skip_newlines();
     SharedPtr<BlockNode> body = new BlockNode { current_token() };
     validate_current_token();
     skip_newlines();

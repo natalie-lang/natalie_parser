@@ -10,14 +10,19 @@ void BeginNode::transform(Creator *creator) const {
     for (auto rescue_node : m_rescue_nodes) {
         creator->append(rescue_node.static_cast_as<Node>());
     }
-    if (m_else_body)
-        creator->append(m_else_body->without_unnecessary_nesting());
+    if (m_else_body) {
+        if (!m_else_body->is_empty())
+            creator->append(m_else_body->without_unnecessary_nesting());
+    }
     if (m_ensure_body) {
         if (m_rescue_nodes.is_empty())
             creator->set_type("ensure");
         else
             creator->wrap("ensure");
-        creator->append(m_ensure_body->without_unnecessary_nesting());
+        if (m_ensure_body->is_empty())
+            creator->append_nil_sexp();
+        else
+            creator->append(m_ensure_body->without_unnecessary_nesting());
     }
 }
 

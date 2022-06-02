@@ -23,8 +23,11 @@ void BeginRescueNode::transform(Creator *creator) const {
     if (m_name)
         array.add_node(name_to_node());
     creator->append(array);
-    for (auto node : m_body->nodes())
-        creator->append(node);
+    if (m_body->nodes().is_empty())
+        creator->append_nil();
+    else
+        for (auto node : m_body->nodes())
+            creator->append(node);
 }
 
 }

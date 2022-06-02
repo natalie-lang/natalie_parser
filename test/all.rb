@@ -1,4 +1,5 @@
 require 'fileutils'
+require 'minitest/autorun'
 require 'minitest/reporters'
 
 $LOAD_PATH << File.expand_path('../lib', __dir__)

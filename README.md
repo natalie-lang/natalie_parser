@@ -25,3 +25,7 @@ rake test
 
 Natalie is copyright 2022, Tim Morgan and contributors. Natalie is licensed
 under the MIT License; see the `LICENSE` file in this directory for the full text.
+
+### Note about Outside Sources
+
+The file `test/test_ruby_parser.rb` is copyright Ryan Davis and is licensed MIT.
