@@ -65,8 +65,10 @@ Token WordArrayLexer::consume_array() {
                 }
             }
         } else if (isspace(c)) {
-            if (m_state == State::DynamicStringInProgress)
+            if (m_state == State::DynamicStringInProgress) {
+                advance();
                 return dynamic_string_finish();
+            }
             if (!m_buffer->is_empty()) {
                 advance();
                 return Token { Token::Type::String, m_buffer, m_file, m_token_line, m_token_column };
@@ -111,7 +113,6 @@ Token WordArrayLexer::start_evaluation() {
 
 Token WordArrayLexer::dynamic_string_finish() {
     if (!m_buffer->is_empty()) {
-        advance();
         m_state = State::DynamicStringEnd;
         return Token { Token::Type::String, m_buffer, m_file, m_token_line, m_token_column };
     }

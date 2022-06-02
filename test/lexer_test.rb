@@ -589,6 +589,17 @@ describe 'NatalieParser' do
         { type: :string, literal: '3' },
         { type: :']' },
       ]
+      expect(tokenize("%W[\#{1}foo]")).must_equal [
+        { type: :'%W[' },
+        { type: :dstr },
+        { type: :string, literal: '' },
+        { type: :evstr },
+        { type: :fixnum, literal: 1 },
+        { type: :evstrend },
+        { type: :string, literal: 'foo' },
+        { type: :dstrend },
+        { type: :']' },
+      ]
       expect(tokenize("%W[\#{1+1}]")).must_equal [
         { type: :'%W[' },
         { type: :dstr },
