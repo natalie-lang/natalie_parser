@@ -73,6 +73,11 @@ task :todo do
   sh "egrep -r 'FIXME|TODO' src include lib"
 end
 
+desc 'Run the benchmark script'
+task benchmark: :build do
+  require_relative './test/benchmark'
+end
+
 # # # # Docker Tasks (used for CI) # # # #
 
 DOCKER_FLAGS =
