@@ -6,7 +6,7 @@ ext/natalie_parser/*.log
 ext/natalie_parser/*.so
 ext/natalie_parser/*.bundle
 ext/natalie_parser/Makefile
-test/support/fragments.hpp
+test/support/fragments.rb
 *.gem
 
 # Editor tools
