@@ -544,6 +544,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('a, *b.c = 1, 2')).must_equal s(:masgn, s(:array, s(:lasgn, :a), s(:splat, s(:attrasgn, s(:call, nil, :b), :c=))), s(:array, s(:lit, 1), s(:lit, 2)))
         expect(parse('a, b[c] = 1, 2')).must_equal s(:masgn, s(:array, s(:lasgn, :a), s(:attrasgn, s(:call, nil, :b), :[]=, s(:call, nil, :c))), s(:array, s(:lit, 1), s(:lit, 2)))
         expect(parse('a, b[c][d] = 1, 2')).must_equal s(:masgn, s(:array, s(:lasgn, :a), s(:attrasgn, s(:call, s(:call, nil, :b), :[], s(:call, nil, :c)), :[]=, s(:call, nil, :d))), s(:array, s(:lit, 1), s(:lit, 2)))
+        expect(parse('h[:foo], h[:bar] = 1, 2')).must_equal s(:masgn, s(:array, s(:attrasgn, s(:call, nil, :h), :[]=, s(:lit, :foo)), s(:attrasgn, s(:call, nil, :h), :[]=, s(:lit, :bar))), s(:array, s(:lit, 1), s(:lit, 2)))
         expect(parse('*a = 1, 2')).must_equal s(:masgn, s(:array, s(:splat, s(:lasgn, :a))), s(:array, s(:lit, 1), s(:lit, 2)))
         expect(parse('x = 1 && 2 && 3')).must_equal s(:lasgn, :x, s(:and, s(:lit, 1), s(:and, s(:lit, 2), s(:lit, 3))))
         expect(parse('true && false && x = 1')).must_equal s(:and, s(:true), s(:and, s(:false), s(:lasgn, :x, s(:lit, 1))))
