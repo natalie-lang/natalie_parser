@@ -2382,37 +2382,37 @@ SharedPtr<Node> Parser::parse_op_attr_assign_expression(SharedPtr<Node> left, Lo
     auto token = current_token();
     advance();
     auto value = parse_expression(Precedence::OP_ASSIGNMENT, locals);
-    switch (token.type()) {
-    case Token::Type::AmpersandAmpersandEqual:
-        return new OpAssignAndNode {
-            token,
-            left,
-            value,
-        };
-    case Token::Type::PipePipeEqual:
-        return new OpAssignOrNode {
-            token,
-            left,
-            value,
-        };
-    default: {
-        auto op = new String(token.type_value());
-        op->chomp();
-        SharedPtr<String> message = new String(left_call->message().ref());
-        message->append_char('=');
-        auto op_node = new OpAssignAccessorNode {
-            token,
-            op,
-            left_call->receiver(),
-            message,
-            value,
-            left_call->args(),
-        };
-        if (left->type() == Node::Type::SafeCall)
-            op_node->set_safe(true);
-        return op_node;
+
+    if (*left_call->message() != "[]") {
+        if (token.type() == Token::Type::AmpersandAmpersandEqual) {
+            return new OpAssignAndNode {
+                token,
+                left,
+                value,
+            };
+        } else if (token.type() == Token::Type::PipePipeEqual) {
+            return new OpAssignOrNode {
+                token,
+                left,
+                value,
+            };
+        }
     }
-    }
+    auto op = new String(token.type_value());
+    op->chomp();
+    SharedPtr<String> message = new String(left_call->message().ref());
+    message->append_char('=');
+    auto op_node = new OpAssignAccessorNode {
+        token,
+        op,
+        left_call->receiver(),
+        message,
+        value,
+        left_call->args(),
+    };
+    if (left->type() == Node::Type::SafeCall)
+        op_node->set_safe(true);
+    return op_node;
 }
 
 SharedPtr<Node> Parser::parse_proc_call_expression(SharedPtr<Node> left, LocalsHashmap &) {

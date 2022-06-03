@@ -1598,14 +1598,14 @@ module TestRubyParserShared
     #assert_parse rb, pt
   #end
 
-  #def test_op_asgn_index_command_call
-    #rb = "a[:b] ||= c 1, 2"
-    #pt = s(:op_asgn1, s(:call, nil, :a), s(:arglist, s(:lit, :b)),
-           #:"||",
-           #s(:call, nil, :c, s(:lit, 1), s(:lit, 2)))
+  def test_op_asgn_index_command_call
+    rb = "a[:b] ||= c 1, 2"
+    pt = s(:op_asgn1, s(:call, nil, :a), s(:arglist, s(:lit, :b)),
+           :"||",
+           s(:call, nil, :c, s(:lit, 1), s(:lit, 2)))
 
-    #assert_parse rb, pt
-  #end
+    assert_parse rb, pt
+  end
 
   #def test_op_asgn_primary_colon_identifier1
     #rb = "A::b += 1"
