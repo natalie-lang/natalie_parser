@@ -27,6 +27,8 @@ public:
         BeginKeyword,
         BEGINKeyword,
         Bignum,
+        BignumComplex,
+        BignumRational,
         BreakKeyword,
         Caret,
         CaretEqual,
@@ -60,7 +62,11 @@ public:
         FalseKeyword,
         FILEKeyword,
         Fixnum,
+        FixnumComplex,
+        FixnumRational,
         Float,
+        FloatComplex,
+        FloatRational,
         ForKeyword,
         GlobalVariable,
         GreaterThan,
@@ -268,6 +274,10 @@ public:
             return "BEGIN";
         case Type::Bignum:
             return "bignum";
+        case Type::BignumComplex:
+            return "bignum_complex";
+        case Type::BignumRational:
+            return "bignum_rational";
         case Type::BreakKeyword:
             return "break";
         case Type::Caret:
@@ -334,8 +344,18 @@ public:
             return "false";
         case Type::FILEKeyword:
             return "__FILE__";
+        case Type::Fixnum:
+            return "fixnum";
+        case Type::FixnumComplex:
+            return "fixnum_complex";
+        case Type::FixnumRational:
+            return "fixnum_rational";
         case Type::Float:
             return "float";
+        case Type::FloatComplex:
+            return "float_complex";
+        case Type::FloatRational:
+            return "float_rational";
         case Type::ForKeyword:
             return "for";
         case Type::GlobalVariable:
@@ -352,8 +372,6 @@ public:
             return "in";
         case Type::InstanceVariable:
             return "ivar";
-        case Type::Fixnum:
-            return "fixnum";
         case Type::InterpolatedRegexpBegin:
             return "dregx";
         case Type::InterpolatedRegexpEnd:
@@ -824,6 +842,38 @@ public:
 
     bool whitespace_precedes() const { return m_whitespace_precedes; }
     void set_whitespace_precedes(bool whitespace_precedes) { m_whitespace_precedes = whitespace_precedes; }
+
+    void make_complex() {
+        switch (m_type) {
+        case Token::Type::Bignum:
+            m_type = Token::Type::BignumComplex;
+            break;
+        case Token::Type::Fixnum:
+            m_type = Token::Type::FixnumComplex;
+            break;
+        case Token::Type::Float:
+            m_type = Token::Type::FloatComplex;
+            break;
+        default:
+            TM_UNREACHABLE();
+        }
+    }
+
+    void make_rational() {
+        switch (m_type) {
+        case Token::Type::Bignum:
+            m_type = Token::Type::BignumRational;
+            break;
+        case Token::Type::Fixnum:
+            m_type = Token::Type::FixnumRational;
+            break;
+        case Token::Type::Float:
+            m_type = Token::Type::FloatRational;
+            break;
+        default:
+            TM_UNREACHABLE();
+        }
+    }
 
     void validate();
 

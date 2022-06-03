@@ -68,6 +68,8 @@ VALUE token_to_ruby(NatalieParser::Token token, bool include_location_info) {
     auto lit = token.literal_or_blank();
     switch (token.type()) {
     case NatalieParser::Token::Type::Bignum:
+    case NatalieParser::Token::Type::BignumComplex:
+    case NatalieParser::Token::Type::BignumRational:
     case NatalieParser::Token::Type::Doc:
     case NatalieParser::Token::Type::String: {
         auto literal = token.literal_string();
@@ -87,10 +89,14 @@ VALUE token_to_ruby(NatalieParser::Token token, bool include_location_info) {
         break;
     }
     case NatalieParser::Token::Type::Fixnum:
+    case NatalieParser::Token::Type::FixnumComplex:
+    case NatalieParser::Token::Type::FixnumRational:
     case NatalieParser::Token::Type::NthRef:
         rb_hash_aset(hash, ID2SYM(rb_intern("literal")), rb_int_new(token.get_fixnum()));
         break;
     case NatalieParser::Token::Type::Float:
+    case NatalieParser::Token::Type::FloatComplex:
+    case NatalieParser::Token::Type::FloatRational:
         rb_hash_aset(hash, ID2SYM(rb_intern("literal")), rb_float_new(token.get_double()));
         break;
     case NatalieParser::Token::Type::InterpolatedRegexpEnd:

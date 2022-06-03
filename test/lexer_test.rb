@@ -264,6 +264,28 @@ describe 'NatalieParser' do
       expect(tokenize('0xefor')).must_equal [{ type: :fixnum, literal: 239 }, { type: :or }]
     end
 
+    it 'tokenizes complex literals' do
+      expect(tokenize('3i')).must_equal [{ type: :fixnum_complex, literal: 3 }]
+      expect(tokenize('3r')).must_equal [{ type: :fixnum_rational, literal: 3 }]
+      expect(tokenize('0d3i')).must_equal [{ type: :fixnum_complex, literal: 3 }]
+      expect(tokenize('0d3r')).must_equal [{ type: :fixnum_rational, literal: 3 }]
+      expect(tokenize('0o3i')).must_equal [{ type: :fixnum_complex, literal: 3 }]
+      expect(tokenize('0o3r')).must_equal [{ type: :fixnum_rational, literal: 3 }]
+      expect(tokenize('0x3i')).must_equal [{ type: :fixnum_complex, literal: 3 }]
+      expect(tokenize('0x3r')).must_equal [{ type: :fixnum_rational, literal: 3 }]
+      expect(tokenize('0b1i')).must_equal [{ type: :fixnum_complex, literal: 1 }]
+      expect(tokenize('0b1r')).must_equal [{ type: :fixnum_rational, literal: 1 }]
+      expect(tokenize('100000000000000000000i')).must_equal [{ type: :bignum_complex, literal: '100000000000000000000' }]
+      expect(tokenize('100000000000000000000r')).must_equal [{ type: :bignum_rational, literal: '100000000000000000000' }]
+      expect(tokenize('1.1i')).must_equal [{ type: :float_complex, literal: 1.1 }]
+      expect(tokenize('1.1r')).must_equal [{ type: :float_rational, literal: 1.1 }]
+
+      # it's a trap! (some other letter afterwards)
+      expect(tokenize('123if')).must_equal [{ type: :fixnum, literal: 123 }, { type: :if }]
+      expect(tokenize('100000000000000000000if')).must_equal [{ type: :bignum, literal: '100000000000000000000' }, { type: :if }]
+      expect(tokenize('1.1if')).must_equal [{ type: :float, literal: 1.1 }, { type: :if }]
+    end
+
     it 'tokenizes floats' do
       expect(tokenize('1.234')).must_equal [{ type: :float, literal: 1.234 }]
       expect(tokenize('-1.234')).must_equal [{ type: :'-' }, { type: :float, literal: 1.234 }]

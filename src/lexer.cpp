@@ -1322,7 +1322,25 @@ Token Lexer::consume_heredoc() {
 
 Token Lexer::consume_numeric() {
     SharedPtr<String> chars = new String;
+
+    auto consume_decimal_digits_and_build_token = [&]() {
+        char c = current_char();
+        do {
+            chars->append_char(c);
+            c = next();
+            if (c == '_')
+                c = next();
+        } while (isdigit(c));
+        if ((c == '.' && isdigit(peek())) || (c == 'e' || c == 'E'))
+            return consume_numeric_as_float(chars);
+        else
+            return chars_to_fixnum_or_bignum_token(chars, 10, 0);
+    };
+
+    Token token;
+
     if (current_char() == '0') {
+        // special-prefixed literals 0d, 0x, etc.
         switch (peek()) {
         case 'd':
         case 'D': {
@@ -1336,7 +1354,8 @@ Token Lexer::consume_numeric() {
                 if (c == '_')
                     c = next();
             } while (isdigit(c));
-            return chars_to_fixnum_or_bignum_token(chars, 10, 0);
+            token = chars_to_fixnum_or_bignum_token(chars, 10, 0);
+            break;
         }
         case 'o':
         case 'O': {
@@ -1352,7 +1371,8 @@ Token Lexer::consume_numeric() {
                 if (c == '_')
                     c = next();
             } while (c >= '0' && c <= '7');
-            return chars_to_fixnum_or_bignum_token(chars, 8, 2);
+            token = chars_to_fixnum_or_bignum_token(chars, 8, 2);
+            break;
         }
         case 'x':
         case 'X': {
@@ -1368,7 +1388,8 @@ Token Lexer::consume_numeric() {
                 if (c == '_')
                     c = next();
             } while (isxdigit(c));
-            return chars_to_fixnum_or_bignum_token(chars, 16, 2);
+            token = chars_to_fixnum_or_bignum_token(chars, 16, 2);
+            break;
         }
         case 'b':
         case 'B': {
@@ -1384,21 +1405,36 @@ Token Lexer::consume_numeric() {
                 if (c == '_')
                     c = next();
             } while (c == '0' || c == '1');
-            return chars_to_fixnum_or_bignum_token(chars, 2, 2);
+            token = chars_to_fixnum_or_bignum_token(chars, 2, 2);
+            break;
         }
+        default:
+            token = consume_decimal_digits_and_build_token();
         }
+    } else {
+        token = consume_decimal_digits_and_build_token();
     }
-    char c = current_char();
-    do {
-        chars->append_char(c);
-        c = next();
-        if (c == '_')
-            c = next();
-    } while (isdigit(c));
-    if ((c == '.' && isdigit(peek())) || (c == 'e' || c == 'E'))
-        return consume_numeric_as_float(chars);
-    else
-        return chars_to_fixnum_or_bignum_token(chars, 10, 0);
+
+    // is it a complex or a rational literal?
+    switch (current_char()) {
+    case 'i':
+        if (isalnum(peek()))
+            break;
+        advance();
+        token.make_complex();
+        break;
+    case 'r':
+        if (isalnum(peek()))
+            break;
+        advance();
+        token.make_rational();
+        break;
+    default:
+        // do nothing special
+        break;
+    }
+
+    return token;
 }
 
 const long long max_fixnum = std::numeric_limits<long long>::max() / 2; // 63 bits for MRI
