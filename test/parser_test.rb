@@ -1313,6 +1313,12 @@ require_relative '../lib/natalie_parser/sexp'
         expect_raise_with_message(-> { parse("m.a 1, &b do end") }, SyntaxError, "Both block arg and actual block given.")
       end
 
+      it 'parses numbered block arg shorthand' do
+        expect(parse('foo { _1; _2; _3 }')).must_equal s(:iter, s(:call, nil, :foo), 0, s(:block, s(:call, nil, :_1), s(:call, nil, :_2), s(:call, nil, :_3)))
+        expect(parse('foo { |x| _1; _2; _3 }')).must_equal s(:iter, s(:call, nil, :foo), s(:args, :x), s(:block, s(:call, nil, :_1), s(:call, nil, :_2), s(:call, nil, :_3)))
+        expect(parse('-> { _1; _2; _3 }')).must_equal s(:iter, s(:lambda), 0, s(:block, s(:call, nil, :_1), s(:call, nil, :_2), s(:call, nil, :_3)))
+      end
+
       it 'parses block pass (ampersand operator)' do
         expect(parse('map(&:foo)')).must_equal s(:call, nil, :map, s(:block_pass, s(:lit, :foo)))
         expect(parse('map(&myblock)')).must_equal s(:call, nil, :map, s(:block_pass, s(:call, nil, :myblock)))
