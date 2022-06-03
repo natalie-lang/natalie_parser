@@ -1206,6 +1206,25 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("ruby_version_is ''...'3.0' do\nend")).must_equal s(:iter, s(:call, nil, :ruby_version_is, s(:dot3, s(:str, ''), s(:str, '3.0'))), 0)
       end
 
+      it 'parses argument forwarding shorthand' do
+        expect(parse("def foo(...); end")).must_equal s(:defn, :foo, s(:args, s(:forward_args)), s(:nil))
+        expect(parse("def foo(...); bar(...); end")).must_equal s(:defn, :foo, s(:args, s(:forward_args)), s(:call, nil, :bar, s(:forward_args)))
+        expect(parse("def foo(a, ...); bar(a, ...); end")).must_equal s(:defn, :foo, s(:args, :a, s(:forward_args)), s(:call, nil, :bar, s(:lvar, :a), s(:forward_args)))
+        expect(parse("-> (...) { bar(...) }")).must_equal s(:iter, s(:lambda), s(:args, s(:forward_args)), s(:call, nil, :bar, s(:forward_args)))
+        expect(parse("-> (a, ...) { bar(a, ...) }")).must_equal s(:iter, s(:lambda), s(:args, :a, s(:forward_args)), s(:call, nil, :bar, s(:lvar, :a), s(:forward_args)))
+        expect(-> { parse("def foo(..., a); bar(...); end") }).must_raise SyntaxError
+        expect(-> { parse("def foo(a); bar(...); end") }).must_raise SyntaxError
+        expect(-> { parse("bar(...)") }).must_raise SyntaxError
+        expect(-> { parse("foo { |...| bar(...) }") }).must_raise SyntaxError
+        expect(-> { parse("foo { |a, ...| bar(a, ...) }") }).must_raise SyntaxError
+        expect(-> { parse("def foo(...); a = ...; end") }).must_raise SyntaxError
+
+        # it's a trap! (don't confuse with range)
+        expect(parse("def foo(...); bar(1...2); end")).must_equal s(:defn, :foo, s(:args, s(:forward_args)), s(:call, nil, :bar, s(:lit, 1...2)))
+        expect(parse("def foo(...); bar(1...); end")).must_equal s(:defn, :foo, s(:args, s(:forward_args)), s(:call, nil, :bar, s(:dot3, s(:lit, 1), nil)))
+        expect(parse("def foo(...); bar(...2); end")).must_equal s(:defn, :foo, s(:args, s(:forward_args)), s(:call, nil, :bar, s(:dot3, nil, s(:lit, 2))))
+      end
+
       it 'parses return' do
         expect(parse('return')).must_equal s(:return)
         expect(parse('return foo')).must_equal s(:return, s(:call, nil, :foo))

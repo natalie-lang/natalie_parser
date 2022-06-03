@@ -42,6 +42,7 @@ public:
         False,
         Fixnum,
         Float,
+        ForwardArgs,
         Hash,
         HashPattern,
         Identifier,

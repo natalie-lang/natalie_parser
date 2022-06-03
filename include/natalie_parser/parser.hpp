@@ -87,11 +87,19 @@ private:
     SharedPtr<Node> parse_constant(LocalsHashmap &);
     SharedPtr<Node> parse_def(LocalsHashmap &);
     SharedPtr<Node> parse_defined(LocalsHashmap &);
+
     void parse_def_args(Vector<SharedPtr<Node>> &, LocalsHashmap &);
-    void parse_def_single_arg(Vector<SharedPtr<Node>> &, LocalsHashmap &);
+    enum class ArgsContext {
+        Block,
+        Method,
+        Proc,
+    };
+    void parse_def_single_arg(Vector<SharedPtr<Node>> &, LocalsHashmap &, ArgsContext);
+
     SharedPtr<Node> parse_encoding(LocalsHashmap &);
     SharedPtr<Node> parse_end_block(LocalsHashmap &);
     SharedPtr<Node> parse_file_constant(LocalsHashmap &);
+    SharedPtr<Node> parse_forward_args(LocalsHashmap &);
     SharedPtr<Node> parse_group(LocalsHashmap &);
     SharedPtr<Node> parse_hash(LocalsHashmap &);
     SharedPtr<Node> parse_hash_inner(LocalsHashmap &, Precedence, Token::Type, SharedPtr<Node> = {});
@@ -128,6 +136,7 @@ private:
     SharedPtr<Node> parse_symbol_key(LocalsHashmap &);
     SharedPtr<Node> parse_statement_keyword(LocalsHashmap &);
     SharedPtr<Node> parse_top_level_constant(LocalsHashmap &);
+    SharedPtr<Node> parse_triple_dot(LocalsHashmap &);
     SharedPtr<Node> parse_unary_operator(LocalsHashmap &);
     SharedPtr<Node> parse_undef(LocalsHashmap &);
     SharedPtr<Node> parse_unless(LocalsHashmap &);
@@ -195,6 +204,7 @@ private:
     void skip_newlines();
 
     void expect(Token::Type, const char *);
+    [[noreturn]] void throw_error(const Token &, const char *);
     [[noreturn]] void throw_unexpected(const Token &, const char *, const char * = nullptr);
     [[noreturn]] void throw_unexpected(const char *);
     [[noreturn]] void throw_unterminated_thing(Token, Token = {});

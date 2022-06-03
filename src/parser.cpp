@@ -979,28 +979,32 @@ SharedPtr<Node> Parser::parse_defined(LocalsHashmap &locals) {
 }
 
 void Parser::parse_def_args(Vector<SharedPtr<Node>> &args, LocalsHashmap &locals) {
-    parse_def_single_arg(args, locals);
+    parse_def_single_arg(args, locals, ArgsContext::Method);
     while (current_token().is_comma()) {
         advance();
-        parse_def_single_arg(args, locals);
+        parse_def_single_arg(args, locals, ArgsContext::Method);
     }
 }
 
-void Parser::parse_def_single_arg(Vector<SharedPtr<Node>> &args, LocalsHashmap &locals) {
+void Parser::parse_def_single_arg(Vector<SharedPtr<Node>> &args, LocalsHashmap &locals, ArgsContext context) {
     auto args_have_any_splat = [&]() { return !args.is_empty() && args.last()->type() == Node::Type::Arg && args.last().static_cast_as<ArgNode>()->splat_or_kwsplat(); };
     auto args_have_keyword = [&]() { return !args.is_empty() && args.last()->type() == Node::Type::KeywordArg; };
 
     auto token = current_token();
+
+    if (!args.is_empty() && args.last()->type() == Node::Type::ForwardArgs)
+        throw_error(token, "anything after arg forwarding (...) shorthand");
+
     switch (token.type()) {
     case Token::Type::BareName: {
         if (args_have_keyword())
-            throw_unexpected(token, nullptr, "normal arg after keyword arg");
+            throw_error(token, "normal arg after keyword arg");
         SharedPtr<ArgNode> arg = new ArgNode { token, token.literal_string() };
         advance();
         arg->add_to_locals(locals);
         if (current_token().is_equal()) {
             if (args_have_any_splat())
-                throw_unexpected(token, nullptr, "default value after splat");
+                throw_error(token, "default value after splat");
             advance(); // =
             arg->set_value(parse_expression(Precedence::DEF_ARG, locals));
         }
@@ -1022,7 +1026,7 @@ void Parser::parse_def_single_arg(Vector<SharedPtr<Node>> &args, LocalsHashmap &
     }
     case Token::Type::Star: {
         if (args_have_any_splat())
-            throw_unexpected(token, nullptr, "splat after keyword splat");
+            throw_error(token, "splat after keyword splat");
         advance();
         SharedPtr<ArgNode> arg;
         if (current_token().is_bare_name()) {
@@ -1076,6 +1080,15 @@ void Parser::parse_def_single_arg(Vector<SharedPtr<Node>> &args, LocalsHashmap &
         default:
             arg->set_value(parse_expression(Precedence::DEF_ARG, locals));
         }
+        arg->add_to_locals(locals);
+        args.push(arg.static_cast_as<Node>());
+        return;
+    }
+    case Token::Type::DotDotDot: {
+        if (context == ArgsContext::Block)
+            throw_error(token, "arg forwarding (...) shorthand not allowed in block");
+        SharedPtr<ForwardArgsNode> arg = new ForwardArgsNode { token };
+        advance();
         arg->add_to_locals(locals);
         args.push(arg.static_cast_as<Node>());
         return;
@@ -1149,6 +1162,15 @@ SharedPtr<Node> Parser::parse_file_constant(LocalsHashmap &) {
     auto token = current_token();
     advance();
     return new StringNode { token, token.file() };
+}
+
+SharedPtr<Node> Parser::parse_forward_args(LocalsHashmap &locals) {
+    auto token = current_token();
+    if (!locals.get("..."))
+        throw_error(token, "forwarding args without ... shorthand in method definition");
+    advance(); // ...
+    SharedPtr<ForwardArgsNode> node = new ForwardArgsNode { token };
+    return node.static_cast_as<Node>();
 }
 
 SharedPtr<Node> Parser::parse_group(LocalsHashmap &locals) {
@@ -1605,10 +1627,10 @@ void Parser::parse_proc_args(Vector<SharedPtr<Node>> &args, LocalsHashmap &local
         parse_shadow_variables_in_args(args, locals);
         return;
     }
-    parse_def_single_arg(args, locals);
+    parse_def_single_arg(args, locals, ArgsContext::Proc);
     while (current_token().is_comma()) {
         advance();
-        parse_def_single_arg(args, locals);
+        parse_def_single_arg(args, locals, ArgsContext::Proc);
     }
     if (current_token().is_semicolon()) {
         parse_shadow_variables_in_args(args, locals);
@@ -2101,7 +2123,7 @@ void Parser::parse_iter_args(Vector<SharedPtr<Node>> &args, LocalsHashmap &local
         parse_shadow_variables_in_args(args, locals);
         return;
     }
-    parse_def_single_arg(args, locals);
+    parse_def_single_arg(args, locals, ArgsContext::Block);
     while (current_token().is_comma()) {
         advance();
         if (current_token().is_block_arg_delimiter()) {
@@ -2109,7 +2131,7 @@ void Parser::parse_iter_args(Vector<SharedPtr<Node>> &args, LocalsHashmap &local
             args.push(new NilNode { current_token() });
             break;
         }
-        parse_def_single_arg(args, locals);
+        parse_def_single_arg(args, locals, ArgsContext::Block);
     }
     if (current_token().is_semicolon()) {
         parse_shadow_variables_in_args(args, locals);
@@ -2156,7 +2178,7 @@ SharedPtr<NodeWithArgs> Parser::to_node_with_args(SharedPtr<Node> node) {
     case Node::Type::Yield:
         return node.static_cast_as<NodeWithArgs>();
     default:
-        throw_unexpected(current_token(), nullptr, "left-hand-side is not callable");
+        throw_error(current_token(), "left-hand-side is not callable");
     }
 }
 
@@ -2536,6 +2558,12 @@ SharedPtr<Node> Parser::parse_ternary_expression(SharedPtr<Node> left, LocalsHas
     return new IfNode { token, left, true_expr, false_expr };
 }
 
+SharedPtr<Node> Parser::parse_triple_dot(LocalsHashmap &locals) {
+    if (peek_token().is_rparen())
+        return parse_forward_args(locals);
+    return parse_beginless_range(locals);
+}
+
 SharedPtr<Node> Parser::parse_unless(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
@@ -2603,7 +2631,7 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
         return &Parser::parse_defined;
     case Type::DotDot:
     case Type::DotDotDot:
-        return &Parser::parse_beginless_range;
+        return &Parser::parse_triple_dot;
     case Type::ENCODINGKeyword:
         return &Parser::parse_encoding;
     case Type::ENDKeyword:
@@ -2824,6 +2852,10 @@ void Parser::skip_newlines() {
 void Parser::expect(Token::Type type, const char *expected) {
     if (current_token().type() != type)
         throw_unexpected(expected);
+}
+
+void Parser::throw_error(const Token &token, const char *error) {
+    throw_unexpected(token, nullptr, error);
 }
 
 void Parser::throw_unexpected(const Token &token, const char *expected, const char *error) {

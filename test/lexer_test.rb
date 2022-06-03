@@ -425,7 +425,7 @@ describe 'NatalieParser' do
       end
     end
 
-    it 'parses string character escape sequences' do
+    it 'tokenizes string character escape sequences' do
       # \nnn           octal bit pattern, where nnn is 1-3 octal digits ([0-7])
       expect(tokenize('"\7 \77 \777"')).must_equal [{ type: :dstr }, { type: :string, literal: "\a ? \xFF" }, { type: :dstrend }]
       # \xnn           hexadecimal bit pattern, where nn is 1-2 hexadecimal digits ([0-9a-fA-F])
@@ -920,7 +920,7 @@ describe 'NatalieParser' do
       ]
     end
 
-    it 'parses method names using keywords' do
+    it 'tokenizes method names using keywords' do
       expect(tokenize('def self')).must_equal [{ type: :def }, { type: :name, literal: :self }]
       expect(tokenize('def self.self')).must_equal [{ type: :def }, { type: :self }, { type: :"." }, { type: :name, literal: :self }]
       expect(tokenize('foo.self')).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :name, literal: :self }]
@@ -932,7 +932,7 @@ describe 'NatalieParser' do
       expect(tokenize('foo.while')).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :name, literal: :while }]
     end
 
-    it 'parses unary operator method names' do
+    it 'tokenizes unary operator method names' do
       %w[+ - ~ !].each do |op|
         expect(tokenize("foo #{op}@bar")).must_equal [{ type: :name, literal: :foo }, { type: op.to_sym }, { type: :ivar, literal: :@bar }]
         expect(tokenize("foo #{op} @bar")).must_equal [{ type: :name, literal: :foo }, { type: op.to_sym }, { type: :ivar, literal: :@bar }]
@@ -945,7 +945,11 @@ describe 'NatalieParser' do
       expect(tokenize("foo.%(x)")).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :% }, { type: :"(" }, { type: :name, literal: :x }, { type: :")" }]
     end
 
-    it 'parses ternary operator' do
+    it 'tokenizes argument forwarding shorthand' do
+      expect(tokenize("...")).must_equal [{ type: :'...' }]
+    end
+
+    it 'tokenizes ternary operator' do
       expect(tokenize("a ? '': b")).must_equal [
         { type: :name, literal: :a },
         { type: :"?" },

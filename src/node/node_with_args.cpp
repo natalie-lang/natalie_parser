@@ -17,6 +17,7 @@ void NodeWithArgs::append_method_or_block_args(Creator *creator) const {
                     arg.static_cast_as<ArgNode>()->append_name(c);
                 break;
             }
+            case Node::Type::ForwardArgs:
             case Node::Type::KeywordArg:
             case Node::Type::MultipleAssignmentArg:
             case Node::Type::ShadowArg:
