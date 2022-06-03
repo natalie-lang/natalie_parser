@@ -1157,6 +1157,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('["foo" => :bar, baz: 42]')).must_equal s(:array, s(:hash, s(:str, "foo"), s(:lit, :bar), s(:lit, :baz), s(:lit, 42)))
         expect(parse('bar[1 => 2]')).must_equal s(:call, s(:call, nil, :bar), :[], s(:hash, s(:lit, 1), s(:lit, 2)))
         expect(parse('Foo::Bar[1 => 2]')).must_equal s(:call, s(:colon2, s(:const, :Foo), :Bar), :[], s(:hash, s(:lit, 1), s(:lit, 2)))
+        expect(parse('Hash[a: 1, b: 2]')).must_equal s(:call, s(:const, :Hash), :[], s(:hash, s(:lit, :a), s(:lit, 1), s(:lit, :b), s(:lit, 2)))
         if parser == 'NatalieParser'
           expect_raise_with_message(-> { parse('[1 => 2, 3]') }, SyntaxError, "(string)#1: syntax error, unexpected ']' (expected: 'hash rocket')")
           expect_raise_with_message(-> { parse('[0, 1 => 2, 3]') }, SyntaxError, "(string)#1: syntax error, unexpected ']' (expected: 'hash rocket')")

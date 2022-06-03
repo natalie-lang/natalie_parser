@@ -793,10 +793,11 @@ public:
         case Type::BareName:
         case Type::Comma:
         case Type::Constant:
+        case Type::LBracket:
         case Type::LCurlyBrace:
+        case Type::LParen:
         case Type::Pipe:
         case Type::PipePipe:
-        case Type::LParen:
             return true;
         default:
             return false;
