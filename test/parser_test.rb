@@ -775,9 +775,13 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('x &= 1')).must_equal s(:lasgn, :x, s(:call, s(:lvar, :x), :&, s(:lit, 1)))
         expect(parse('x >>= 1')).must_equal s(:lasgn, :x, s(:call, s(:lvar, :x), :>>, s(:lit, 1)))
         expect(parse('x <<= 1')).must_equal s(:lasgn, :x, s(:call, s(:lvar, :x), :<<, s(:lit, 1)))
-        expect(parse('n = x += 1')).must_equal s(:lasgn, :n, s(:lasgn, :x, s(:call, s(:lvar, :x), :+, s(:lit, 1))))
+        expect(parse('x = y += 1')).must_equal s(:lasgn, :x, s(:lasgn, :y, s(:call, s(:lvar, :y), :+, s(:lit, 1))))
+        expect(parse("x += y += 1")).must_equal s(:lasgn, :x, s(:call, s(:lvar, :x), :+, s(:lasgn, :y, s(:call, s(:lvar, :y), :+, s(:lit, 1)))))
+        expect(parse("x == y += 1")).must_equal s(:call, s(:call, nil, :x), :==, s(:lasgn, :y, s(:call, s(:lvar, :y), :+, s(:lit, 1))))
+        expect(parse("x =~ y += 1")).must_equal s(:call, s(:call, nil, :x), :=~, s(:lasgn, :y, s(:call, s(:lvar, :y), :+, s(:lit, 1))))
+
+        # NOTE: these produce different results in RubyParser, but I don't agree. I'm not sure if it's a bug or just a different choice.
         if parser == 'NatalieParser'
-          # NOTE: these produce different results in RubyParser, but I don't agree. I'm not sure if it's a bug or just a different choice.
           expect(parse("a.b *= c d")).must_equal s(:op_asgn2, s(:call, nil, :a), :b=, :*, s(:call, nil, :c, s(:call, nil, :d)))
           expect(parse("a&.b *= c d")).must_equal s(:safe_op_asgn2, s(:call, nil, :a), :b=, :*, s(:call, nil, :c, s(:call, nil, :d)))
           expect(parse("::A *= c d")).must_equal s(:op_asgn, s(:colon3, :A), :*, s(:call, nil, :c, s(:call, nil, :d)))

@@ -16,7 +16,7 @@ enum class Parser::Precedence {
     INLINE_RESCUE, // foo rescue 2
     ITER_BLOCK, // do |n| ... end
     BARE_CALL_ARG, // foo (_), b
-    OP_ASSIGNMENT, // += -= *= **= /= %= |= &= ^= >>= <<= ||= &&=
+    OP_ASSIGNMENT_RHS, // x += (_)
     TERNARY_TRUE, // _ ? (_) : _
     CALL_ARG, // foo( (_), b )
     TERNARY_QUESTION, // (_) ? _ : _
@@ -28,6 +28,7 @@ enum class Parser::Precedence {
     LOGICAL_NOT, // not
     EQUALITY, // <=> == === != =~ !~
     LESS_GREATER, // <= < > >=
+    OP_ASSIGNMENT_LHS, // (_) += 1
     BITWISE_OR, // ^ |
     BITWISE_AND, // &
     BITWISE_SHIFT, // << >>
@@ -112,7 +113,7 @@ Parser::Precedence Parser::get_precedence(Token &token, SharedPtr<Node> left) {
     case Token::Type::SlashEqual:
     case Token::Type::StarEqual:
     case Token::Type::StarStarEqual:
-        return Precedence::OP_ASSIGNMENT;
+        return Precedence::OP_ASSIGNMENT_LHS;
     case Token::Type::Ampersand:
         return Precedence::BITWISE_AND;
     case Token::Type::Caret:
@@ -2403,7 +2404,7 @@ SharedPtr<Node> Parser::parse_op_attr_assign_expression(SharedPtr<Node> left, Lo
     auto left_call = left.static_cast_as<CallNode>();
     auto token = current_token();
     advance();
-    auto value = parse_expression(Precedence::OP_ASSIGNMENT, locals);
+    auto value = parse_expression(Precedence::OP_ASSIGNMENT_RHS, locals);
 
     if (*left_call->message() != "[]") {
         if (token.type() == Token::Type::AmpersandAmpersandEqual) {
