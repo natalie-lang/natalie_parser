@@ -177,7 +177,13 @@ file "ext/natalie_parser/natalie_parser.#{so_ext}" => [
   Rake::FileList['ext/natalie_parser/*.o'].each { |path| rm path }
   rm_rf 'ext/natalie_parser/natalie_parser.so'
   sh "cd #{build_dir} && ruby extconf.rb"
-  sh "CC=#{cc.inspect} CXX=#{cxx.inspect} make -C #{build_dir} -j -e V=1 2>&1 | tee #{log_file}"
+  if `#{cxx} -v 2>&1` =~ /clang/
+    # workaround for clang bug: https://bugs.ruby-lang.org/issues/18616
+    cxx_hacky = "#{cxx} -fdeclspec"
+  else
+    cxx_hacky = cxx
+  end
+  sh "CC=#{cc.inspect} CXX=#{cxx_hacky.inspect} make -C #{build_dir} -j -e V=1 2>&1 | tee #{log_file}"
 end
 
   file 'build/fragments.hpp' => ['test/parser_test.rb', 'test/support/extract_parser_test_fragments.rb'] do
