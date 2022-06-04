@@ -61,17 +61,20 @@ public:
         rb_ary_push(m_sexp, Qfalse);
     }
 
-    virtual void append_float(double number) override {
-        rb_ary_push(m_sexp, rb_float_new(number));
-    }
-
-    virtual void append_integer(long long number) override {
-        rb_ary_push(m_sexp, rb_int_new(number));
-    }
-
-    virtual void append_integer(TM::String &number) override {
+    virtual void append_bignum(TM::String &number) override {
         auto string_obj = rb_utf8_str_new(number.c_str(), number.length());
-        rb_ary_push(m_sexp, rb_Integer(string_obj));
+        auto num = rb_Integer(string_obj);
+        rb_ary_push(m_sexp, num);
+    }
+
+    virtual void append_fixnum(long long number) override {
+        auto num = rb_int_new(number);
+        rb_ary_push(m_sexp, num);
+    }
+
+    virtual void append_float(double number) override {
+        auto num = rb_float_new(number);
+        rb_ary_push(m_sexp, num);
     }
 
     virtual void append_nil() override {
@@ -107,6 +110,21 @@ public:
 
     virtual void append_true() override {
         rb_ary_push(m_sexp, Qtrue);
+    }
+
+    virtual void make_complex_number() override {
+        auto num = rb_ary_pop(m_sexp);
+        num = rb_Complex(INT2FIX(0), num);
+        rb_ary_push(m_sexp, num);
+    }
+
+    virtual void make_rational_number() override {
+        auto num = rb_ary_pop(m_sexp);
+        if (TYPE(num) == T_FLOAT)
+            num = rb_flt_rationalize(num);
+        else
+            num = rb_Rational(num, INT2FIX(1));
+        rb_ary_push(m_sexp, num);
     }
 
     virtual void wrap(const char *type) override {

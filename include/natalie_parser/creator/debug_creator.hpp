@@ -42,15 +42,15 @@ public:
         m_nodes.push("false");
     }
 
+    virtual void append_bignum(TM::String &number) override {
+        m_nodes.push(String(number));
+    }
+
+    virtual void append_fixnum(long long number) override {
+        m_nodes.push(String(number));
+    }
+
     virtual void append_float(double number) override {
-        m_nodes.push(String(number));
-    }
-
-    virtual void append_integer(long long number) override {
-        m_nodes.push(String(number));
-    }
-
-    virtual void append_integer(TM::String &number) override {
         m_nodes.push(String(number));
     }
 
@@ -87,6 +87,16 @@ public:
 
     virtual void append_true() override {
         m_nodes.push("true");
+    }
+
+    virtual void make_complex_number() override {
+        auto num = m_nodes.pop();
+        m_nodes.push(String::format("Complex(0, {})", num));
+    }
+
+    virtual void make_rational_number() override {
+        auto num = m_nodes.pop();
+        m_nodes.push(String::format("Rational({}, 1)", num));
     }
 
     virtual void wrap(const char *type) override {

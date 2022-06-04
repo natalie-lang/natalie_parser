@@ -23,7 +23,7 @@ public:
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("lit");
-        creator->append_integer(*m_number);
+        creator->append_bignum(*m_number);
     }
 
     void negate() {

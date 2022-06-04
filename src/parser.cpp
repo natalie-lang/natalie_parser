@@ -1514,19 +1514,40 @@ SharedPtr<Node> Parser::parse_interpolated_symbol(LocalsHashmap &locals) {
 
 SharedPtr<Node> Parser::parse_lit(LocalsHashmap &) {
     auto token = current_token();
+    SharedPtr<Node> node;
     switch (token.type()) {
     case Token::Type::Bignum:
         advance();
-        return new BignumNode { token, token.literal_string() };
+        node = new BignumNode { token, token.literal_string() };
+        break;
     case Token::Type::Fixnum:
         advance();
-        return new FixnumNode { token, token.get_fixnum() };
+        node = new FixnumNode { token, token.get_fixnum() };
+        break;
     case Token::Type::Float:
         advance();
-        return new FloatNode { token, token.get_double() };
+        node = new FloatNode { token, token.get_double() };
+        break;
     default:
         TM_UNREACHABLE();
     }
+    switch (current_token().type()) {
+    case Token::Type::Complex:
+        advance();
+        node = new ComplexNode { token, node };
+        break;
+    case Token::Type::Rational:
+        advance();
+        node = new RationalNode { token, node };
+        break;
+    case Token::Type::RationalComplex:
+        advance();
+        node = new ComplexNode { token, new RationalNode { token, node } };
+        break;
+    default:
+        break;
+    }
+    return node;
 };
 
 SharedPtr<Node> Parser::parse_keyword_splat(LocalsHashmap &locals) {

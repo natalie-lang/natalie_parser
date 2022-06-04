@@ -32,7 +32,7 @@ public:
         if (m_has_args)
             append_method_or_block_args(creator);
         else
-            creator->append_integer(0);
+            creator->append_fixnum(0);
         if (!m_body->is_empty())
             creator->append(m_body->without_unnecessary_nesting());
     }

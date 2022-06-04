@@ -18,7 +18,7 @@ public:
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("nth_ref");
-        creator->append_integer(m_num);
+        creator->append_fixnum(m_num);
     }
 
 protected:

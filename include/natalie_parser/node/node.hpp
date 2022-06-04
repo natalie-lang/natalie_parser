@@ -33,6 +33,7 @@ public:
         Class,
         Colon2,
         Colon3,
+        Complex,
         Constant,
         Def,
         Defined,
@@ -74,6 +75,7 @@ public:
         OpAssignOr,
         Pin,
         Range,
+        Rational,
         Redo,
         Regexp,
         Retry,
@@ -123,7 +125,7 @@ public:
 
     virtual void transform(Creator *creator) const {
         creator->set_type("NOT_YET_IMPLEMENTED");
-        creator->append_integer((int)type());
+        creator->append_fixnum((int)type());
     }
 
     SharedPtr<String> file() const { return m_token.file(); }

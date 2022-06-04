@@ -1,4 +1,5 @@
 require_relative './test_helper'
+require_relative './support/expectations'
 require_relative '../lib/natalie_parser/sexp'
 
 %w[RubyParser NatalieParser].each do |parser|
@@ -67,6 +68,30 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('1.5 ')).must_equal s(:lit, 1.5)
         expect(parse('-1')).must_equal s(:lit, -1)
         expect(parse('-1.5')).must_equal s(:lit, -1.5)
+      end
+
+      it 'parses complex and rational numbers' do
+        expect(parse('3i')).must_equal s(:lit, Complex(0, 3))
+        expect(parse('3r')).must_equal_and_be_same_class s(:lit, Rational(3, 1))
+        expect(parse('3ri')).must_equal s(:lit, Complex(0, Rational(3, 1)))
+        expect(parse('0d3i')).must_equal s(:lit, Complex(0, 3))
+        expect(parse('0d3r')).must_equal_and_be_same_class s(:lit, Rational(3, 1))
+        expect(parse('0d3ri')).must_equal s(:lit, Complex(0, Rational(3, 1)))
+        expect(parse('0o3i')).must_equal s(:lit, Complex(0, 3))
+        expect(parse('0o3r')).must_equal_and_be_same_class s(:lit, Rational(3, 1))
+        expect(parse('0o3ri')).must_equal s(:lit, Complex(0, Rational(3, 1)))
+        expect(parse('0x3i')).must_equal s(:lit, Complex(0, 3))
+        expect(parse('0x3r')).must_equal_and_be_same_class s(:lit, Rational(3, 1))
+        expect(parse('0x3ri')).must_equal s(:lit, Complex(0, Rational(3, 1)))
+        expect(parse('0b11i')).must_equal s(:lit, Complex(0, 3))
+        expect(parse('0b11r')).must_equal_and_be_same_class s(:lit, Rational(3, 1))
+        expect(parse('0b11ri')).must_equal s(:lit, Complex(0, Rational(3, 1)))
+        expect(parse('1.1i')).must_equal s(:lit, Complex(0, 1.1))
+        expect(parse('1.1r')).must_equal_and_be_same_class s(:lit, Rational(11, 10))
+        expect(parse('1.1ri')).must_equal s(:lit, Complex(0, Rational(11, 10)))
+        expect(parse('100000000000000000000i')).must_equal s(:lit, Complex(0, 100000000000000000000))
+        expect(parse('100000000000000000000r')).must_equal_and_be_same_class s(:lit, Rational(100000000000000000000, 1))
+        expect(parse('100000000000000000000ri')).must_equal s(:lit, Complex(0, Rational(100000000000000000000, 1)))
       end
 
       it 'parses unary operators' do

@@ -842,6 +842,23 @@ Token Lexer::build_next_token() {
         auto token = consume_numeric();
         return token;
     }
+    case 'i':
+        if (m_last_token.can_be_complex_or_rational() && !isalnum(peek())) {
+            advance();
+            return Token { Token::Type::Complex, m_file, m_token_line, m_token_column };
+        }
+        break;
+    case 'r':
+        if (m_last_token.can_be_complex_or_rational()) {
+            if (peek() == 'i') {
+                advance(2);
+                return Token { Token::Type::RationalComplex, m_file, m_token_line, m_token_column };
+            } else if (!isalnum(peek())) {
+                advance();
+                return Token { Token::Type::Rational, m_file, m_token_line, m_token_column };
+            }
+        }
+        break;
     };
 
     Token keyword_token;
@@ -1413,25 +1430,6 @@ Token Lexer::consume_numeric() {
         }
     } else {
         token = consume_decimal_digits_and_build_token();
-    }
-
-    // is it a complex or a rational literal?
-    switch (current_char()) {
-    case 'i':
-        if (isalnum(peek()))
-            break;
-        advance();
-        token.make_complex();
-        break;
-    case 'r':
-        if (isalnum(peek()))
-            break;
-        advance();
-        token.make_rational();
-        break;
-    default:
-        // do nothing special
-        break;
     }
 
     return token;

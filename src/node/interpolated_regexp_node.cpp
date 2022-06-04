@@ -13,7 +13,7 @@ void InterpolatedRegexpNode::transform(Creator *creator) const {
             creator->append(node);
     }
     if (m_options != 0)
-        creator->append_integer(m_options);
+        creator->append_fixnum(m_options);
 }
 
 }
