@@ -127,6 +127,7 @@ if system('which compiledb 2>&1 >/dev/null')
     if $compiledb_out.any?
       File.write('build/build.log', $compiledb_out.join("\n"))
       sh 'compiledb < build/build.log'
+      sh 'cd ext/natalie_parser && compiledb < build.log'
     end
   end
 else
@@ -172,13 +173,11 @@ file "ext/natalie_parser/natalie_parser.#{so_ext}" => [
   'ext/natalie_parser/mri_creator.hpp',
 ] + SOURCES + HEADERS do |t|
   build_dir = File.expand_path('ext/natalie_parser', __dir__)
+  log_file = File.join(build_dir, 'build.log')
   Rake::FileList['ext/natalie_parser/*.o'].each { |path| rm path }
   rm_rf 'ext/natalie_parser/natalie_parser.so'
-  sh <<-SH
-    cd #{build_dir} && \
-    ruby extconf.rb && \
-    make -j
-  SH
+  sh "cd #{build_dir} && ruby extconf.rb"
+  sh "CC=#{cc.inspect} CXX=#{cxx.inspect} make -C #{build_dir} -j -e V=1 2>&1 | tee #{log_file}"
 end
 
   file 'build/fragments.hpp' => ['test/parser_test.rb', 'test/support/extract_parser_test_fragments.rb'] do
