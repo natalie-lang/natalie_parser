@@ -25,11 +25,11 @@ production applications.**
 - [ ] Support different source encodings
 - [ ] Support more of the Ruby 3.0 syntax
   - [x] "Endless" method definition (`def foo = bar`)
-  - [ ] Argument forwarding (`...`)
-  - [ ] Pattern matching
-  - [ ] Numbered block parameters (`_1`, `_2`, etc.)
+  - [x] Argument forwarding (`...`)
+  - [x] Numbered block parameters (`_1`, `_2`, etc.)
+  - [x] Rational and Complex literals (`1r` and `2i`)
   - [ ] Non-ASCII identifiers
-  - [ ] Rational and Complex literals (`1r` and `2i`)
+  - [ ] Pattern matching
 
 ## Development
 
