@@ -33,6 +33,13 @@ production applications.**
 
 ## Development
 
+You'll need:
+
+- gcc or clang
+- ruby-dev (dev headers)
+- ccache (optional)
+- compiledb (optional)
+
 ```sh
 rake
 ruby -I lib:ext -r natalie_parser -e "p NatalieParser.parse('1 + 2')"
