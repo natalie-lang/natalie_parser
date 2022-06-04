@@ -8,7 +8,7 @@
 
 - CHORE: Add ccache and compiledb for the ext/natalie_parser directory
 - CHORE: Add tests for numbered block arg shorthand
-- FEAT Parse arg forwarding (...) shorthand
+- FEAT: Parse arg forwarding (...) shorthand
 - FEAT: Parse complex and rational numbers
 - FIX: Fix panic when closing word array delimiter is not found
 - FIX: Fix precedence bug with op assign operators (+= et al)
