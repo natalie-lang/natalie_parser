@@ -378,6 +378,7 @@ require_relative '../lib/natalie_parser/sexp'
           )
           expect_raise_with_message(-> { parse("%w(foo\nbaz") }, SyntaxError, /expected closing '\)' somewhere after/)
           expect_raise_with_message(-> { parse("%w/foo\nbaz") }, SyntaxError, /expected closing '\/' somewhere after/)
+          expect_raise_with_message(-> { parse('%W[ foo#{#1} bar ]') }, SyntaxError, /expected closing delimiter somewhere after/)
         end
       end
 

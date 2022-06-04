@@ -2914,20 +2914,22 @@ void Parser::throw_unterminated_thing(Token token, Token start_token) {
     auto indent = String { start_token.column(), ' ' };
     String expected;
     const char *lit = start_token.literal();
-    assert(lit);
-    if (strcmp(lit, "(") == 0)
-        expected = "')'";
-    else if (strcmp(lit, "[") == 0)
-        expected = "']'";
-    else if (strcmp(lit, "{") == 0)
-        expected = "'}'";
-    else if (strcmp(lit, "<") == 0)
-        expected = "'>'";
-    else if (strcmp(lit, "'") == 0)
-        expected = "\"'\"";
-    else
-        expected = String::format("'{}'", lit);
-    assert(!expected.is_empty());
+    if (lit) {
+        if (strcmp(lit, "(") == 0)
+            expected = "')'";
+        else if (strcmp(lit, "[") == 0)
+            expected = "']'";
+        else if (strcmp(lit, "{") == 0)
+            expected = "'}'";
+        else if (strcmp(lit, "<") == 0)
+            expected = "'>'";
+        else if (strcmp(lit, "'") == 0)
+            expected = "\"'\"";
+        else
+            expected = String::format("'{}'", lit);
+    } else {
+        expected = "delimiter"; // FIXME: why do we not know what this delimiter is?
+    }
     const char *thing = nullptr;
     switch (token.type()) {
     case Token::Type::InterpolatedRegexpBegin:
