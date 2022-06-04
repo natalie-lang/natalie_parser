@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1 (2022-06-04)
+
+- FIX: Workaround for clang declspec bug
+
 ## 1.1.0 (2022-06-04)
 
 - CHORE: Add ccache and compiledb for the ext/natalie_parser directory
