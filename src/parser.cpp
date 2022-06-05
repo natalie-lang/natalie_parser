@@ -2205,7 +2205,7 @@ SharedPtr<NodeWithArgs> Parser::to_node_with_args(SharedPtr<Node> node) {
 }
 
 void Parser::parse_call_args(NodeWithArgs &node, LocalsHashmap &locals, bool bare, Token::Type closing_token_type) {
-    if (node.can_accept_a_block())
+    if (bare && node.can_accept_a_block())
         m_call_depth.last()++;
     auto arg = parse_expression(bare ? Precedence::BARE_CALL_ARG : Precedence::CALL_ARG, locals);
     if (current_token().is_hash_rocket() || arg->is_symbol_key()) {
@@ -2228,7 +2228,7 @@ void Parser::parse_call_args(NodeWithArgs &node, LocalsHashmap &locals, bool bar
             }
         }
     }
-    if (node.can_accept_a_block())
+    if (bare && node.can_accept_a_block())
         m_call_depth.last()--;
 }
 
