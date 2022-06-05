@@ -1501,6 +1501,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("begin\n0\nensure\n:a\n:b\nend")).must_equal s(:ensure, s(:lit, 0), s(:block, s(:lit, :a), s(:lit, :b)))
         expect(parse('begin;0;rescue;:a;else;:c;ensure;:d;:e;end')).must_equal s(:ensure, s(:rescue, s(:lit, 0), s(:resbody, s(:array), s(:lit, :a)), s(:lit, :c)), s(:block, s(:lit, :d), s(:lit, :e)))
         expect(parse('def foo;0;rescue;:a;else;:c;ensure;:d;:e;end')).must_equal s(:defn, :foo, s(:args), s(:ensure, s(:rescue, s(:lit, 0), s(:resbody, s(:array), s(:lit, :a)), s(:lit, :c)), s(:block, s(:lit, :d), s(:lit, :e))))
+        expect(parse('def foo;0;ensure;:a;:e;end')).must_equal s(:defn, :foo, s(:args), s(:ensure, s(:lit, 0), s(:block, s(:lit, :a), s(:lit, :e))))
         expect(parse('begin;0;rescue foo(1), bar(2);1;end')).must_equal s(:rescue, s(:lit, 0), s(:resbody, s(:array, s(:call, nil, :foo, s(:lit, 1)), s(:call, nil, :bar, s(:lit, 2))), s(:lit, 1)))
         expect(parse('begin;0;ensure;1;end')).must_equal s(:ensure, s(:lit, 0), s(:lit, 1))
         expect(parse('x ||= begin;0;rescue;1;end')).must_equal s(:op_asgn_or, s(:lvar, :x), s(:lasgn, :x, s(:rescue, s(:lit, 0), s(:resbody, s(:array), s(:lit, 1)))))

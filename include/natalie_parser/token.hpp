@@ -636,6 +636,7 @@ public:
     bool is_elsif_keyword() const { return m_type == Type::ElsifKeyword; }
     bool is_end_keyword() const { return m_type == Type::EndKeyword; }
     bool is_end_of_expression() const { return m_type == Type::EndKeyword || m_type == Type::RCurlyBrace || m_type == Type::Newline || m_type == Type::Semicolon || m_type == Type::Eof || is_expression_modifier(); }
+    bool is_ensure() const { return m_type == Type::EnsureKeyword; }
     bool is_eof() const { return m_type == Type::Eof; }
     bool is_end_of_line() const { return m_type == Type::Newline || m_type == Type::Semicolon; }
     bool is_equal() const { return m_type == Type::Equal; }
@@ -644,6 +645,7 @@ public:
     bool is_lparen() const { return m_type == Type::LParen; }
     bool is_newline() const { return m_type == Type::Newline; }
     bool is_rbracket() const { return m_type == Type::RBracket; }
+    bool is_rescue() const { return m_type == Type::RescueKeyword; }
     bool is_rparen() const { return m_type == Type::RParen; }
     bool is_semicolon() const { return m_type == Type::Semicolon; }
     bool is_splat() const { return m_type == Type::Star || m_type == Type::StarStar; }

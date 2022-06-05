@@ -249,7 +249,7 @@ SharedPtr<BlockNode> Parser::parse_body(LocalsHashmap &locals, Precedence preced
     validate_current_token();
     skip_newlines();
     while (!current_token().is_eof() && !is_end(current_token().type())) {
-        if (allow_rescue && current_token().type() == Token::Type::RescueKeyword) {
+        if (allow_rescue && (current_token().is_rescue() || current_token().is_ensure())) {
             auto token = body->token();
             SharedPtr<BeginNode> begin_node = new BeginNode { body->token(), body };
             parse_rest_of_begin(begin_node.ref(), locals);
