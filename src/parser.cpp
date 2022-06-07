@@ -2472,15 +2472,19 @@ SharedPtr<Node> Parser::parse_proc_call_expression(SharedPtr<Node> left, LocalsH
 
 SharedPtr<Node> Parser::parse_range_expression(SharedPtr<Node> left, LocalsHashmap &locals) {
     auto token = current_token();
-    advance();
+    advance(); // .. or ...
+    skip_newlines();
     SharedPtr<Node> right;
-    try {
+    if (current_token().can_be_range_arg_token()) {
         right = parse_expression(Precedence::RANGE, locals);
-    } catch (SyntaxError &e) {
-        // NOTE: I'm not sure if this is the "right" way to handle an endless range,
-        // but it seems to be effective for the tests I threw at it. ¯\_(ツ)_/¯
+    } else {
+        // endless range
         right = new NilNode { token };
+        // HACK: insert a newline here so subsequent expressions parse ok
+        if (!current_token().can_follow_collapsible_newline())
+            m_tokens->insert(m_index, Token { Token::Type::Newline, current_token().file(), current_token().line(), current_token().column() });
     }
+
     return new RangeNode { token, left, right, token.type() == Token::Type::DotDotDot };
 }
 

@@ -682,7 +682,6 @@ public:
         case Token::Type::Comparison:
         case Token::Type::ConstantResolution:
         case Token::Type::Dot:
-        case Token::Type::DotDot:
         case Token::Type::Equal:
         case Token::Type::EqualEqual:
         case Token::Type::EqualEqualEqual:
@@ -824,6 +823,25 @@ public:
         default:
             return false;
         }
+    }
+
+    bool can_be_range_arg_token() const {
+        if (is_closing_token())
+            return false;
+        if (is_semicolon() || is_eof())
+            return false;
+        switch (m_type) {
+        case Type::ElseKeyword:
+        case Type::ElsifKeyword:
+        case Type::EndKeyword:
+        case Type::InKeyword:
+        case Type::WhenKeyword:
+            // TODO: likely many more cases!
+            return false;
+        default:
+            return true;
+        }
+        return true;
     }
 
     void set_literal(const char *literal) { m_literal = new String(literal); }

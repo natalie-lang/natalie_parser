@@ -1228,11 +1228,13 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('(..3)')).must_equal s(:dot2, nil, s(:lit, 3))
         expect(parse('x = ...3')).must_equal s(:lasgn, :x, s(:dot3, nil, s(:lit, 3)))
         expect(parse('4..')).must_equal s(:dot2, s(:lit, 4), nil)
+        expect(parse('4..nil')).must_equal s(:dot2, s(:lit, 4), s(:nil))
         expect(parse('(4..)')).must_equal s(:dot2, s(:lit, 4), nil)
         expect(parse("4..\n5")).must_equal s(:lit, 4..5)
         expect(parse("4..\nfoo")).must_equal s(:dot2, s(:lit, 4), s(:call, nil, :foo))
         expect(parse('(4..) * 5')).must_equal s(:call, s(:dot2, s(:lit, 4), nil), :*, s(:lit, 5))
         expect(parse('x = (4..)')).must_equal s(:lasgn, :x, s(:dot2, s(:lit, 4), nil))
+        expect(parse("case 1\nwhen 1\n2..\nwhen 2\n3...\nwhen 4\n5..\nend")).must_equal s(:case, s(:lit, 1), s(:when, s(:array, s(:lit, 1)), s(:dot2, s(:lit, 2), nil)), s(:when, s(:array, s(:lit, 2)), s(:dot3, s(:lit, 3), nil)), s(:when, s(:array, s(:lit, 4)), s(:dot2, s(:lit, 5), nil)), nil)
         expect(parse("ruby_version_is ''...'3.0' do\nend")).must_equal s(:iter, s(:call, nil, :ruby_version_is, s(:dot3, s(:str, ''), s(:str, '3.0'))), 0)
       end
 
