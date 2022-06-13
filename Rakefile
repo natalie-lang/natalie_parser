@@ -127,7 +127,9 @@ if system('which compiledb 2>&1 >/dev/null')
     if $compiledb_out.any?
       File.write('build/build.log', $compiledb_out.join("\n"))
       sh 'compiledb < build/build.log'
-      sh 'cd ext/natalie_parser && compiledb < build.log'
+      if File.exist?('ext/natalie_parser/build.log')
+        sh 'cd ext/natalie_parser && compiledb < build.log'
+      end
     end
   end
 else
