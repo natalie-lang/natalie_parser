@@ -4635,9 +4635,9 @@ module TestPatternMatching
                      s(:const, :B).line(2)).line(2))
   end
 
-  #def test_case_in_28_2
-    #assert_case_in '{ "b": }', s(:hash_pat, nil, s(:lit, :b).line(2), nil).line(2)
-  #end
+  def test_case_in_28_2
+    assert_case_in '{ "b": }', s(:hash_pat, nil, s(:lit, :b).line(2), nil).line(2)
+  end
 
   #def test_case_in_28
     #assert_case_in "[]", s(:array_pat).line(2)

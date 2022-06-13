@@ -659,23 +659,31 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
     case Token::Type::LCurlyBrace: {
         advance();
         SharedPtr<HashPatternNode> hash = new HashPatternNode { token };
+        node = hash.static_cast_as<Node>();
         if (current_token().type() == Token::Type::RCurlyBrace) {
             advance();
             node = hash.static_cast_as<Node>();
             break;
         }
-        expect(Token::Type::SymbolKey, "hash pattern symbol key");
-        hash->add_node(parse_symbol(locals));
-        hash->add_node(parse_case_in_pattern(locals));
+        hash->add_node(parse_case_in_pattern_hash_symbol_key(locals));
+        if (current_token().type() == Token::Type::RCurlyBrace || current_token().type() == Token::Type::Comma) {
+            hash->add_last_node_to_locals(locals);
+            hash->add_node(new NilNode { current_token() });
+        } else {
+            hash->add_node(parse_case_in_pattern(locals));
+        }
         while (current_token().is_comma()) {
             advance(); // ,
-            expect(Token::Type::Symbol, "hash pattern symbol");
-            hash->add_node(parse_symbol(locals));
-            hash->add_node(parse_case_in_pattern(locals));
+            hash->add_node(parse_case_in_pattern_hash_symbol_key(locals));
+            if (current_token().type() == Token::Type::RCurlyBrace || current_token().type() == Token::Type::Comma) {
+                hash->add_last_node_to_locals(locals);
+                hash->add_node(new NilNode { current_token() });
+            } else {
+                hash->add_node(parse_case_in_pattern(locals));
+            }
         }
         expect(Token::Type::RCurlyBrace, "hash pattern closing brace");
         advance();
-        node = hash.static_cast_as<Node>();
         break;
     }
     case Token::Type::LParen:
@@ -743,6 +751,24 @@ SharedPtr<Node> Parser::parse_case_in_pattern_alternation(LocalsHashmap &locals)
     if (array_pattern->nodes().size() == 1)
         return array_pattern->nodes().first();
     return array_pattern.static_cast_as<Node>();
+}
+
+SharedPtr<Node> Parser::parse_case_in_pattern_hash_symbol_key(LocalsHashmap &locals) {
+    auto token = current_token();
+    SharedPtr<Node> node;
+    switch (token.type()) {
+    case Token::Type::SymbolKey:
+        node = parse_symbol_key(locals);
+        break;
+    case Token::Type::InterpolatedStringBegin:
+        node = parse_interpolated_string(locals);
+        break;
+    default:
+        throw_unexpected("hash pattern symbol key");
+    }
+    if (node->type() != Node::Type::SymbolKey)
+        throw_unexpected(token, "hash pattern symbol key");
+    return node;
 }
 
 SharedPtr<Node> Parser::parse_case_in_patterns(LocalsHashmap &locals) {

@@ -83,6 +83,7 @@ private:
     SharedPtr<Node> parse_case(LocalsHashmap &);
     SharedPtr<Node> parse_case_in_pattern(LocalsHashmap &);
     SharedPtr<Node> parse_case_in_pattern_alternation(LocalsHashmap &);
+    SharedPtr<Node> parse_case_in_pattern_hash_symbol_key(LocalsHashmap &);
     SharedPtr<Node> parse_case_in_patterns(LocalsHashmap &);
     void parse_comma_separated_expressions(ArrayNode &, LocalsHashmap &);
     SharedPtr<Node> parse_constant(LocalsHashmap &);
