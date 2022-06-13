@@ -624,6 +624,11 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         advance();
         node = new IdentifierNode { token, true };
         break;
+    case Token::Type::Bignum:
+    case Token::Type::Fixnum:
+    case Token::Type::Float:
+        node = parse_lit(locals);
+        break;
     case Token::Type::Caret:
         advance();
         expect(Token::Type::BareName, "pinned variable name");
@@ -636,6 +641,9 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
     case Token::Type::LBracketRBracket:
         advance();
         node = new ArrayPatternNode { token };
+        break;
+    case Token::Type::InterpolatedStringBegin:
+        node = parse_interpolated_string(locals);
         break;
     case Token::Type::LBracket: {
         // TODO: might need to keep track of and pass along precedence value?
@@ -696,11 +704,6 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         node = parse_case_in_pattern(locals);
         expect(Token::Type::RParen, "closing paren for pattern");
         advance();
-        break;
-    case Token::Type::Bignum:
-    case Token::Type::Fixnum:
-    case Token::Type::Float:
-        node = parse_lit(locals);
         break;
     case Token::Type::NilKeyword:
         node = parse_nil(locals);

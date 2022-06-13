@@ -4906,20 +4906,20 @@ module TestPatternMatching
     #assert_parse rb, pt
   #end
 
-  #def test_case_in_hash_pat
-    #rb = "case :a\nin { b: 'c', d: \"e\" } then\n  :f\nend\n"
-    #pt = s(:case, s(:lit, :a),
-           #s(:in,
-             #s(:hash_pat,
-               #nil,
-               #s(:lit, :b).line(2), s(:str, "c").line(2),
-               #s(:lit, :d).line(2), s(:str, "e").line(2)).line(2),
-             #s(:lit, :f).line(3)
-             #).line(2),
-          #nil)
+  def test_case_in_hash_pat
+    rb = "case :a\nin { b: 'c', d: \"e\" } then\n  :f\nend\n"
+    pt = s(:case, s(:lit, :a),
+           s(:in,
+             s(:hash_pat,
+               nil,
+               s(:lit, :b).line(2), s(:str, "c").line(2),
+               s(:lit, :d).line(2), s(:str, "e").line(2)).line(2),
+             s(:lit, :f).line(3)
+             ).line(2),
+          nil)
 
-    #assert_parse rb, pt
-  #end
+    assert_parse rb, pt
+  end
 
   #def test_case_in_hash_pat_assign
     #rb = "case :a\nin { b: Integer => x, d: \"e\", f: } then\n  :g\nend"

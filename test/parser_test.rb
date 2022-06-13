@@ -1472,6 +1472,10 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("case 1\nin nil, nil\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:nil), s(:nil)), nil), nil)
         expect(parse("case 1\nin nil, nil, nil\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:nil), s(:nil), s(:nil)), nil), nil)
 
+        # string
+        expect(parse("case 1\nin \"x\"\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:str, "x"), nil), nil)
+        expect(parse("case 1\nin 'x'\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:str, "x"), nil), nil)
+
         # variable 
         expect(parse("case 1\nin x\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lvar, :x), s(:lit, :a)), nil)
         expect(parse("case 1\nin x then :a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lvar, :x), s(:lit, :a)), nil)
