@@ -52,6 +52,7 @@ void test_code_ignoring_syntax_errors(TM::String code) {
 }
 
 void test_file(TM::String path, size_t expected_output_size) {
+    printf("testing %s for memory errors\n", path.c_str());
     auto code = read_file(path);
     auto output = test_code(code, path);
     if (output.size() == expected_output_size) {
@@ -61,27 +62,33 @@ void test_file(TM::String path, size_t expected_output_size) {
         printf("%s\n", output.c_str());
         abort();
     }
+    printf("\n");
 }
 
 void test_fragments() {
+    printf("testing fragments for memory errors\n");
     auto fragments = build_fragments();
     for (auto fragment : *fragments) {
         test_code(fragment);
         printf(".");
     }
+    printf("\n");
     delete fragments;
 }
 
 void test_fragments_with_syntax_errors() {
+    printf("testing with intentional syntax errors for memory errors\n");
     auto fragments = build_fragments();
     for (auto fragment : *fragments) {
         test_code_with_syntax_error(fragment + "\n^");
         printf(".");
     }
+    printf("\n");
     delete fragments;
 }
 
 void test_fragments_with_fuzzing(int seed) {
+    printf("fuzzing with seed %d\n", seed);
     char bad_chars[] = { '`', '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '+', '=', '[', ']', '{', '}', '|', '\\', '7', 'a', '<', '>', ',', '.', '/', '?', ' ', '\n', '\t', '\v' };
     auto fragments = build_fragments();
     srand(seed);
@@ -95,6 +102,7 @@ void test_fragments_with_fuzzing(int seed) {
         test_code_ignoring_syntax_errors(fragment);
         printf(".");
     }
+    printf("\n");
     delete fragments;
 }
 
