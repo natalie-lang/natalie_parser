@@ -63,7 +63,7 @@ end
 # NATFIXME: we do care about line numbers, but we have bigger fish to fry first :-)
 def assert_parse_ignoring_line_numbers_for_now(rb, pt)
   ast = RubyParser.new.parse(rb)
-  assert_equal strip_line_numbers(ast), strip_line_numbers(pt)
+  assert_equal strip_line_numbers(pt), strip_line_numbers(ast)
 end
 
 def strip_line_numbers(ast)
@@ -4588,51 +4588,52 @@ module TestPatternMatching
     pp Sexp.from_array Ripper.sexp rb
   end
 
-  #def assert_case_in lit, exp_pt
-    #rb = "case :a\nin #{lit}\nend"
+  def assert_case_in lit, exp_pt
+    rb = "case :a\nin #{lit}\nend"
 
-    #if ENV["VERBOSE_TEST"] then
-      #puts
-      #puts rb
-    #end
+    if ENV["VERBOSE_TEST"] then
+      puts
+      puts rb
+    end
 
-    #pt = s(:case, s(:lit, :a),
-           #s(:in, exp_pt, nil).line(2),
-           #nil)
+    pt = s(:case, s(:lit, :a),
+           s(:in, exp_pt, nil).line(2),
+           nil)
 
-    #assert_parse rb, pt
-  #end
+    assert_parse rb, pt
+  end
 
-  #def test_case_in_09
-    #assert_case_in(":b, [:c]",
-                   #s(:array_pat, nil,
-                     #s(:lit, :b).line(2),
-                     #s(:array_pat, nil, s(:lit, :c).line(2)).line(2)).line(2))
-  #end
+  def test_case_in_09
+    assert_case_in(":b, [:c]",
+                   s(:array_pat, nil,
+                     s(:lit, :b).line(2),
+                     s(:array_pat, nil, s(:lit, :c).line(2)).line(2)).line(2))
+  end
 
-  #def test_case_in_10
-    #assert_case_in "nil, nil, nil", s(:array_pat,
-                                      #nil,
-                                      #s(:nil).line(2),
-                                      #s(:nil).line(2),
-                                      #s(:nil).line(2)).line(2)
-  #end
+  def test_case_in_10
+    assert_case_in "nil, nil, nil", s(:array_pat,
+                                      nil,
+                                      s(:nil).line(2),
+                                      s(:nil).line(2),
+                                      s(:nil).line(2)).line(2)
+  end
 
-  #def test_case_in_21
-    #assert_case_in "Symbol()", s(:array_pat, s(:const, :Symbol).line(2)).line(2)
-  #end
+  def test_case_in_21
+    skip # NATFIXME: this doesn't seem right to me
+    assert_case_in "Symbol()", s(:array_pat, s(:const, :Symbol).line(2)).line(2)
+  end
 
-  #def test_case_in_26
-    #assert_case_in "(42)", s(:lit, 42).line(2)
-  #end
+  def test_case_in_26
+    assert_case_in "(42)", s(:lit, 42).line(2)
+  end
 
-  #def test_case_in_27
-    #assert_case_in("[A, *, B]",
-                   #s(:array_pat, nil,
-                     #s(:const, :A).line(2),
-                     #:*,
-                     #s(:const, :B).line(2)).line(2))
-  #end
+  def test_case_in_27
+    assert_case_in("[A, *, B]",
+                   s(:array_pat, nil,
+                     s(:const, :A).line(2),
+                     :*,
+                     s(:const, :B).line(2)).line(2))
+  end
 
   #def test_case_in_28_2
     #assert_case_in '{ "b": }', s(:hash_pat, nil, s(:lit, :b).line(2), nil).line(2)

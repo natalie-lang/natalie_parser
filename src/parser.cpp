@@ -678,28 +678,38 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         node = hash.static_cast_as<Node>();
         break;
     }
+    case Token::Type::LParen:
+        advance(); // (
+        node = parse_case_in_pattern(locals);
+        expect(Token::Type::RParen, "closing paren for pattern");
+        advance();
+        break;
     case Token::Type::Bignum:
     case Token::Type::Fixnum:
     case Token::Type::Float:
         node = parse_lit(locals);
         break;
+    case Token::Type::NilKeyword:
+        node = parse_nil(locals);
+        break;
     case Token::Type::Star: {
         auto splat_token = current_token();
+        SharedPtr<String> name;
         advance();
-        SharedPtr<ArrayPatternNode> array = new ArrayPatternNode { token };
         switch (current_token().type()) {
         case Token::Type::BareName:
         case Token::Type::Constant: {
-            auto name = new IdentifierNode { current_token(), true };
-            name->prepend_to_name('*');
-            array->add_node(name);
+            name = current_token().literal_string();
             advance();
             break;
         }
-        default:
-            array->add_node(new SplatNode { splat_token });
+        default: {
+            name = new String();
         }
-        node = array.static_cast_as<Node>();
+        }
+        name->prepend_char('*');
+        auto symbol = new SymbolNode { current_token(), name };
+        node = new SplatNode { symbol->token(), symbol };
         break;
     }
     case Token::Type::String:
@@ -723,26 +733,30 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
     return node;
 }
 
-SharedPtr<Node> Parser::parse_case_in_patterns(LocalsHashmap &locals) {
-    Vector<SharedPtr<Node>> patterns;
-    patterns.push(parse_case_in_pattern(locals));
-    while (current_token().type() == Token::Type::Pipe) {
-        advance();
-        patterns.push(parse_case_in_pattern(locals));
-    }
+SharedPtr<Node> Parser::parse_case_in_pattern_alternation(LocalsHashmap &locals) {
+    SharedPtr<ArrayPatternNode> array_pattern = new ArrayPatternNode { current_token() };
+    array_pattern->add_node(parse_case_in_pattern(locals));
     while (current_token().is_comma()) {
         advance();
-        auto last_pattern = patterns.last();
-        auto next_pattern = parse_case_in_pattern(locals);
-        if (last_pattern->type() == Node::Type::ArrayPattern) {
-            last_pattern.static_cast_as<ArrayPatternNode>()->add_node(next_pattern);
-        } else {
-            patterns.pop();
-            auto array_pattern = new ArrayPatternNode { last_pattern->token() };
-            array_pattern->add_node(last_pattern);
-            array_pattern->add_node(next_pattern);
-            patterns.push(array_pattern);
-        }
+        array_pattern->add_node(parse_case_in_pattern(locals));
+    }
+    if (array_pattern->nodes().size() == 1)
+        return array_pattern->nodes().first();
+    return array_pattern.static_cast_as<Node>();
+}
+
+SharedPtr<Node> Parser::parse_case_in_patterns(LocalsHashmap &locals) {
+    Vector<SharedPtr<Node>> patterns;
+    auto pattern = parse_case_in_pattern_alternation(locals);
+    if (pattern->type() == Node::Type::Splat)
+        pattern = new ArrayPatternNode { pattern->token(), pattern };
+    patterns.push(pattern);
+    while (current_token().type() == Token::Type::Pipe) {
+        advance();
+        auto pattern = parse_case_in_pattern_alternation(locals);
+        if (pattern->type() == Node::Type::Splat)
+            pattern = new ArrayPatternNode { pattern->token(), pattern };
+        patterns.push(pattern);
     }
     assert(patterns.size() > 0);
     if (patterns.size() == 1) {

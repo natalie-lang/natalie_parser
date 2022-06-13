@@ -1467,32 +1467,56 @@ require_relative '../lib/natalie_parser/sexp'
       end
 
       it 'parses case/in/else' do
+        # nil
+        expect(parse("case 1\nin nil\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:nil), nil), nil)
+        expect(parse("case 1\nin nil, nil\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:nil), s(:nil)), nil), nil)
+        expect(parse("case 1\nin nil, nil, nil\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:nil), s(:nil), s(:nil)), nil), nil)
+
+        # variable 
         expect(parse("case 1\nin x\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lvar, :x), s(:lit, :a)), nil)
         expect(parse("case 1\nin x then :a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lvar, :x), s(:lit, :a)), nil)
-        # FIXME:
-        #expect(parse("case 1\nin *x then :a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, :"*x"), s(:lit, :a)), nil)
+
+        # FIXME: splat
+        expect(parse("case 1\nin *x then :a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, :"*x"), s(:lit, :a)), nil)
+        expect(parse("case 1\nin :x, *y\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:lit, :x), :"*y"), s(:lit, :a)), nil)
+        expect(parse("case 1\nin [:x, *y]\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:lit, :x), :"*y"), s(:lit, :a)), nil)
+
+        # or
         expect(parse("case 1\nin x | y\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:or, s(:lvar, :x), s(:lvar, :y)), s(:lit, :a)), nil)
-        expect(parse("case 1\nin x, :y\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:lvar, :x), s(:lit, :y)), s(:lit, :a)), nil)
-        # FIXME:
-        #expect(parse("case 1\nin *x, :y\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, :"*x", s(:lit, :y)), s(:lit, :a)), nil)
+
+        # constant
         expect(parse("case 1\nin X\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:const, :X), s(:lit, :a)), nil)
-        expect(parse("case 1\nin []\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat), s(:lit, :a)), nil)
-        expect(parse("case 1\nin [ ]\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat), s(:lit, :a)), nil)
-        expect(parse("case 1\nin [:x, x]\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:lit, :x), s(:lvar, :x)), s(:lit, :a)), nil)
-        expect(parse("case 1\nin [a, a]\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:lvar, :a), s(:lvar, :a)), s(:lit, :a)), nil)
+
+        # pinned variable
         if parser == 'NatalieParser'
           # pinned variables not supported in ruby_parser yet
           expect(parse("case 1\nin [^a, a]\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:pin, s(:lvar, :a)), s(:lvar, :a)), s(:lit, :a)), nil)
         end
+
+        # array pattern
+        expect(parse("case 1\nin x, :y\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:lvar, :x), s(:lit, :y)), s(:lit, :a)), nil)
+        expect(parse("case 1\nin x, [:y]\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:lvar, :x), s(:array_pat, nil, s(:lit, :y))), s(:lit, :a)), nil)
+        expect(parse("case 1\nin [x], :y\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:array_pat, nil, s(:lvar, :x)), s(:lit, :y)), s(:lit, :a)), nil)
+        expect(parse("case 1\nin []\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat), s(:lit, :a)), nil)
+        expect(parse("case 1\nin [ ]\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat), nil), nil)
+        expect(parse("case 1\nin [:x, x]\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:lit, :x), s(:lvar, :x)), s(:lit, :a)), nil)
+        expect(parse("case 1\nin [a, a]\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:lvar, :a), s(:lvar, :a)), s(:lit, :a)), nil)
         expect(parse("case 1\nin [1, x]\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:lit, 1), s(:lvar, :x)), s(:lit, :a)), nil)
         expect(parse("case 1\nin [1.2, x]\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:lit, 1.2), s(:lvar, :x)), s(:lit, :a)), nil)
         expect(parse("case 1\nin ['one', x]\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:str, 'one'), s(:lvar, :x)), s(:lit, :a)), nil)
         expect(parse("case 1\nin [1, 2] => a\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lasgn, :a, s(:array_pat, nil, s(:lit, 1), s(:lit, 2))), s(:lit, :a)), nil)
         expect(parse("case 1\nin [1 => a] => b\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lasgn, :b, s(:array_pat, nil, s(:lasgn, :a, s(:lit, 1)))), s(:lit, :a)), nil)
+
+        # hash pattern
         expect(parse("case 1\nin {}\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil), s(:lit, :a)), nil)
         expect(parse("case 1\nin { x: x }\nx\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil, s(:lit, :x), s(:lvar, :x)), s(:call, nil, :x)), nil)
         expect(parse("case 1\nin { x: [:a, a] => b } => y\nx\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lasgn, :y, s(:hash_pat, nil, s(:lit, :x), s(:lasgn, :b, s(:array_pat, nil, s(:lit, :a), s(:lvar, :a))))), s(:call, nil, :x)), nil)
-        expect(-> { parse("case 1\nin [1,* 2]\n:a\nend") }).must_raise SyntaxError
+
+        # parens only allow a single item?
+        expect(parse("case 1\nin (1)\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lit, 1), nil), nil)
+        expect(parse("case 1\nin (:x)\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lit, :x), nil), nil)
+        expect(parse("case 1\nin ([:x])\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:lit, :x)), nil), nil)
+        expect(-> { parse("case 1\nin (:x, :y)\nend") }).must_raise SyntaxError
       end
 
       it 'parses begin/rescue/else/ensure' do
