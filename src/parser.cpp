@@ -665,23 +665,28 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
             node = hash.static_cast_as<Node>();
             break;
         }
-        hash->add_node(parse_case_in_pattern_hash_symbol_key(locals));
-        if (current_token().type() == Token::Type::RCurlyBrace || current_token().type() == Token::Type::Comma) {
-            hash->add_last_node_to_locals(locals);
-            hash->add_node(new NilNode { current_token() });
-        } else {
-            hash->add_node(parse_case_in_pattern(locals));
-        }
-        while (current_token().is_comma()) {
-            advance(); // ,
-            hash->add_node(parse_case_in_pattern_hash_symbol_key(locals));
-            if (current_token().type() == Token::Type::RCurlyBrace || current_token().type() == Token::Type::Comma) {
-                hash->add_last_node_to_locals(locals);
+
+        auto add_pair = [&]() {
+            auto key = parse_case_in_pattern_hash_symbol_key(locals);
+            hash->add_node(key);
+            if (key->type() == Node::Type::KeywordRestPattern) {
+                // nothing else to do
+            } else if (current_token().type() == Token::Type::RCurlyBrace || current_token().type() == Token::Type::Comma) {
+                if (key->type() == Node::Type::SymbolKey)
+                    locals.set(key.static_cast_as<SymbolKeyNode>()->name().ref());
                 hash->add_node(new NilNode { current_token() });
             } else {
                 hash->add_node(parse_case_in_pattern(locals));
             }
+        };
+
+        add_pair();
+
+        while (current_token().is_comma()) {
+            advance(); // ,
+            add_pair();
         }
+
         expect(Token::Type::RCurlyBrace, "hash pattern closing brace");
         advance();
         break;
@@ -701,9 +706,8 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         node = parse_nil(locals);
         break;
     case Token::Type::Star: {
-        auto splat_token = current_token();
         SharedPtr<String> name;
-        advance();
+        advance(); // *
         switch (current_token().type()) {
         case Token::Type::BareName:
         case Token::Type::Constant: {
@@ -718,6 +722,13 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         name->prepend_char('*');
         auto symbol = new SymbolNode { current_token(), name };
         node = new SplatNode { symbol->token(), symbol };
+        break;
+    }
+    case Token::Type::StarStar: {
+        SharedPtr<HashPatternNode> hash = new HashPatternNode { token };
+        auto key = parse_case_in_pattern_hash_symbol_key(locals);
+        hash->add_node(key);
+        node = hash.static_cast_as<Node>();
         break;
     }
     case Token::Type::String:
@@ -757,17 +768,32 @@ SharedPtr<Node> Parser::parse_case_in_pattern_hash_symbol_key(LocalsHashmap &loc
     auto token = current_token();
     SharedPtr<Node> node;
     switch (token.type()) {
-    case Token::Type::SymbolKey:
-        node = parse_symbol_key(locals);
-        break;
     case Token::Type::InterpolatedStringBegin:
         node = parse_interpolated_string(locals);
+        if (node->type() != Node::Type::SymbolKey)
+            throw_unexpected(token, "hash pattern symbol key");
+        break;
+    case Token::Type::StarStar:
+        advance(); // **
+        switch (current_token().type()) {
+        case Token::Type::NilKeyword:
+            node = new KeywordRestPatternNode { token, current_token().type_value() };
+            advance();
+            break;
+        case Token::Type::BareName:
+            node = new KeywordRestPatternNode { token, current_token().literal_string() };
+            advance();
+            break;
+        default:
+            throw_unexpected(token, "**kwrest name");
+        }
+        break;
+    case Token::Type::SymbolKey:
+        node = parse_symbol_key(locals);
         break;
     default:
         throw_unexpected("hash pattern symbol key");
     }
-    if (node->type() != Node::Type::SymbolKey)
-        throw_unexpected(token, "hash pattern symbol key");
     return node;
 }
 
@@ -889,13 +915,12 @@ SharedPtr<Node> Parser::parse_assignment_identifier(bool allow_splat, LocalsHash
     case Token::Type::Star: {
         if (!allow_splat)
             expect(Token::Type::BareName, "assignment identifier");
-        auto splat_token = current_token();
         advance();
         if (current_token().is_assignable()) {
             auto id = parse_assignment_identifier(false, locals);
-            node = new SplatNode { splat_token, id };
+            node = new SplatNode { token, id };
         } else {
-            node = new SplatNode { splat_token };
+            node = new SplatNode { token };
         }
         break;
     }

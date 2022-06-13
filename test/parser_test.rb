@@ -1516,6 +1516,9 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("case 1\nin { x: }\nx\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil, s(:lit, :x), nil), s(:lvar, :x)), nil)
         expect(parse("case 1\nin { x:, y: }\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil, s(:lit, :x), nil, s(:lit, :y), nil), nil), nil)
         expect(parse("case 1\nin { x: [:a, a] => b } => y\nx\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lasgn, :y, s(:hash_pat, nil, s(:lit, :x), s(:lasgn, :b, s(:array_pat, nil, s(:lit, :a), s(:lvar, :a))))), s(:call, nil, :x)), nil)
+        expect(parse("case 1\nin { x:, **foo }\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil, s(:lit, :x), nil, s(:kwrest, :"**foo")), nil), nil)
+        expect(parse("case 1\nin **foo\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil, s(:kwrest, :"**foo")), nil), nil)
+        expect(parse("case 1\nin **nil\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil, s(:kwrest, :"**nil")), nil), nil)
 
         # parens only allow a single item?
         expect(parse("case 1\nin (1)\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lit, 1), nil), nil)

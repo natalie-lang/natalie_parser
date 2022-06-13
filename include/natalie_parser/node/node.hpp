@@ -56,6 +56,7 @@ public:
         InterpolatedSymbol,
         InterpolatedSymbolKey,
         KeywordArg,
+        KeywordRestPattern,
         KeywordSplat,
         LogicalAnd,
         LogicalOr,

@@ -45,6 +45,7 @@
 #include "natalie_parser/node/interpolated_symbol_node.hpp"
 #include "natalie_parser/node/iter_node.hpp"
 #include "natalie_parser/node/keyword_arg_node.hpp"
+#include "natalie_parser/node/keyword_rest_pattern_node.hpp"
 #include "natalie_parser/node/keyword_splat_node.hpp"
 #include "natalie_parser/node/logical_and_node.hpp"
 #include "natalie_parser/node/logical_or_node.hpp"

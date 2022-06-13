@@ -4639,17 +4639,17 @@ module TestPatternMatching
     assert_case_in '{ "b": }', s(:hash_pat, nil, s(:lit, :b).line(2), nil).line(2)
   end
 
-  #def test_case_in_28
-    #assert_case_in "[]", s(:array_pat).line(2)
-  #end
+  def test_case_in_28
+    assert_case_in "[]", s(:array_pat).line(2)
+  end
 
-  #def test_case_in_29
-    #assert_case_in "**nil", s(:hash_pat, nil, s(:kwrest, :"**nil").line(2)).line(2)
-  #end
+  def test_case_in_29
+    assert_case_in "**nil", s(:hash_pat, nil, s(:kwrest, :"**nil").line(2)).line(2)
+  end
 
-  #def test_case_in_30
-    #assert_case_in "{}", s(:hash_pat, nil).line(2)
-  #end
+  def test_case_in_30
+    assert_case_in "{}", s(:hash_pat, nil).line(2)
+  end
 
   #def test_case_in_31?
     #rb = "case :a\nin [:b, *c]\n  :d\nend"
