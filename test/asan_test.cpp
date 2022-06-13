@@ -1,3 +1,5 @@
+#include <time.h>
+
 #include "fragments.hpp"
 #include "natalie_parser/creator/debug_creator.hpp"
 #include "natalie_parser/parser.hpp"
@@ -105,9 +107,8 @@ int main() {
         abort();
     }
     test_fragments_with_syntax_errors();
-    for (int i = 0; i < 7; ++i) {
-        test_fragments_with_fuzzing(i);
-    }
+    srand(time(NULL));
+    test_fragments_with_fuzzing(rand());
     printf("\n");
     return 0;
 }
