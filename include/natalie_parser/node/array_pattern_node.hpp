@@ -31,9 +31,12 @@ public:
         for (auto node : m_nodes) {
             if (node->type() == Node::Type::Splat) {
                 auto splat_node = node.static_cast_as<SplatNode>();
-                assert(splat_node->node());
-                assert(splat_node->node()->type() == Node::Type::Symbol);
-                creator->append_symbol(splat_node->node().static_cast_as<SymbolNode>()->name());
+                auto name = String("*");
+                if (splat_node->node()) {
+                    assert(splat_node->node()->type() == Node::Type::Symbol);
+                    name.append(splat_node->node().static_cast_as<SymbolNode>()->name().ref());
+                }
+                creator->append_symbol(name);
             } else {
                 creator->append(node);
             }

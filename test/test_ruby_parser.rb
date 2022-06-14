@@ -5081,29 +5081,29 @@ module TestPatternMatching
     #assert_parse rb, pt
   #end
 
-  #def test_parse_pattern_051
-    #rb = <<~RUBY
-        #case [0, 1, 2]
-        #in [0, 1,]
-          #true
-        #end
-      #RUBY
-    #pt = s(:case,
-           #s(:array,
-             #s(:lit, 0),
-             #s(:lit, 1),
-             #s(:lit, 2)),
-           #s(:in,
-             #s(:array_pat,
-               #nil,
-               #s(:lit, 0).line(2),
-               #s(:lit, 1).line(2),
-               #:*).line(666),
-             #s(:true).line(3)).line(2),
-           #nil)
+  def test_parse_pattern_051
+    rb = <<~RUBY
+        case [0, 1, 2]
+        in [0, 1,]
+          true
+        end
+      RUBY
+    pt = s(:case,
+           s(:array,
+             s(:lit, 0),
+             s(:lit, 1),
+             s(:lit, 2)),
+           s(:in,
+             s(:array_pat,
+               nil,
+               s(:lit, 0).line(2),
+               s(:lit, 1).line(2),
+               :*).line(2),
+             s(:true).line(3)).line(2),
+           nil)
 
-    #assert_parse rb, pt
-  #end
+    assert_parse rb, pt
+  end
 
   #def test_parse_pattern_058
     #rb = <<~RUBY

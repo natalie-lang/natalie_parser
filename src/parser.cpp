@@ -650,7 +650,6 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         node = parse_interpolated_string(locals);
         break;
     case Token::Type::LBracket: {
-        // TODO: might need to keep track of and pass along precedence value?
         advance();
         SharedPtr<ArrayPatternNode> array = new ArrayPatternNode { token };
         if (current_token().is_rbracket()) {
@@ -661,7 +660,10 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         array->add_node(parse_case_in_pattern(locals));
         while (current_token().is_comma()) {
             advance();
-            array->add_node(parse_case_in_pattern(locals));
+            if (current_token().is_rbracket())
+                array->add_node(new SplatNode { current_token() });
+            else
+                array->add_node(parse_case_in_pattern(locals));
         }
         expect(Token::Type::RBracket, "array pattern closing bracket");
         advance();
@@ -716,22 +718,19 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         node = parse_nil(locals);
         break;
     case Token::Type::Star: {
-        SharedPtr<String> name;
         advance(); // *
         switch (current_token().type()) {
         case Token::Type::BareName:
         case Token::Type::Constant: {
-            name = current_token().literal_string();
+            SharedPtr<String> name = current_token().literal_string();
+            auto symbol = new SymbolNode { current_token(), name };
+            node = new SplatNode { symbol->token(), symbol };
             advance();
             break;
         }
-        default: {
-            name = new String();
+        default:
+            node = new SplatNode { current_token() };
         }
-        }
-        name->prepend_char('*');
-        auto symbol = new SymbolNode { current_token(), name };
-        node = new SplatNode { symbol->token(), symbol };
         break;
     }
     case Token::Type::StarStar: {
