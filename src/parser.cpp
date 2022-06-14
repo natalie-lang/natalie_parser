@@ -638,6 +638,10 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
     case Token::Type::Constant:
         node = parse_constant(locals);
         break;
+    case Token::Type::DotDot:
+    case Token::Type::DotDotDot:
+        node = parse_beginless_range(locals);
+        break;
     case Token::Type::LBracketRBracket:
         advance();
         node = new ArrayPatternNode { token };
@@ -705,6 +709,9 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
         expect(Token::Type::RParen, "closing paren for pattern");
         advance();
         break;
+    case Token::Type::Minus:
+        node = parse_unary_operator(locals);
+        break;
     case Token::Type::NilKeyword:
         node = parse_nil(locals);
         break;
@@ -743,6 +750,11 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
     default:
         throw_unexpected("case in pattern");
     }
+
+    if (current_token().type() == Token::Type::DotDot || current_token().type() == Token::Type::DotDotDot) {
+        node = parse_range_expression(node, locals);
+    }
+
     token = current_token();
     if (token.is_hash_rocket()) {
         advance();

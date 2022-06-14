@@ -1235,6 +1235,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('(4..) * 5')).must_equal s(:call, s(:dot2, s(:lit, 4), nil), :*, s(:lit, 5))
         expect(parse('x = (4..)')).must_equal s(:lasgn, :x, s(:dot2, s(:lit, 4), nil))
         expect(parse("case 1\nwhen 1\n2..\nwhen 2\n3...\nwhen 4\n5..\nend")).must_equal s(:case, s(:lit, 1), s(:when, s(:array, s(:lit, 1)), s(:dot2, s(:lit, 2), nil)), s(:when, s(:array, s(:lit, 2)), s(:dot3, s(:lit, 3), nil)), s(:when, s(:array, s(:lit, 4)), s(:dot2, s(:lit, 5), nil)), nil)
+        expect(parse("case 1\nwhen 1..2 then 1\nwhen 3.. then 3\nend")).must_equal s(:case, s(:lit, 1), s(:when, s(:array, s(:lit, 1..2)), s(:lit, 1)), s(:when, s(:array, s(:dot2, s(:lit, 3), nil)), s(:lit, 3)), nil)
         expect(parse("ruby_version_is ''...'3.0' do\nend")).must_equal s(:iter, s(:call, nil, :ruby_version_is, s(:dot3, s(:str, ''), s(:str, '3.0'))), 0)
       end
 
@@ -1476,11 +1477,28 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("case 1\nin \"x\"\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:str, "x"), nil), nil)
         expect(parse("case 1\nin 'x'\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:str, "x"), nil), nil)
 
+        # range
+        expect(parse("case 1\nin 'a'..'z'\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:dot2, s(:str, 'a'), s(:str, 'z')), nil), nil)
+        expect(parse("case 1\nin 'a'..'z' then 1\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:dot2, s(:str, "a"), s(:str, "z")), s(:lit, 1)), nil)
+        if parser == 'NatalieParser'
+          # NOTE: I like this better -- it's more consistent with normal ranges
+          expect(parse("case 1\nin 1..2\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lit, 1..2), nil), nil)
+          expect(parse("case 1\nin 1...2\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lit, 1...2), nil), nil)
+          expect(parse("case 1\nin -1..2\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lit, -1..2), nil), nil)
+        else
+          expect(parse("case 1\nin 1..2\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:dot2, s(:lit, 1), s(:lit, 2)), nil), nil)
+          expect(parse("case 1\nin 1...2\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:dot3, s(:lit, 1), s(:lit, 2)), nil), nil)
+          expect(parse("case 1\nin -1..2\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:dot2, s(:lit, -1), s(:lit, 2)), nil), nil)
+        end
+        expect(parse("case 1\nin ...2\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:dot3, nil, s(:lit, 2)), nil), nil)
+        expect(parse("case 1\nin (1...)\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:dot3, s(:lit, 1), nil), nil), nil)
+        expect(parse("case 1\nin 1.. then 1\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:dot2, s(:lit, 1), nil), s(:lit, 1)), nil)
+
         # variable 
         expect(parse("case 1\nin x\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lvar, :x), s(:lit, :a)), nil)
         expect(parse("case 1\nin x then :a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lvar, :x), s(:lit, :a)), nil)
 
-        # FIXME: splat
+        # splat
         expect(parse("case 1\nin *x then :a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, :"*x"), s(:lit, :a)), nil)
         expect(parse("case 1\nin :x, *y\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:lit, :x), :"*y"), s(:lit, :a)), nil)
         expect(parse("case 1\nin [:x, *y]\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, s(:lit, :x), :"*y"), s(:lit, :a)), nil)

@@ -4651,32 +4651,33 @@ module TestPatternMatching
     assert_case_in "{}", s(:hash_pat, nil).line(2)
   end
 
-  #def test_case_in_31?
-    #rb = "case :a\nin [:b, *c]\n  :d\nend"
-    #pt = s(:case, s(:lit, :a),
-           #s(:in,
-             #s(:array_pat, nil, s(:lit, :b).line(2), :"*c").line(2),
-             #s(:lit, :d).line(3)).line(2),
-           #nil)
+  def test_case_in_31?
+    rb = "case :a\nin [:b, *c]\n  :d\nend"
+    pt = s(:case, s(:lit, :a),
+           s(:in,
+             s(:array_pat, nil, s(:lit, :b).line(2), :"*c").line(2),
+             s(:lit, :d).line(3)).line(2),
+           nil)
 
-    #assert_parse rb, pt
-  #end
+    assert_parse rb, pt
+  end
 
-  #def test_case_in_32
-    #assert_case_in "(1...3)", s(:dot3, s(:lit, 1).line(2), s(:lit, 3).line(2)).line(2)
-  #end
+  def test_case_in_32
+    skip # we return s(:lit, 1...3) to be consistent with normal range parsing
+    assert_case_in "(1...3)", s(:dot3, s(:lit, 1).line(2), s(:lit, 3).line(2)).line(2)
+  end
 
-  #def test_case_in_33
-    #assert_case_in "(1...)", s(:dot3, s(:lit, 1).line(2), nil).line(2)
-  #end
+  def test_case_in_33
+    assert_case_in "(1...)", s(:dot3, s(:lit, 1).line(2), nil).line(2)
+  end
 
-  #def test_case_in_34
-    #assert_case_in "(..10)", s(:dot2, nil, s(:lit, 10).line(2)).line(2)
-  #end
+  def test_case_in_34
+    assert_case_in "(..10)", s(:dot2, nil, s(:lit, 10).line(2)).line(2)
+  end
 
-  #def test_case_in_35
-    #assert_case_in "(...10)", s(:dot3, nil, s(:lit, 10).line(2)).line(2)
-  #end
+  def test_case_in_35
+    assert_case_in "(...10)", s(:dot3, nil, s(:lit, 10).line(2)).line(2)
+  end
 
   #def test_case_in_36
     #rb = "[:a, b, c, [:d, *e, nil]]"
@@ -4757,16 +4758,16 @@ module TestPatternMatching
     #assert_parse rb, pt
   #end
 
-  #def test_case_in_67
-    #rb = "case :a\nin 1.. then nil\nend"
-    #pt = s(:case,
-           #s(:lit, :a),
-           #s(:in, s(:dot2, s(:lit, 1).line(2), nil).line(2),
-             #s(:nil).line(2)).line(2),
-           #nil)
+  def test_case_in_67
+    rb = "case :a\nin 1.. then nil\nend"
+    pt = s(:case,
+           s(:lit, :a),
+           s(:in, s(:dot2, s(:lit, 1).line(2), nil).line(2),
+             s(:nil).line(2)).line(2),
+           nil)
 
-    #assert_parse rb, pt
-  #end
+    assert_parse rb, pt
+  end
 
   #def test_case_in_76
     #assert_case_in "`echo hi`", s(:xstr, "echo hi").line(2)
@@ -5046,22 +5047,23 @@ module TestPatternMatching
     #assert_parse rb, pt
   #end
 
-  #def test_parse_pattern_019
-    #rb = <<~RUBY
-        #case 0
-        #in -1..1
-          #true
-        #end
-      #RUBY
+  def test_parse_pattern_019
+    skip # we parse the range as s(:lit -1..1)
+    rb = <<~RUBY
+        case 0
+        in -1..1
+          true
+        end
+      RUBY
 
-    #pt = s(:case,
-           #s(:lit, 0),
-           #s(:in, s(:dot2, s(:lit, -1).line(2), s(:lit, 1).line(2)).line(2),
-             #s(:true).line(3)).line(2),
-           #nil)
+    pt = s(:case,
+           s(:lit, 0),
+           s(:in, s(:dot2, s(:lit, -1).line(2), s(:lit, 1).line(2)).line(2),
+             s(:true).line(3)).line(2),
+           nil)
 
-    #assert_parse rb, pt
-  #end
+    assert_parse rb, pt
+  end
 
   #def test_parse_pattern_044
       #rb = <<~RUBY

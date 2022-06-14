@@ -664,6 +664,7 @@ public:
         case Token::Type::RParen:
         case Token::Type::SafeNavigation:
         case Token::Type::TernaryColon:
+        case Token::Type::ThenKeyword:
             return true;
         default:
             return false;
@@ -835,13 +836,13 @@ public:
         case Type::ElsifKeyword:
         case Type::EndKeyword:
         case Type::InKeyword:
+        case Type::ThenKeyword:
         case Type::WhenKeyword:
             // TODO: likely many more cases!
             return false;
         default:
             return true;
         }
-        return true;
     }
 
     void set_literal(const char *literal) { m_literal = new String(literal); }
