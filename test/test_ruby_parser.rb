@@ -5105,48 +5105,48 @@ module TestPatternMatching
     assert_parse rb, pt
   end
 
-  #def test_parse_pattern_058
-    #rb = <<~RUBY
-        #case {a: 0}
-        #in {a:, **rest}
-          #[a, rest]
-        #end
-      #RUBY
-    #pt = s(:case,
-           #s(:hash,
-             #s(:lit, :a),
-             #s(:lit, 0)),
-           #s(:in,
-             #s(:hash_pat, nil, s(:lit, :a).line(2), nil,
-               #s(:kwrest, :"**rest").line(2)).line(2),
-             #s(:array,
-               #s(:lvar, :a).line(3),
-               #s(:lvar, :rest).line(3)).line(3)).line(2),
-           #nil)
+  def test_parse_pattern_058
+    rb = <<~RUBY
+        case {a: 0}
+        in {a:, **rest}
+          [a, rest]
+        end
+      RUBY
+    pt = s(:case,
+           s(:hash,
+             s(:lit, :a),
+             s(:lit, 0)),
+           s(:in,
+             s(:hash_pat, nil, s(:lit, :a).line(2), nil,
+               s(:kwrest, :"**rest").line(2)).line(2),
+             s(:array,
+               s(:lvar, :a).line(3),
+               s(:lvar, :rest).line(3)).line(3)).line(2),
+           nil)
 
-    #assert_parse rb, pt
-  #end
+    assert_parse rb, pt
+  end
 
-  #def test_parse_pattern_058_2
-    #rb = <<~RUBY
-        #case {a: 0}
-        #in {a:, **}
-          #[a]
-        #end
-      #RUBY
-    #pt = s(:case,
-           #s(:hash,
-             #s(:lit, :a),
-             #s(:lit, 0)),
-           #s(:in,
-             #s(:hash_pat, nil, s(:lit, :a).line(2), nil,
-               #s(:kwrest, :"**").line(2)).line(2),
-             #s(:array,
-               #s(:lvar, :a).line(3)).line(3)).line(2),
-           #nil)
+  def test_parse_pattern_058_2
+    rb = <<~RUBY
+        case {a: 0}
+        in {a:, **}
+          [a]
+        end
+      RUBY
+    pt = s(:case,
+           s(:hash,
+             s(:lit, :a),
+             s(:lit, 0)),
+           s(:in,
+             s(:hash_pat, nil, s(:lit, :a).line(2), nil,
+               s(:kwrest, :"**").line(2)).line(2),
+             s(:array,
+               s(:lvar, :a).line(3)).line(3)).line(2),
+           nil)
 
-    #assert_parse rb, pt
-  #end
+    assert_parse rb, pt
+  end
 
   #def test_parse_pattern_069
     #rb = <<~RUBY

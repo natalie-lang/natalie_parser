@@ -14,6 +14,9 @@ using namespace TM;
 
 class KeywordRestPatternNode : public Node {
 public:
+    KeywordRestPatternNode(const Token &token)
+        : Node { token } { }
+
     KeywordRestPatternNode(const Token &token, String name)
         : Node { token }
         , m_name { new String(name) } { }
@@ -28,8 +31,9 @@ public:
 
     virtual void transform(Creator *creator) const override {
         creator->set_type("kwrest");
-        auto name = String(*m_name);
-        name.prepend("**");
+        auto name = String("**");
+        if (m_name)
+            name.append(m_name.ref());
         creator->append_symbol(name);
     }
 

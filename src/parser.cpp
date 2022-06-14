@@ -794,12 +794,16 @@ SharedPtr<Node> Parser::parse_case_in_pattern_hash_symbol_key(LocalsHashmap &loc
             node = new KeywordRestPatternNode { token, current_token().type_value() };
             advance();
             break;
-        case Token::Type::BareName:
-            node = new KeywordRestPatternNode { token, current_token().literal_string() };
+        case Token::Type::BareName: {
+            auto name = current_token().literal_string();
+            node = new KeywordRestPatternNode { token, name };
+            locals.set(name.ref());
             advance();
             break;
+        }
         default:
-            throw_unexpected(token, "**kwrest name");
+            node = new KeywordRestPatternNode { token };
+            break;
         }
         break;
     case Token::Type::SymbolKey:
