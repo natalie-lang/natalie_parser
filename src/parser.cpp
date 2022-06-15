@@ -2279,9 +2279,9 @@ SharedPtr<NodeWithArgs> Parser::to_node_with_args(SharedPtr<Node> node) {
     case Node::Type::Colon2: {
         auto colon2 = node.static_cast_as<Colon2Node>();
         auto call_node = new CallNode {
-          colon2->token(),
-          colon2->left(),
-          colon2->name(),
+            colon2->token(),
+            colon2->left(),
+            colon2->name(),
         };
         return call_node;
     }
