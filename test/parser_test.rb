@@ -865,6 +865,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('foo()')).must_equal s(:call, nil, :foo)
         expect(parse("foo ()")).must_equal s(:call, nil, :foo, s(:nil))
         expect(parse('Foo()')).must_equal s(:call, nil, :Foo)
+        expect(parse('Foo::Bar()')).must_equal s(:call, s(:const, :Foo), :Bar)
         expect(parse('foo() + bar()')).must_equal s(:call, s(:call, nil, :foo), :+, s(:call, nil, :bar))
         expect(parse("foo(1, 'baz')")).must_equal s(:call, nil, :foo, s(:lit, 1), s(:str, 'baz'))
         expect(parse('foo(a, b)')).must_equal s(:call, nil, :foo, s(:call, nil, :a), s(:call, nil, :b))
