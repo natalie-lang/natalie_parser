@@ -199,6 +199,7 @@ private:
 
     SharedPtr<NodeWithArgs> to_node_with_args(SharedPtr<Node> node);
 
+    Token &previous_token() const;
     Token &current_token() const;
     Token &peek_token() const;
 

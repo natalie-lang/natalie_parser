@@ -771,6 +771,7 @@ public:
         case Token::Type::LBracketRBracket:
         case Token::Type::LINEKeyword:
         case Token::Type::LParen:
+        case Token::Type::Minus:
         case Token::Type::NilKeyword:
         case Token::Type::Not:
         case Token::Type::NotKeyword:
@@ -778,6 +779,7 @@ public:
         case Token::Type::PercentLowerW:
         case Token::Type::PercentUpperI:
         case Token::Type::PercentUpperW:
+        case Token::Type::Plus:
         case Token::Type::SelfKeyword:
         case Token::Type::Star:
         case Token::Type::String:

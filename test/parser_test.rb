@@ -108,6 +108,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('~foo')).must_equal s(:call, s(:call, nil, :foo), :~)
         expect(parse('foo ~2')).must_equal s(:call, nil, :foo, s(:call, s(:lit, 2), :~))
         expect(parse('2 + ~2')).must_equal s(:call, s(:lit, 2), :+, s(:call, s(:lit, 2), :~))
+        expect(parse('foo -123')).must_equal s(:call, nil, :foo, s(:lit, -123))
+        expect(parse('foo +123')).must_equal s(:call, nil, :foo, s(:lit, 123))
       end
 
       it 'parses operator expressions' do
@@ -1338,6 +1340,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("foo def bar\n x.y do; end\n end")).must_equal s(:call, nil, :foo, s(:defn, :bar, s(:args), s(:iter, s(:call, s(:call, nil, :x), :y), 0)))
         expect(parse("[1,\nfoo do; end,\n 3]")).must_equal s(:array, s(:lit, 1), s(:iter, s(:call, nil, :foo), 0), s(:lit, 3))
         expect(parse("foo(1,\nbar do; end,\n 3)")).must_equal s(:call, nil, :foo, s(:lit, 1), s(:iter, s(:call, nil, :bar), 0), s(:lit, 3))
+        expect(-> { parse("foo :a { 1 }") }).must_raise SyntaxError
+        expect(-> { parse("1 < 2 { 1 }") }).must_raise SyntaxError
         expect(-> { parse("foo 1 < 2 { 3 }") }).must_raise SyntaxError
         expect(-> { parse("foo 1 | 2 { 3 }") }).must_raise SyntaxError
         expect(-> { parse("foo 1 & 2 { 3 }") }).must_raise SyntaxError

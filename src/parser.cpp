@@ -2183,6 +2183,12 @@ SharedPtr<Node> Parser::parse_iter_expression(SharedPtr<Node> left, LocalsHashma
     bool curly_brace = current_token().type() == Token::Type::LCurlyBrace;
     bool has_args = false;
     auto args = Vector<SharedPtr<Node>> {};
+
+    if (curly_brace) {
+        if (left->type() == Node::Type::Call && !left.static_cast_as<CallNode>()->args().is_empty() && !previous_token().is_rparen())
+            throw_unexpected("nearest object cannot accept a { ... } block");
+    }
+
     if (left->type() == Node::Type::StabbyProc) {
         advance(); // { or do
         auto stabby_proc_node = left.static_cast_as<StabbyProcNode>();
@@ -2863,16 +2869,19 @@ Parser::parse_left_fn Parser::left_denotation(Token &token, SharedPtr<Node> left
     case Type::LeftShift:
     case Type::LessThan:
     case Type::LessThanOrEqual:
-    case Type::Minus:
     case Type::NotEqual:
     case Type::Percent:
     case Type::Pipe:
-    case Type::Plus:
     case Type::RightShift:
     case Type::Slash:
     case Type::Star:
     case Type::StarStar:
         return &Parser::parse_infix_expression;
+    case Type::Minus:
+    case Type::Plus:
+        if (peek_token().whitespace_precedes() || !left->is_callable())
+            return &Parser::parse_infix_expression;
+        break;
     case Type::DoKeyword:
     case Type::LCurlyBrace:
         return &Parser::parse_iter_expression;
@@ -2939,20 +2948,22 @@ bool Parser::is_first_arg_of_call_without_parens(SharedPtr<Node> left, Token &to
     return left->is_callable() && token.can_be_first_arg_of_implicit_call();
 }
 
+Token &Parser::previous_token() const {
+    if (m_index > 0)
+        return (*m_tokens)[m_index - 1];
+    return Token::invalid();
+}
+
 Token &Parser::current_token() const {
-    if (m_index < m_tokens->size()) {
+    if (m_index < m_tokens->size())
         return m_tokens->at(m_index);
-    } else {
-        return Token::invalid();
-    }
+    return Token::invalid();
 }
 
 Token &Parser::peek_token() const {
-    if (m_index + 1 < m_tokens->size()) {
+    if (m_index + 1 < m_tokens->size())
         return (*m_tokens)[m_index + 1];
-    } else {
-        return Token::invalid();
-    }
+    return Token::invalid();
 }
 
 void Parser::next_expression() {
