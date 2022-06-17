@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1 (2022-06-16)
+
+- FIX: Fix regression with unary/infix operators (+/-)
+
 ## 1.2.0 (2022-06-16)
 
 - CHORE: Enable true random fuzzing
