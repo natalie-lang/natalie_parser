@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.0 (2022-06-16)
+
+- CHORE: Enable true random fuzzing
+- FEAT: Add Node::debug() function to help with debugging
+- FEAT: Parse more pattern matching cases
+- FIX: Don't error if ext/natalie_parser/build.log isn't written yet
+- FIX: Fix block association inside call with parentheses
+- FIX: Fix bug negating an already-negative number
+- FIX: Fix bug parsing unary operator as an infix operation
+- FIX: Fix method definition with lonely ensure
+- FIX: Fix parsing endless ranges inside case/when and other odd places
+- FIX: Make sure every token knows if it has preceding whitespace
+- FIX: Parse method calls with constant receiver
+
 ## 1.1.1 (2022-06-04)
 
 - FIX: Workaround for clang declspec bug
