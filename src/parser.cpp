@@ -2886,7 +2886,7 @@ Parser::parse_left_fn Parser::left_denotation(Token &token, SharedPtr<Node> left
         return &Parser::parse_infix_expression;
     case Type::Minus:
     case Type::Plus:
-        if (peek_token().whitespace_precedes() || !left->is_callable())
+        if (!token.whitespace_precedes() || peek_token().whitespace_precedes() || !left->is_callable())
             return &Parser::parse_infix_expression;
         break;
     case Type::DoKeyword:

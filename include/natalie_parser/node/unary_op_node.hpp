@@ -20,7 +20,7 @@ public:
 
     virtual Type type() const override { return Type::UnaryOp; }
 
-    virtual bool is_callable() const override { return true; }
+    virtual bool is_callable() const override { return false; }
     virtual bool can_accept_a_block() const override { return false; }
 
     const SharedPtr<String> op() const { return m_op; }
