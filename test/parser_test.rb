@@ -110,6 +110,10 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('2 + ~2')).must_equal s(:call, s(:lit, 2), :+, s(:call, s(:lit, 2), :~))
         expect(parse('foo -123')).must_equal s(:call, nil, :foo, s(:lit, -123))
         expect(parse('foo +123')).must_equal s(:call, nil, :foo, s(:lit, 123))
+        expect(parse('foo --123')).must_equal s(:call, nil, :foo, s(:call, s(:lit, -123), :-@))
+        expect(parse('1 --123')).must_equal s(:call, s(:lit, 1), :-, s(:lit, -123))
+        expect(parse('--123')).must_equal s(:call, s(:lit, -123), :-@)
+        expect(parse('--9223372036854775808')).must_equal s(:call, s(:lit, -9223372036854775808), :-@)
       end
 
       it 'parses operator expressions' do

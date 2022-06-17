@@ -30,6 +30,10 @@ public:
         m_number *= -1;
     }
 
+    bool negative() const {
+        return m_number < 0;
+    }
+
 protected:
     long long m_number;
 };

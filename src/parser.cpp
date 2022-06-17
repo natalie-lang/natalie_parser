@@ -1969,11 +1969,14 @@ SharedPtr<Node> Parser::parse_unary_operator(LocalsHashmap &locals) {
     advance();
     auto precedence = get_precedence(token);
     auto receiver = parse_expression(precedence, locals);
+
     if ((token.type() == Token::Type::Minus || token.type() == Token::Type::Plus) && receiver->is_numeric()) {
         switch (receiver->type()) {
         case Node::Type::Bignum: {
             if (token.type() == Token::Type::Minus) {
                 auto num = receiver.static_cast_as<BignumNode>();
+                if (num->negative())
+                    break;
                 num->negate();
                 return num.static_cast_as<Node>();
             }
@@ -1982,6 +1985,8 @@ SharedPtr<Node> Parser::parse_unary_operator(LocalsHashmap &locals) {
         case Node::Type::Fixnum: {
             if (token.type() == Token::Type::Minus) {
                 auto num = receiver.static_cast_as<FixnumNode>();
+                if (num->negative())
+                    break;
                 num->negate();
                 return num.static_cast_as<Node>();
             }
@@ -1990,6 +1995,8 @@ SharedPtr<Node> Parser::parse_unary_operator(LocalsHashmap &locals) {
         case Node::Type::Float: {
             if (token.type() == Token::Type::Minus) {
                 auto num = receiver.static_cast_as<FloatNode>();
+                if (num->negative())
+                    break;
                 num->negate();
                 return num.static_cast_as<Node>();
             }

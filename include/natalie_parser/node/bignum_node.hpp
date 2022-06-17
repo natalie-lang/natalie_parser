@@ -31,6 +31,10 @@ public:
         m_number->prepend_char('-');
     }
 
+    bool negative() const {
+        return m_number->at(0) == '-';
+    }
+
 protected:
     SharedPtr<String> m_number;
 };

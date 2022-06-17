@@ -30,6 +30,10 @@ public:
         m_number *= -1;
     }
 
+    bool negative() const {
+        return m_number < 0.0;
+    }
+
 protected:
     double m_number;
 };
