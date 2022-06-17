@@ -158,58 +158,64 @@ public:
 
     Token() { }
 
-    Token(Type type, SharedPtr<String> file, size_t line, size_t column)
+    Token(Type type, SharedPtr<String> file, size_t line, size_t column, bool whitespace_precedes)
         : m_type { type }
         , m_file { file }
         , m_line { line }
-        , m_column { column } {
+        , m_column { column }
+        , m_whitespace_precedes { whitespace_precedes } {
         assert(file);
     }
 
-    Token(Type type, const char *literal, SharedPtr<String> file, size_t line, size_t column)
+    Token(Type type, const char *literal, SharedPtr<String> file, size_t line, size_t column, bool whitespace_precedes)
         : m_type { type }
         , m_literal { new String(literal) }
         , m_file { file }
         , m_line { line }
-        , m_column { column } {
+        , m_column { column }
+        , m_whitespace_precedes { whitespace_precedes } {
         assert(literal);
         assert(file);
     }
 
-    Token(Type type, SharedPtr<String> literal, SharedPtr<String> file, size_t line, size_t column)
+    Token(Type type, SharedPtr<String> literal, SharedPtr<String> file, size_t line, size_t column, bool whitespace_precedes)
         : m_type { type }
         , m_literal { literal }
         , m_file { file }
         , m_line { line }
-        , m_column { column } {
+        , m_column { column }
+        , m_whitespace_precedes { whitespace_precedes } {
         assert(literal);
         assert(file);
     }
 
-    Token(Type type, char literal, SharedPtr<String> file, size_t line, size_t column)
+    Token(Type type, char literal, SharedPtr<String> file, size_t line, size_t column, bool whitespace_precedes)
         : m_type { type }
         , m_literal { new String(literal) }
         , m_file { file }
         , m_line { line }
-        , m_column { column } {
+        , m_column { column }
+        , m_whitespace_precedes { whitespace_precedes } {
         assert(file);
     }
 
-    Token(Type type, long long fixnum, SharedPtr<String> file, size_t line, size_t column)
+    Token(Type type, long long fixnum, SharedPtr<String> file, size_t line, size_t column, bool whitespace_precedes)
         : m_type { type }
         , m_fixnum { fixnum }
         , m_file { file }
         , m_line { line }
-        , m_column { column } {
+        , m_column { column }
+        , m_whitespace_precedes { whitespace_precedes } {
         assert(file);
     }
 
-    Token(Type type, double dbl, SharedPtr<String> file, size_t line, size_t column)
+    Token(Type type, double dbl, SharedPtr<String> file, size_t line, size_t column, bool whitespace_precedes)
         : m_type { type }
         , m_double { dbl }
         , m_file { file }
         , m_line { line }
-        , m_column { column } {
+        , m_column { column }
+        , m_whitespace_precedes { whitespace_precedes } {
         assert(file);
     }
 

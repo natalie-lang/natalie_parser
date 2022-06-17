@@ -14,7 +14,7 @@ Token InterpolatedStringLexer::build_next_token() {
     case State::EndToken:
         return finish();
     case State::Done:
-        return Token { Token::Type::Eof, m_file, m_cursor_line, m_cursor_column };
+        return Token { Token::Type::Eof, m_file, m_cursor_line, m_cursor_column, m_whitespace_precedes };
     }
     TM_UNREACHABLE();
 }
@@ -26,13 +26,13 @@ Token InterpolatedStringLexer::consume_string() {
             advance(); // backslash
             auto result = consume_escaped_byte(*buf);
             if (!result.first)
-                return Token { result.second, current_char(), m_file, m_cursor_line, m_cursor_column };
+                return Token { result.second, current_char(), m_file, m_cursor_line, m_cursor_column, m_whitespace_precedes };
         } else if (c == '#' && peek() == '{') {
             if (buf->is_empty()) {
                 advance(2);
                 return start_evaluation();
             }
-            auto token = Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
+            auto token = Token { Token::Type::String, buf, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             advance(2);
             m_state = State::EvaluateBegin;
             return token;
@@ -49,7 +49,7 @@ Token InterpolatedStringLexer::consume_string() {
                 return finish();
             } else {
                 m_state = State::EndToken;
-                return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
         } else {
             buf->append_char(c);
@@ -62,27 +62,27 @@ Token InterpolatedStringLexer::consume_string() {
     if (m_stop_char == 0) {
         advance();
         m_state = State::EndToken;
-        return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     }
 
-    return Token { Token::Type::UnterminatedString, buf, m_file, m_token_line, m_token_column };
+    return Token { Token::Type::UnterminatedString, buf, m_file, m_token_line, m_token_column, m_whitespace_precedes };
 }
 
 Token InterpolatedStringLexer::start_evaluation() {
     m_nested_lexer = new Lexer { *this, '{', '}' };
     m_state = State::EvaluateEnd;
-    return Token { Token::Type::EvaluateToStringBegin, m_file, m_token_line, m_token_column };
+    return Token { Token::Type::EvaluateToStringBegin, m_file, m_token_line, m_token_column, m_whitespace_precedes };
 }
 
 Token InterpolatedStringLexer::stop_evaluation() {
     advance(); // }
     m_state = State::InProgress;
-    return Token { Token::Type::EvaluateToStringEnd, m_file, m_token_line, m_token_column };
+    return Token { Token::Type::EvaluateToStringEnd, m_file, m_token_line, m_token_column, m_whitespace_precedes };
 }
 
 Token InterpolatedStringLexer::finish() {
     m_state = State::Done;
-    return Token { m_end_type, m_file, m_cursor_line, m_cursor_column };
+    return Token { m_end_type, m_file, m_cursor_line, m_cursor_column, m_whitespace_precedes };
 }
 
 };

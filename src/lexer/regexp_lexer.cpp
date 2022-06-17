@@ -11,7 +11,7 @@ Token RegexpLexer::build_next_token() {
         m_nested_lexer = new Lexer { *this };
         m_nested_lexer->set_stop_char('}');
         m_state = State::EvaluateEnd;
-        return Token { Token::Type::EvaluateToStringBegin, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::EvaluateToStringBegin, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     case State::EvaluateEnd:
         advance(); // }
         if (current_char() == m_stop_char) {
@@ -21,16 +21,16 @@ Token RegexpLexer::build_next_token() {
         } else {
             m_state = State::InProgress;
         }
-        return Token { Token::Type::EvaluateToStringEnd, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::EvaluateToStringEnd, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     case State::EndToken: {
         m_state = State::Done;
-        auto token = Token { Token::Type::InterpolatedRegexpEnd, m_file, m_cursor_line, m_cursor_column };
+        auto token = Token { Token::Type::InterpolatedRegexpEnd, m_file, m_cursor_line, m_cursor_column, m_whitespace_precedes };
         if (m_options && !m_options->is_empty())
             token.set_literal(m_options);
         return token;
     }
     case State::Done:
-        return Token { Token::Type::Eof, m_file, m_cursor_line, m_cursor_column };
+        return Token { Token::Type::Eof, m_file, m_cursor_line, m_cursor_column, m_whitespace_precedes };
     }
     TM_UNREACHABLE();
 }
@@ -55,7 +55,7 @@ Token RegexpLexer::consume_regexp() {
             }
             advance();
         } else if (c == '#' && peek() == '{') {
-            auto token = Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
+            auto token = Token { Token::Type::String, buf, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             buf = new String;
             advance(2);
             m_state = State::EvaluateBegin;
@@ -72,14 +72,14 @@ Token RegexpLexer::consume_regexp() {
             } else {
                 m_options = consume_options();
                 m_state = State::EndToken;
-                return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
         } else {
             buf->append_char(c);
             advance();
         }
     }
-    return Token { Token::Type::UnterminatedRegexp, buf, m_file, m_token_line, m_token_column };
+    return Token { Token::Type::UnterminatedRegexp, buf, m_file, m_token_line, m_token_column, m_whitespace_precedes };
 }
 
 String *RegexpLexer::consume_options() {

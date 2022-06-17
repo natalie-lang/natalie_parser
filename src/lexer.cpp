@@ -147,12 +147,12 @@ bool Lexer::skip_whitespace() {
 
 Token Lexer::build_next_token() {
     if (m_index >= m_size)
-        return Token { Token::Type::Eof, m_file, m_cursor_line, m_cursor_column };
+        return Token { Token::Type::Eof, m_file, m_cursor_line, m_cursor_column, m_whitespace_precedes };
     if (m_start_char && current_char() == m_start_char) {
         m_pair_depth++;
     } else if (m_stop_char && current_char() == m_stop_char) {
         if (m_pair_depth == 0)
-            return Token { Token::Type::Eof, m_file, m_cursor_line, m_cursor_column };
+            return Token { Token::Type::Eof, m_file, m_cursor_line, m_cursor_column, m_whitespace_precedes };
         m_pair_depth--;
     } else if (m_index == 0 && current_char() == '\xEF') {
         // UTF-8 BOM
@@ -170,18 +170,18 @@ Token Lexer::build_next_token() {
             switch (current_char()) {
             case '=': {
                 advance();
-                return Token { Token::Type::EqualEqualEqual, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::EqualEqualEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
             default:
-                return Token { Token::Type::EqualEqual, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::EqualEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
         }
         case '>':
             advance();
-            return Token { Token::Type::HashRocket, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::HashRocket, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         case '~':
             advance();
-            return Token { Token::Type::Match, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Match, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         default:
             if (m_cursor_column == 1 && match(5, "begin")) {
                 SharedPtr<String> doc = new String("=begin");
@@ -191,10 +191,9 @@ Token Lexer::build_next_token() {
                     c = next();
                 } while (c && !(m_cursor_column == 0 && match(4, "=end")));
                 doc->append("=end\n");
-                return Token { Token::Type::Doc, doc, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Doc, doc, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
-            auto token = Token { Token::Type::Equal, m_file, m_token_line, m_token_column };
-            token.set_whitespace_precedes(m_whitespace_precedes);
+            auto token = Token { Token::Type::Equal, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             return token;
         }
     }
@@ -203,37 +202,37 @@ Token Lexer::build_next_token() {
         switch (current_char()) {
         case '=':
             advance();
-            return Token { Token::Type::PlusEqual, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::PlusEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         case '@':
             if (m_last_token.is_def_keyword() || m_last_token.is_dot()) {
                 advance();
                 SharedPtr<String> lit = new String("+@");
-                return Token { Token::Type::BareName, lit, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::BareName, lit, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             } else {
-                return Token { Token::Type::Plus, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Plus, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
         default:
-            return Token { Token::Type::Plus, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Plus, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         }
     case '-':
         advance();
         switch (current_char()) {
         case '>':
             advance();
-            return Token { Token::Type::Arrow, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Arrow, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         case '=':
             advance();
-            return Token { Token::Type::MinusEqual, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::MinusEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         case '@':
             if (m_last_token.is_def_keyword() || m_last_token.is_dot()) {
                 advance();
                 SharedPtr<String> lit = new String("-@");
-                return Token { Token::Type::BareName, lit, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::BareName, lit, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             } else {
-                return Token { Token::Type::Minus, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Minus, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
         default:
-            return Token { Token::Type::Minus, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Minus, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         }
     case '*':
         advance();
@@ -243,15 +242,15 @@ Token Lexer::build_next_token() {
             switch (current_char()) {
             case '=':
                 advance();
-                return Token { Token::Type::StarStarEqual, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::StarStarEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             default:
-                return Token { Token::Type::StarStar, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::StarStar, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
         case '=':
             advance();
-            return Token { Token::Type::StarEqual, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::StarEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         default:
-            return Token { Token::Type::Star, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Star, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         }
     case '/': {
         advance();
@@ -267,19 +266,19 @@ Token Lexer::build_next_token() {
         case Token::Type::Newline:
             return consume_regexp('/', '/');
         case Token::Type::DefKeyword:
-            return Token { Token::Type::Slash, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Slash, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         default: {
             switch (current_char()) {
             case ' ':
-                return Token { Token::Type::Slash, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Slash, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             case '=':
                 advance();
-                return Token { Token::Type::SlashEqual, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::SlashEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             default:
                 if (m_whitespace_precedes) {
                     return consume_regexp('/', '/');
                 } else {
-                    return Token { Token::Type::Slash, m_file, m_token_line, m_token_column };
+                    return Token { Token::Type::Slash, m_file, m_token_line, m_token_column, m_whitespace_precedes };
                 }
             }
         }
@@ -290,7 +289,7 @@ Token Lexer::build_next_token() {
         switch (current_char()) {
         case '=':
             advance();
-            return Token { Token::Type::PercentEqual, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::PercentEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         case 'q':
             switch (peek()) {
             case '[':
@@ -311,7 +310,7 @@ Token Lexer::build_next_token() {
                     advance(2);
                     return consume_single_quoted_string(c, c);
                 } else {
-                    return Token { Token::Type::Percent, m_file, m_token_line, m_token_column };
+                    return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };
                 }
             }
             }
@@ -335,7 +334,7 @@ Token Lexer::build_next_token() {
                     advance(2);
                     return consume_double_quoted_string(c, c);
                 } else {
-                    return Token { Token::Type::Percent, m_file, m_token_line, m_token_column };
+                    return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };
                 }
             }
             }
@@ -359,7 +358,7 @@ Token Lexer::build_next_token() {
                     advance(2);
                     return consume_regexp(c, c);
                 } else {
-                    return Token { Token::Type::Percent, m_file, m_token_line, m_token_column };
+                    return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };
                 }
             }
             }
@@ -382,7 +381,7 @@ Token Lexer::build_next_token() {
                 return consume_double_quoted_string('(', ')', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
             }
             default:
-                return Token { Token::Type::Percent, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
         case 'w':
             switch (peek()) {
@@ -405,7 +404,7 @@ Token Lexer::build_next_token() {
                 advance(2);
                 return consume_quoted_array_without_interpolation('(', ')', Token::Type::PercentLowerW);
             default:
-                return Token { Token::Type::Percent, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
         case 'W':
             switch (peek()) {
@@ -428,7 +427,7 @@ Token Lexer::build_next_token() {
                 advance(2);
                 return consume_quoted_array_with_interpolation('(', ')', Token::Type::PercentUpperW);
             default:
-                return Token { Token::Type::Percent, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
         case 'i':
             switch (peek()) {
@@ -451,7 +450,7 @@ Token Lexer::build_next_token() {
                 advance(2);
                 return consume_quoted_array_without_interpolation('(', ')', Token::Type::PercentLowerI);
             default:
-                return Token { Token::Type::Percent, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
         case 'I':
             switch (peek()) {
@@ -474,7 +473,7 @@ Token Lexer::build_next_token() {
                 advance(2);
                 return consume_quoted_array_with_interpolation('(', ')', Token::Type::PercentUpperI);
             default:
-                return Token { Token::Type::Percent, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
         case '[':
             advance();
@@ -501,26 +500,26 @@ Token Lexer::build_next_token() {
             break;
         }
         }
-        return Token { Token::Type::Percent, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     case '!':
         advance();
         switch (current_char()) {
         case '=':
             advance();
-            return Token { Token::Type::NotEqual, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::NotEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         case '~':
             advance();
-            return Token { Token::Type::NotMatch, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::NotMatch, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         case '@':
             if (m_last_token.is_def_keyword() || m_last_token.is_dot()) {
                 advance();
                 SharedPtr<String> lit = new String("!@");
-                return Token { Token::Type::BareName, lit, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::BareName, lit, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             } else {
-                return Token { Token::Type::Not, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Not, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
         default:
-            return Token { Token::Type::Not, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Not, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         }
     case '<':
         advance();
@@ -540,12 +539,12 @@ Token Lexer::build_next_token() {
                 case '\'':
                     return consume_heredoc();
                 default:
-                    return Token { Token::Type::LeftShift, m_file, m_token_line, m_token_column };
+                    return Token { Token::Type::LeftShift, m_file, m_token_line, m_token_column, m_whitespace_precedes };
                 }
             }
             case '=':
                 advance();
-                return Token { Token::Type::LeftShiftEqual, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::LeftShiftEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             default:
                 if (!m_whitespace_precedes) {
                     if (token_is_first_on_line())
@@ -553,7 +552,7 @@ Token Lexer::build_next_token() {
                     else if (m_last_token.can_precede_heredoc_that_looks_like_left_shift_operator())
                         return consume_heredoc();
                     else
-                        return Token { Token::Type::LeftShift, m_file, m_token_line, m_token_column };
+                        return Token { Token::Type::LeftShift, m_file, m_token_line, m_token_column, m_whitespace_precedes };
                 }
                 if (isalpha(current_char()))
                     return consume_heredoc();
@@ -564,7 +563,7 @@ Token Lexer::build_next_token() {
                 case '\'':
                     return consume_heredoc();
                 default:
-                    return Token { Token::Type::LeftShift, m_file, m_token_line, m_token_column };
+                    return Token { Token::Type::LeftShift, m_file, m_token_line, m_token_column, m_whitespace_precedes };
                 }
             }
         }
@@ -573,12 +572,12 @@ Token Lexer::build_next_token() {
             switch (current_char()) {
             case '>':
                 advance();
-                return Token { Token::Type::Comparison, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Comparison, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             default:
-                return Token { Token::Type::LessThanOrEqual, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::LessThanOrEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
         default:
-            return Token { Token::Type::LessThan, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::LessThan, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         }
     case '>':
         advance();
@@ -588,15 +587,15 @@ Token Lexer::build_next_token() {
             switch (current_char()) {
             case '=':
                 advance();
-                return Token { Token::Type::RightShiftEqual, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::RightShiftEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             default:
-                return Token { Token::Type::RightShift, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::RightShift, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
         case '=':
             advance();
-            return Token { Token::Type::GreaterThanOrEqual, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::GreaterThanOrEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         default:
-            return Token { Token::Type::GreaterThan, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::GreaterThan, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         }
     case '&':
         advance();
@@ -606,18 +605,18 @@ Token Lexer::build_next_token() {
             switch (current_char()) {
             case '=':
                 advance();
-                return Token { Token::Type::AmpersandAmpersandEqual, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::AmpersandAmpersandEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             default:
-                return Token { Token::Type::AmpersandAmpersand, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::AmpersandAmpersand, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
         case '=':
             advance();
-            return Token { Token::Type::AmpersandEqual, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::AmpersandEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         case '.':
             advance();
-            return Token { Token::Type::SafeNavigation, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::SafeNavigation, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         default:
-            return Token { Token::Type::Ampersand, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Ampersand, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         }
     case '|':
         advance();
@@ -627,24 +626,24 @@ Token Lexer::build_next_token() {
             switch (current_char()) {
             case '=':
                 advance();
-                return Token { Token::Type::PipePipeEqual, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::PipePipeEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             default:
-                return Token { Token::Type::PipePipe, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::PipePipe, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
         case '=':
             advance();
-            return Token { Token::Type::PipeEqual, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::PipeEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         default:
-            return Token { Token::Type::Pipe, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Pipe, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         }
     case '^':
         advance();
         switch (current_char()) {
         case '=':
             advance();
-            return Token { Token::Type::CaretEqual, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::CaretEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         default:
-            return Token { Token::Type::Caret, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Caret, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         }
     case '~':
         advance();
@@ -653,28 +652,28 @@ Token Lexer::build_next_token() {
             if (m_last_token.is_def_keyword() || m_last_token.is_dot()) {
                 advance();
                 SharedPtr<String> lit = new String("~@");
-                return Token { Token::Type::BareName, lit, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::BareName, lit, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             } else {
-                return Token { Token::Type::Tilde, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Tilde, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
         default:
-            return Token { Token::Type::Tilde, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Tilde, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         }
     case '?': {
         auto c = next();
         if (isspace(c)) {
             m_open_ternary = true;
-            return Token { Token::Type::TernaryQuestion, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::TernaryQuestion, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         } else {
             advance();
             if (c == '\\') {
                 auto buf = new String();
                 auto result = consume_escaped_byte(*buf);
                 if (!result.first)
-                    return Token { result.second, current_char(), m_file, m_token_line, m_token_column };
-                return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
+                    return Token { result.second, current_char(), m_file, m_token_line, m_token_column, m_whitespace_precedes };
+                return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             } else {
-                return Token { Token::Type::String, c, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::String, c, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
         }
     }
@@ -682,20 +681,19 @@ Token Lexer::build_next_token() {
         auto c = next();
         if (c == ':') {
             advance();
-            return Token { Token::Type::ConstantResolution, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::ConstantResolution, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         } else if (m_last_token.type() == Token::Type::InterpolatedStringEnd && !m_whitespace_precedes && !m_open_ternary) {
-            return Token { Token::Type::InterpolatedStringSymbolKey, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::InterpolatedStringSymbolKey, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         } else if (c == '"') {
             advance();
             return consume_double_quoted_string('"', '"', Token::Type::InterpolatedSymbolBegin, Token::Type::InterpolatedSymbolEnd);
         } else if (c == '\'') {
             advance();
             auto string = consume_single_quoted_string('\'', '\'');
-            return Token { Token::Type::Symbol, string.literal(), m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Symbol, string.literal(), m_file, m_token_line, m_token_column, m_whitespace_precedes };
         } else if (isspace(c)) {
             m_open_ternary = false;
-            auto token = Token { Token::Type::TernaryColon, m_file, m_token_line, m_token_column };
-            token.set_whitespace_precedes(m_whitespace_precedes);
+            auto token = Token { Token::Type::TernaryColon, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             return token;
         } else {
             return consume_symbol();
@@ -716,7 +714,7 @@ Token Lexer::build_next_token() {
     case '$':
         if (peek() == '&') {
             advance(2);
-            return Token { Token::Type::BackRef, '&', m_file, m_token_line, m_token_column };
+            return Token { Token::Type::BackRef, '&', m_file, m_token_line, m_token_column, m_whitespace_precedes };
         } else if (peek() >= '1' && peek() <= '9') {
             return consume_nth_ref();
         } else {
@@ -730,16 +728,16 @@ Token Lexer::build_next_token() {
             switch (current_char()) {
             case '.':
                 advance();
-                return Token { Token::Type::DotDotDot, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::DotDotDot, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             default:
-                return Token { Token::Type::DotDot, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::DotDot, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
         default:
-            return Token { Token::Type::Dot, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Dot, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         }
     case '{':
         advance();
-        return Token { Token::Type::LCurlyBrace, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::LCurlyBrace, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     case '[': {
         advance();
         switch (current_char()) {
@@ -748,36 +746,33 @@ Token Lexer::build_next_token() {
             switch (current_char()) {
             case '=':
                 advance();
-                return Token { Token::Type::LBracketRBracketEqual, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::LBracketRBracketEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             default:
-                auto token = Token { Token::Type::LBracketRBracket, m_file, m_token_line, m_token_column };
-                token.set_whitespace_precedes(m_whitespace_precedes);
+                auto token = Token { Token::Type::LBracketRBracket, m_file, m_token_line, m_token_column, m_whitespace_precedes };
                 return token;
             }
         default:
-            auto token = Token { Token::Type::LBracket, m_file, m_token_line, m_token_column };
-            token.set_whitespace_precedes(m_whitespace_precedes);
+            auto token = Token { Token::Type::LBracket, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             return token;
         }
     }
     case '(': {
         advance();
-        auto token = Token { Token::Type::LParen, m_file, m_token_line, m_token_column };
-        token.set_whitespace_precedes(m_whitespace_precedes);
+        auto token = Token { Token::Type::LParen, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         return token;
     }
     case '}':
         advance();
-        return Token { Token::Type::RCurlyBrace, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::RCurlyBrace, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     case ']':
         advance();
-        return Token { Token::Type::RBracket, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::RBracket, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     case ')':
         advance();
-        return Token { Token::Type::RParen, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::RParen, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     case '\n': {
         advance();
-        auto token = Token { Token::Type::Newline, m_file, m_token_line, m_token_column };
+        auto token = Token { Token::Type::Newline, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         if (!m_heredoc_stack.is_empty()) {
             auto new_index = m_heredoc_stack.last();
             while (m_index < new_index)
@@ -788,10 +783,10 @@ Token Lexer::build_next_token() {
     }
     case ';':
         advance();
-        return Token { Token::Type::Semicolon, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::Semicolon, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     case ',':
         advance();
-        return Token { Token::Type::Comma, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::Comma, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     case '"':
         advance();
         return consume_double_quoted_string('"', '"');
@@ -821,13 +816,13 @@ Token Lexer::build_next_token() {
                     doc->append_char(c);
                 c = next();
             }
-            return Token { Token::Type::Doc, doc, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Doc, doc, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         } else {
             char c;
             do {
                 c = next();
             } while (c && c != '\n' && c != '\r');
-            return Token { Token::Type::Comment, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Comment, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         }
     case '0':
     case '1':
@@ -845,17 +840,17 @@ Token Lexer::build_next_token() {
     case 'i':
         if (m_last_token.can_be_complex_or_rational() && !isalnum(peek())) {
             advance();
-            return Token { Token::Type::Complex, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Complex, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         }
         break;
     case 'r':
         if (m_last_token.can_be_complex_or_rational()) {
             if (peek() == 'i') {
                 advance(2);
-                return Token { Token::Type::RationalComplex, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::RationalComplex, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             } else if (!isalnum(peek())) {
                 advance();
-                return Token { Token::Type::Rational, m_file, m_token_line, m_token_column };
+                return Token { Token::Type::Rational, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
         }
         break;
@@ -865,101 +860,101 @@ Token Lexer::build_next_token() {
 
     if (!m_last_token.is_dot() && match(4, "self")) {
         if (current_char() == '.')
-            keyword_token = { Token::Type::SelfKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::SelfKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else
             rewind(4);
     }
 
     if (!m_last_token.is_dot() && !m_last_token.is_def_keyword()) {
         if (match(12, "__ENCODING__"))
-            keyword_token = { Token::Type::ENCODINGKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::ENCODINGKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(8, "__LINE__"))
-            keyword_token = { Token::Type::LINEKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::LINEKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(8, "__FILE__"))
-            keyword_token = { Token::Type::FILEKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::FILEKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(5, "BEGIN"))
-            keyword_token = { Token::Type::BEGINKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::BEGINKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(3, "END"))
-            keyword_token = { Token::Type::ENDKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::ENDKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(5, "alias"))
-            keyword_token = { Token::Type::AliasKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::AliasKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(3, "and"))
-            keyword_token = { Token::Type::AndKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::AndKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(5, "begin"))
-            keyword_token = { Token::Type::BeginKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::BeginKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(5, "break"))
-            keyword_token = { Token::Type::BreakKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::BreakKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(4, "case"))
-            keyword_token = { Token::Type::CaseKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::CaseKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(5, "class"))
-            keyword_token = { Token::Type::ClassKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::ClassKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(8, "defined?"))
-            keyword_token = { Token::Type::DefinedKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::DefinedKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(3, "def"))
-            keyword_token = { Token::Type::DefKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::DefKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(2, "do"))
-            keyword_token = { Token::Type::DoKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::DoKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(4, "else"))
-            keyword_token = { Token::Type::ElseKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::ElseKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(5, "elsif"))
-            keyword_token = { Token::Type::ElsifKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::ElsifKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(3, "end"))
-            keyword_token = { Token::Type::EndKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::EndKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(6, "ensure"))
-            keyword_token = { Token::Type::EnsureKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::EnsureKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(5, "false"))
-            keyword_token = { Token::Type::FalseKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::FalseKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(3, "for"))
-            keyword_token = { Token::Type::ForKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::ForKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(2, "if"))
-            keyword_token = { Token::Type::IfKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::IfKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(2, "in"))
-            keyword_token = { Token::Type::InKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::InKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(6, "module"))
-            keyword_token = { Token::Type::ModuleKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::ModuleKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(4, "next"))
-            keyword_token = { Token::Type::NextKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::NextKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(3, "nil"))
-            keyword_token = { Token::Type::NilKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::NilKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(3, "not"))
-            keyword_token = { Token::Type::NotKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::NotKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(2, "or"))
-            keyword_token = { Token::Type::OrKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::OrKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(4, "redo"))
-            keyword_token = { Token::Type::RedoKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::RedoKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(6, "rescue"))
-            keyword_token = { Token::Type::RescueKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::RescueKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(5, "retry"))
-            keyword_token = { Token::Type::RetryKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::RetryKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(6, "return"))
-            keyword_token = { Token::Type::ReturnKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::ReturnKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(4, "self"))
-            keyword_token = { Token::Type::SelfKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::SelfKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(5, "super"))
-            keyword_token = { Token::Type::SuperKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::SuperKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(4, "then"))
-            keyword_token = { Token::Type::ThenKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::ThenKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(4, "true"))
-            keyword_token = { Token::Type::TrueKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::TrueKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(5, "undef"))
-            keyword_token = { Token::Type::UndefKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::UndefKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(6, "unless"))
-            keyword_token = { Token::Type::UnlessKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::UnlessKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(5, "until"))
-            keyword_token = { Token::Type::UntilKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::UntilKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(4, "when"))
-            keyword_token = { Token::Type::WhenKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::WhenKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(5, "while"))
-            keyword_token = { Token::Type::WhileKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::WhileKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(5, "yield"))
-            keyword_token = { Token::Type::YieldKeyword, m_file, m_token_line, m_token_column };
+            keyword_token = { Token::Type::YieldKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     }
 
     // if a colon comes next, it's not a keyword -- it's a symbol!
     if (keyword_token && current_char() == ':' && peek() != ':' && !m_open_ternary) {
         advance(); // :
         auto name = keyword_token.type_value();
-        return Token { Token::Type::SymbolKey, name, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::SymbolKey, name, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     } else if (keyword_token) {
         return keyword_token;
     }
@@ -971,7 +966,7 @@ Token Lexer::build_next_token() {
         return consume_constant();
     } else {
         auto buf = consume_non_whitespace();
-        auto token = Token { Token::Type::Invalid, buf, m_file, m_token_line, m_token_column };
+        auto token = Token { Token::Type::Invalid, buf, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         return token;
     }
 
@@ -1031,7 +1026,7 @@ Token Lexer::consume_symbol() {
             gobble(c);
             break;
         default:
-            return Token { Token::Type::Invalid, c, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Invalid, c, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         }
         break;
     case '!':
@@ -1074,7 +1069,7 @@ Token Lexer::consume_symbol() {
             c = gobble(c);
             if (c == '=') gobble(c);
         } else {
-            return Token { Token::Type::Invalid, c, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::Invalid, c, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         }
         break;
     default:
@@ -1095,7 +1090,7 @@ Token Lexer::consume_symbol() {
             break;
         }
     }
-    return Token { Token::Type::Symbol, buf, m_file, m_token_line, m_token_column };
+    return Token { Token::Type::Symbol, buf, m_file, m_token_line, m_token_column, m_whitespace_precedes };
 }
 
 Token Lexer::consume_word(Token::Type type) {
@@ -1114,7 +1109,7 @@ Token Lexer::consume_word(Token::Type type) {
     default:
         break;
     }
-    return Token { type, buf, m_file, m_token_line, m_token_column };
+    return Token { type, buf, m_file, m_token_line, m_token_column, m_whitespace_precedes };
 }
 
 Token Lexer::consume_bare_name() {
@@ -1164,14 +1159,14 @@ Token Lexer::consume_global_variable() {
         SharedPtr<String> buf = new String("$");
         buf->append_char(current_char());
         advance();
-        return Token { Token::Type::GlobalVariable, buf, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::GlobalVariable, buf, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     }
     case '-': {
         SharedPtr<String> buf = new String("$-");
         advance(2);
         buf->append_char(current_char());
         advance();
-        return Token { Token::Type::GlobalVariable, buf, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::GlobalVariable, buf, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     }
     default: {
         return consume_word(Token::Type::GlobalVariable);
@@ -1274,7 +1269,7 @@ Token Lexer::consume_heredoc() {
             case '\n':
             case '\r':
             case 0:
-                return Token { Token::Type::UnterminatedString, "heredoc identifier", m_file, m_token_line, m_token_column };
+                return Token { Token::Type::UnterminatedString, "heredoc identifier", m_file, m_token_line, m_token_column, m_whitespace_precedes };
             default:
                 heredoc_name.append_char(c);
                 c = next();
@@ -1293,7 +1288,7 @@ Token Lexer::consume_heredoc() {
         // start consuming the heredoc on the next line
         while (get_char() != '\n') {
             if (heredoc_index >= m_size)
-                return Token { Token::Type::UnterminatedString, "heredoc", m_file, m_token_line, m_token_column };
+                return Token { Token::Type::UnterminatedString, "heredoc", m_file, m_token_line, m_token_column, m_whitespace_precedes };
             heredoc_index++;
         }
         heredoc_index++;
@@ -1307,7 +1302,7 @@ Token Lexer::consume_heredoc() {
         if (heredoc_index >= m_size) {
             if (is_valid_heredoc(with_dash, doc, heredoc_name))
                 break;
-            return Token { Token::Type::UnterminatedString, doc, m_file, m_token_line, m_token_column };
+            return Token { Token::Type::UnterminatedString, doc, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         }
         char c = get_char();
         heredoc_index++;
@@ -1327,11 +1322,11 @@ Token Lexer::consume_heredoc() {
     // This index is used to jump to the end of the heredoc later.
     m_heredoc_stack.push(heredoc_index);
 
-    auto token = Token { Token::Type::String, doc, m_file, m_token_line, m_token_column };
+    auto token = Token { Token::Type::String, doc, m_file, m_token_line, m_token_column, m_whitespace_precedes };
 
     if (should_interpolate) {
         m_nested_lexer = new InterpolatedStringLexer { *this, token, end_type };
-        return Token { begin_type, m_file, m_token_line, m_token_column };
+        return Token { begin_type, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     }
 
     return token;
@@ -1364,7 +1359,7 @@ Token Lexer::consume_numeric() {
             advance();
             char c = next();
             if (!isdigit(c))
-                return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column };
+                return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column, m_whitespace_precedes };
             do {
                 chars->append_char(c);
                 c = next();
@@ -1381,7 +1376,7 @@ Token Lexer::consume_numeric() {
             advance();
             char c = next();
             if (!(c >= '0' && c <= '7'))
-                return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column };
+                return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column, m_whitespace_precedes };
             do {
                 chars->append_char(c);
                 c = next();
@@ -1398,7 +1393,7 @@ Token Lexer::consume_numeric() {
             advance();
             char c = next();
             if (!isxdigit(c))
-                return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column };
+                return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column, m_whitespace_precedes };
             do {
                 chars->append_char(c);
                 c = next();
@@ -1415,7 +1410,7 @@ Token Lexer::consume_numeric() {
             advance();
             char c = next();
             if (c != '0' && c != '1')
-                return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column };
+                return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column, m_whitespace_precedes };
             do {
                 chars->append_char(c);
                 c = next();
@@ -1441,9 +1436,9 @@ Token Lexer::chars_to_fixnum_or_bignum_token(SharedPtr<String> chars, int base, 
     errno = 0;
     auto fixnum = strtoll(chars->c_str() + offset, nullptr, base);
     if (errno != 0 || fixnum > max_fixnum)
-        return Token { Token::Type::Bignum, chars, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::Bignum, chars, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     else
-        return Token { Token::Type::Fixnum, fixnum, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::Fixnum, fixnum, m_file, m_token_line, m_token_column, m_whitespace_precedes };
 }
 
 Token Lexer::consume_numeric_as_float(SharedPtr<String> chars) {
@@ -1466,7 +1461,7 @@ Token Lexer::consume_numeric_as_float(SharedPtr<String> chars) {
             c = next();
         }
         if (!isdigit(c))
-            return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column };
+            return Token { Token::Type::Invalid, c, m_file, m_cursor_line, m_cursor_column, m_whitespace_precedes };
         do {
             chars->append_char(c);
             c = next();
@@ -1475,7 +1470,7 @@ Token Lexer::consume_numeric_as_float(SharedPtr<String> chars) {
         } while (isdigit(c));
     }
     double dbl = atof(chars->c_str());
-    return Token { Token::Type::Float, dbl, m_file, m_token_line, m_token_column };
+    return Token { Token::Type::Float, dbl, m_file, m_token_line, m_token_column, m_whitespace_precedes };
 }
 
 Token Lexer::consume_nth_ref() {
@@ -1486,7 +1481,7 @@ Token Lexer::consume_nth_ref() {
         num += c - '0';
         c = next();
     } while (isdigit(c));
-    return Token { Token::Type::NthRef, num, m_file, m_token_line, m_token_column };
+    return Token { Token::Type::NthRef, num, m_file, m_token_line, m_token_column, m_whitespace_precedes };
 }
 
 long long Lexer::consume_hex_number(int max_length, bool allow_underscore) {
@@ -1670,7 +1665,7 @@ bool Lexer::token_is_first_on_line() const {
 
 Token Lexer::consume_double_quoted_string(char start_char, char stop_char, Token::Type begin_type, Token::Type end_type) {
     m_nested_lexer = new InterpolatedStringLexer { *this, start_char, stop_char, end_type };
-    return Token { begin_type, start_char, m_file, m_token_line, m_token_column };
+    return Token { begin_type, start_char, m_file, m_token_line, m_token_column, m_whitespace_precedes };
 }
 
 Token Lexer::consume_single_quoted_string(char start_char, char stop_char) {
@@ -1697,9 +1692,9 @@ Token Lexer::consume_single_quoted_string(char start_char, char stop_char) {
                 advance(); // '
                 if (current_char() == ':' && !m_open_ternary) {
                     advance(); // :
-                    return Token { Token::Type::SymbolKey, buf, m_file, m_token_line, m_token_column };
+                    return Token { Token::Type::SymbolKey, buf, m_file, m_token_line, m_token_column, m_whitespace_precedes };
                 } else {
-                    return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column };
+                    return Token { Token::Type::String, buf, m_file, m_token_line, m_token_column, m_whitespace_precedes };
                 }
             }
         } else {
@@ -1707,22 +1702,22 @@ Token Lexer::consume_single_quoted_string(char start_char, char stop_char) {
         }
         c = next();
     }
-    return Token { Token::Type::UnterminatedString, start_char, m_file, m_token_line, m_token_column };
+    return Token { Token::Type::UnterminatedString, start_char, m_file, m_token_line, m_token_column, m_whitespace_precedes };
 }
 
 Token Lexer::consume_quoted_array_without_interpolation(char start_char, char stop_char, Token::Type type) {
     m_nested_lexer = new WordArrayLexer { *this, start_char, stop_char, false };
-    return Token { type, start_char, m_file, m_token_line, m_token_column };
+    return Token { type, start_char, m_file, m_token_line, m_token_column, m_whitespace_precedes };
 }
 
 Token Lexer::consume_quoted_array_with_interpolation(char start_char, char stop_char, Token::Type type) {
     m_nested_lexer = new WordArrayLexer { *this, start_char, stop_char, true };
-    return Token { type, start_char, m_file, m_token_line, m_token_column };
+    return Token { type, start_char, m_file, m_token_line, m_token_column, m_whitespace_precedes };
 }
 
 Token Lexer::consume_regexp(char start_char, char stop_char) {
     m_nested_lexer = new RegexpLexer { *this, start_char, stop_char };
-    return Token { Token::Type::InterpolatedRegexpBegin, start_char, m_file, m_token_line, m_token_column };
+    return Token { Token::Type::InterpolatedRegexpBegin, start_char, m_file, m_token_line, m_token_column, m_whitespace_precedes };
 }
 
 SharedPtr<String> Lexer::consume_non_whitespace() {

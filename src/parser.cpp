@@ -313,7 +313,7 @@ SharedPtr<SymbolNode> Parser::parse_alias_arg(LocalsHashmap &locals, const char 
                 //     def bar; end
                 //
                 // So, we'll put the newline back.
-                m_tokens->insert(m_index, Token { Token::Type::Newline, token.file(), token.line(), token.column() });
+                m_tokens->insert(m_index, Token { Token::Type::Newline, token.file(), token.line(), token.column(), token.whitespace_precedes() });
             }
             return new SymbolNode { token, new String(token.type_value()) };
         } else {
@@ -2574,7 +2574,7 @@ SharedPtr<Node> Parser::parse_range_expression(SharedPtr<Node> left, LocalsHashm
         right = new NilNode { token };
         // HACK: insert a newline here so subsequent expressions parse ok
         if (!current_token().can_follow_collapsible_newline())
-            m_tokens->insert(m_index, Token { Token::Type::Newline, current_token().file(), current_token().line(), current_token().column() });
+            m_tokens->insert(m_index, Token { Token::Type::Newline, current_token().file(), current_token().line(), current_token().column(), current_token().whitespace_precedes() });
     }
 
     return new RangeNode { token, left, right, token.type() == Token::Type::DotDotDot };

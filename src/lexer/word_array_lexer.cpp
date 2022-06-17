@@ -11,7 +11,7 @@ Token WordArrayLexer::build_next_token() {
         return consume_array();
     case State::DynamicStringBegin:
         m_state = State::EvaluateBegin;
-        return Token { Token::Type::String, m_buffer, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::String, m_buffer, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     case State::DynamicStringEnd:
         if (current_char() == m_stop_char) {
             advance();
@@ -19,18 +19,18 @@ Token WordArrayLexer::build_next_token() {
         } else {
             m_state = State::InProgress;
         }
-        return Token { Token::Type::InterpolatedStringEnd, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::InterpolatedStringEnd, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     case State::EvaluateBegin:
         return start_evaluation();
     case State::EvaluateEnd:
         advance(); // }
         m_state = State::DynamicStringInProgress;
-        return Token { Token::Type::EvaluateToStringEnd, m_file, m_token_line, m_token_column };
+        return Token { Token::Type::EvaluateToStringEnd, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     case State::EndToken:
         m_state = State::Done;
-        return Token { Token::Type::RBracket, m_file, m_cursor_line, m_cursor_column };
+        return Token { Token::Type::RBracket, m_file, m_cursor_line, m_cursor_column, m_whitespace_precedes };
     case State::Done:
-        return Token { Token::Type::Eof, m_file, m_cursor_line, m_cursor_column };
+        return Token { Token::Type::Eof, m_file, m_cursor_line, m_cursor_column, m_whitespace_precedes };
     }
     TM_UNREACHABLE();
 }
@@ -70,7 +70,7 @@ Token WordArrayLexer::consume_array() {
                 return dynamic_string_finish();
             }
             if (!m_buffer->is_empty()) {
-                auto token = Token { Token::Type::String, m_buffer, m_file, m_cursor_line, m_cursor_column };
+                auto token = Token { Token::Type::String, m_buffer, m_file, m_cursor_line, m_cursor_column, m_whitespace_precedes };
                 advance();
                 return token;
             }
@@ -97,38 +97,38 @@ Token WordArrayLexer::consume_array() {
         }
     }
 
-    return Token { Token::Type::UnterminatedWordArray, m_buffer, m_file, m_token_line, m_token_column };
+    return Token { Token::Type::UnterminatedWordArray, m_buffer, m_file, m_token_line, m_token_column, m_whitespace_precedes };
 }
 
 Token WordArrayLexer::in_progress_start_dynamic_string() {
     advance(2); // #{
     m_state = State::DynamicStringBegin;
-    return Token { Token::Type::InterpolatedStringBegin, m_file, m_cursor_line, m_cursor_column };
+    return Token { Token::Type::InterpolatedStringBegin, m_file, m_cursor_line, m_cursor_column, m_whitespace_precedes };
 }
 
 Token WordArrayLexer::start_evaluation() {
     m_nested_lexer = new Lexer { *this, '{', '}' };
     m_state = State::EvaluateEnd;
-    return Token { Token::Type::EvaluateToStringBegin, m_file, m_token_line, m_token_column };
+    return Token { Token::Type::EvaluateToStringBegin, m_file, m_token_line, m_token_column, m_whitespace_precedes };
 }
 
 Token WordArrayLexer::dynamic_string_finish() {
     if (!m_buffer->is_empty()) {
         m_state = State::DynamicStringEnd;
-        return Token { Token::Type::String, m_buffer, m_file, m_cursor_line, m_cursor_column };
+        return Token { Token::Type::String, m_buffer, m_file, m_cursor_line, m_cursor_column, m_whitespace_precedes };
     }
     m_state = State::InProgress;
-    return Token { Token::Type::InterpolatedStringEnd, m_file, m_token_line, m_token_column };
+    return Token { Token::Type::InterpolatedStringEnd, m_file, m_token_line, m_token_column, m_whitespace_precedes };
 }
 
 Token WordArrayLexer::in_progress_finish() {
     advance(); // ) or ] or } or whatever
     if (!m_buffer->is_empty()) {
         m_state = State::EndToken;
-        return Token { Token::Type::String, m_buffer, m_file, m_cursor_line, m_cursor_column };
+        return Token { Token::Type::String, m_buffer, m_file, m_cursor_line, m_cursor_column, m_whitespace_precedes };
     }
     m_state = State::Done;
-    return Token { Token::Type::RBracket, m_file, m_cursor_line, m_cursor_column };
+    return Token { Token::Type::RBracket, m_file, m_cursor_line, m_cursor_column, m_whitespace_precedes };
 }
 
 };

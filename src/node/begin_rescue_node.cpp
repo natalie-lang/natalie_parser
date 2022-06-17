@@ -10,7 +10,7 @@ SharedPtr<Node> BeginRescueNode::name_to_node() const {
         token(),
         m_name.static_cast_as<Node>(),
         new IdentifierNode {
-            Token { Token::Type::GlobalVariable, "$!", file(), line(), column() },
+            Token { Token::Type::GlobalVariable, "$!", file(), line(), column(), false },
             false },
     };
 }
