@@ -151,6 +151,8 @@ public:
         return type() != Type::Invalid;
     }
 
+    void debug();
+
 protected:
     static inline SharedPtr<Node> s_invalid {};
     Token m_token {};
