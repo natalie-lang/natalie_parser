@@ -954,6 +954,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("p Foo:bar")).must_equal s(:call, nil, :p, s(:hash, s(:lit, :Foo), s(:call, nil, :bar)))
         expect(parse("p 'foo':'bar'")).must_equal s(:call, nil, :p, s(:hash, s(:lit, :foo), s(:str, "bar")))
         expect(parse('p "foo":"bar"')).must_equal s(:call, nil, :p, s(:hash, s(:lit, :foo), s(:str, "bar")))
+        expect(parse("p $1")).must_equal s(:call, nil, :p, s(:nth_ref, 1))
         expect(-> { parse("for:bar") }).must_raise SyntaxError # not with a keyword :-)
         # FIXME: colon2 and colon3 are callable
         #expect(parse("Foo::Bar :bar")).must_equal s(:call, s(:const, :Foo), :Bar, s(:lit, :bar))

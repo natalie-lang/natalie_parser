@@ -775,6 +775,7 @@ public:
         case Token::Type::NilKeyword:
         case Token::Type::Not:
         case Token::Type::NotKeyword:
+        case Token::Type::NthRef:
         case Token::Type::PercentLowerI:
         case Token::Type::PercentLowerW:
         case Token::Type::PercentUpperI:
