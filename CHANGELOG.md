@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0 (2022-06-24)
+
+- FEAT: Differentiate between bare/implicit hash and explicit one
+- FIX: Fix calling colon2
+- FIX: Parse implicit method calls with nth ref argument
+
 ## 1.2.1 (2022-06-16)
 
 - FIX: Fix regression with unary/infix operators (+/-)
