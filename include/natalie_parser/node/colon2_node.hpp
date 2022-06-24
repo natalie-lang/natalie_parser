@@ -23,6 +23,7 @@ public:
     virtual Type type() const override { return Type::Colon2; }
 
     virtual bool is_assignable() const override { return true; }
+    virtual bool is_callable() const override { return true; }
 
     const SharedPtr<Node> left() const { return m_left; }
     SharedPtr<String> name() const { return m_name; }
