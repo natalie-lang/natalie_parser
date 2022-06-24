@@ -8,12 +8,18 @@ require_relative '../lib/natalie_parser/sexp'
       def parse(code, path = '(string)')
         NatalieParser.parse(code, path)
       end
+      def bare_hash_type
+        :bare_hash
+      end
     else
       require 'ruby_parser'
       def parse(code, path = '(string)')
         RubyParser.new.parse(code, path)
       rescue Racc::ParseError, RubyParser::SyntaxError => e
         raise SyntaxError, e.message
+      end
+      def bare_hash_type
+        :hash # RubyParser doesn't differentiate!
       end
     end
 
@@ -1040,6 +1046,20 @@ require_relative '../lib/natalie_parser/sexp'
           expect(parse("foo.#{keyword}(1)")).must_equal s(:call, s(:call, nil, :foo), keyword, s(:lit, 1))
           expect(parse("foo.#{keyword} 1 ")).must_equal s(:call, s(:call, nil, :foo), keyword, s(:lit, 1))
         end
+      end
+
+      focus
+      it 'parses method calls with explicit hash vs implicit hash (possibly keyword args)' do
+        # hash
+        expect(parse("foo 1, { a: 'b' }")).must_equal s(:call, nil, :foo, s(:lit, 1), s(:hash, s(:lit, :a), s(:str, "b")))
+        expect(parse("foo(1, { a: 'b' })")).must_equal s(:call, nil, :foo, s(:lit, 1), s(:hash, s(:lit, :a), s(:str, "b")))
+        expect(parse("foo 1, { :a => 'b' }")).must_equal s(:call, nil, :foo, s(:lit, 1), s(:hash, s(:lit, :a), s(:str, "b")))
+        expect(parse("foo(1, { :a => 'b' })")).must_equal s(:call, nil, :foo, s(:lit, 1), s(:hash, s(:lit, :a), s(:str, "b")))
+        # bare hash (can be used as keyword args)
+        expect(parse("foo 1, a: 'b'")).must_equal s(:call, nil, :foo, s(:lit, 1), s(bare_hash_type, s(:lit, :a), s(:str, "b")))
+        expect(parse("foo(1, a: 'b')")).must_equal s(:call, nil, :foo, s(:lit, 1), s(bare_hash_type, s(:lit, :a), s(:str, "b")))
+        expect(parse("foo 1, :a => 'b'")).must_equal s(:call, nil, :foo, s(:lit, 1), s(bare_hash_type, s(:lit, :a), s(:str, "b")))
+        expect(parse("foo(1, :a => 'b')")).must_equal s(:call, nil, :foo, s(:lit, 1), s(bare_hash_type, s(:lit, :a), s(:str, "b")))
       end
 
       it 'parses ternary expressions' do

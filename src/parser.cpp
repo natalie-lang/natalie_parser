@@ -337,7 +337,7 @@ SharedPtr<Node> Parser::parse_array(LocalsHashmap &locals) {
             return array.static_cast_as<Node>();
         }
         if (token.type() == Token::Type::SymbolKey) {
-            array->add_node(parse_hash_inner(locals, Precedence::HASH, Token::Type::RBracket));
+            array->add_node(parse_hash_inner(locals, Precedence::HASH, Token::Type::RBracket, true));
             expect(Token::Type::RBracket, "array closing bracket");
             advance();
             return array.static_cast_as<Node>();
@@ -345,7 +345,7 @@ SharedPtr<Node> Parser::parse_array(LocalsHashmap &locals) {
         auto value = parse_expression(Precedence::ARRAY, locals);
         token = current_token();
         if (token.is_hash_rocket()) {
-            array->add_node(parse_hash_inner(locals, Precedence::HASH, Token::Type::RBracket, value));
+            array->add_node(parse_hash_inner(locals, Precedence::HASH, Token::Type::RBracket, true, value));
             expect(Token::Type::RBracket, "array closing bracket");
             advance();
             return array.static_cast_as<Node>();
@@ -1299,17 +1299,17 @@ SharedPtr<Node> Parser::parse_hash(LocalsHashmap &locals) {
     advance();
     SharedPtr<Node> hash;
     if (current_token().type() == Token::Type::RCurlyBrace)
-        hash = new HashNode { token };
+        hash = new HashNode { token, false };
     else
-        hash = parse_hash_inner(locals, Precedence::HASH, Token::Type::RCurlyBrace);
+        hash = parse_hash_inner(locals, Precedence::HASH, Token::Type::RCurlyBrace, false);
     expect(Token::Type::RCurlyBrace, "hash closing curly brace");
     advance();
     return hash;
 }
 
-SharedPtr<Node> Parser::parse_hash_inner(LocalsHashmap &locals, Precedence precedence, Token::Type closing_token_type, SharedPtr<Node> first_key) {
+SharedPtr<Node> Parser::parse_hash_inner(LocalsHashmap &locals, Precedence precedence, Token::Type closing_token_type, bool bare, SharedPtr<Node> first_key) {
     auto token = current_token();
-    SharedPtr<HashNode> hash = new HashNode { token };
+    SharedPtr<HashNode> hash = new HashNode { token, bare };
     if (!first_key)
         first_key = parse_expression(precedence, locals);
     hash->add_node(first_key);
@@ -1640,7 +1640,7 @@ SharedPtr<Node> Parser::parse_keyword_splat(LocalsHashmap &locals) {
 }
 
 SharedPtr<Node> Parser::parse_keyword_splat_wrapped_in_hash(LocalsHashmap &locals) {
-    SharedPtr<HashNode> hash = new HashNode { current_token() };
+    SharedPtr<HashNode> hash = new HashNode { current_token(), true };
     hash->add_node(parse_keyword_splat(locals));
     return hash.static_cast_as<Node>();
 }
@@ -2337,12 +2337,13 @@ void Parser::parse_call_args(NodeWithArgs &node, LocalsHashmap &locals, bool bar
         m_call_depth.last()--;
 }
 
-SharedPtr<Node> Parser::parse_call_hash_args(LocalsHashmap &locals, bool bare, Token::Type closing_token_type, SharedPtr<Node> first_arg) {
+SharedPtr<Node> Parser::parse_call_hash_args(LocalsHashmap &locals, bool bare_call, Token::Type closing_token_type, SharedPtr<Node> first_arg) {
+    bool bare_hash = true; // we got here via foo(1, a: 'b') so it's always a "bare" hash
     SharedPtr<Node> hash;
-    if (bare)
-        hash = parse_hash_inner(locals, Precedence::BARE_CALL_ARG, closing_token_type, first_arg);
+    if (bare_call)
+        hash = parse_hash_inner(locals, Precedence::BARE_CALL_ARG, closing_token_type, bare_hash, first_arg);
     else
-        hash = parse_hash_inner(locals, Precedence::CALL_ARG, closing_token_type, first_arg);
+        hash = parse_hash_inner(locals, Precedence::CALL_ARG, closing_token_type, bare_hash, first_arg);
     if (current_token().type() == Token::Type::StarStar)
         hash.static_cast_as<HashNode>()->add_node(parse_keyword_splat(locals));
     return hash;

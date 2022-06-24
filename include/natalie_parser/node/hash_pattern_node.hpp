@@ -14,7 +14,7 @@ using namespace TM;
 class HashPatternNode : public HashNode {
 public:
     HashPatternNode(const Token &token)
-        : HashNode { token } { }
+        : HashNode { token, true } { }
 
     virtual Type type() const override { return Type::HashPattern; }
 

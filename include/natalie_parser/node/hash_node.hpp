@@ -11,8 +11,9 @@ using namespace TM;
 
 class HashNode : public Node {
 public:
-    HashNode(const Token &token)
-        : Node { token } { }
+    HashNode(const Token &token, bool bare)
+        : Node { token }
+        , m_bare { bare } { }
 
     virtual Type type() const override { return Type::Hash; }
 
@@ -23,12 +24,16 @@ public:
     const Vector<SharedPtr<Node>> &nodes() const { return m_nodes; }
 
     virtual void transform(Creator *creator) const override {
-        creator->set_type("hash");
+        if (m_bare)
+            creator->set_type("bare_hash");
+        else
+            creator->set_type("hash");
         for (auto node : m_nodes)
             creator->append(node);
     }
 
 protected:
     Vector<SharedPtr<Node>> m_nodes {};
+    bool m_bare { false };
 };
 }
