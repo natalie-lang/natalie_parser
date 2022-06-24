@@ -104,7 +104,7 @@ private:
     SharedPtr<Node> parse_forward_args(LocalsHashmap &);
     SharedPtr<Node> parse_group(LocalsHashmap &);
     SharedPtr<Node> parse_hash(LocalsHashmap &);
-    SharedPtr<Node> parse_hash_inner(LocalsHashmap &, Precedence, Token::Type, SharedPtr<Node> = {});
+    SharedPtr<Node> parse_hash_inner(LocalsHashmap &, Precedence, Token::Type, bool, SharedPtr<Node> = {});
     SharedPtr<Node> parse_identifier(LocalsHashmap &);
     SharedPtr<Node> parse_if(LocalsHashmap &);
     void parse_interpolated_body(LocalsHashmap &, InterpolatedNode &, Token::Type);

@@ -166,7 +166,7 @@ module TestRubyParserShared
 
   def test_aref_args_assocs
     rb = "[1 => 2]"
-    pt = s(:array, s(:hash, s(:lit, 1), s(:lit, 2)))
+    pt = s(:array, s(:bare_hash, s(:lit, 1), s(:lit, 2)))
 
     assert_parse rb, pt
   end
@@ -2387,14 +2387,14 @@ module TestRubyParserShared19Plus
 
   def test_aref_args_lit_assocs
     rb = "[1, 2 => 3]"
-    pt = s(:array, s(:lit, 1), s(:hash, s(:lit, 2), s(:lit, 3)))
+    pt = s(:array, s(:lit, 1), s(:bare_hash, s(:lit, 2), s(:lit, 3)))
 
     assert_parse rb, pt
   end
 
   def test_assoc_label
     rb = "a(b:1)"
-    pt = s(:call, nil, :a, s(:hash, s(:lit, :b), s(:lit, 1)))
+    pt = s(:call, nil, :a, s(:bare_hash, s(:lit, :b), s(:lit, 1)))
 
     assert_parse rb, pt
   end
@@ -2696,7 +2696,7 @@ module TestRubyParserShared19Plus
     rb = "foo(:bar, baz: nil)"
     pt = s(:call, nil, :foo,
            s(:lit, :bar),
-           s(:hash, s(:lit, :baz), s(:nil)))
+           s(:bare_hash, s(:lit, :baz), s(:nil)))
 
     assert_parse rb, pt
   end
@@ -2705,42 +2705,42 @@ module TestRubyParserShared19Plus
     rb = "foo(:bar, baz: nil,)"
     pt = s(:call, nil, :foo,    # NOTE: same sexp as test_bug_hash_args
            s(:lit, :bar),
-           s(:hash, s(:lit, :baz), s(:nil)))
+           s(:bare_hash, s(:lit, :baz), s(:nil)))
 
     assert_parse rb, pt
   end
 
   def test_call_arg_assoc
     rb = "f(1, 2=>3)"
-    pt = s(:call, nil, :f, s(:lit, 1), s(:hash, s(:lit, 2), s(:lit, 3)))
+    pt = s(:call, nil, :f, s(:lit, 1), s(:bare_hash, s(:lit, 2), s(:lit, 3)))
 
     assert_parse rb, pt
   end
 
   def test_call_args_assoc_trailing_comma
     rb = "f(1, 2=>3,)"
-    pt = s(:call, nil, :f, s(:lit, 1), s(:hash, s(:lit, 2), s(:lit, 3)))
+    pt = s(:call, nil, :f, s(:lit, 1), s(:bare_hash, s(:lit, 2), s(:lit, 3)))
 
     assert_parse rb, pt
   end
 
   def test_call_array_lit_inline_hash
     rb = "a([:b, :c => 1])"
-    pt = s(:call, nil, :a, s(:array, s(:lit, :b), s(:hash, s(:lit, :c), s(:lit, 1))))
+    pt = s(:call, nil, :a, s(:array, s(:lit, :b), s(:bare_hash, s(:lit, :c), s(:lit, 1))))
 
     assert_parse rb, pt
   end
 
   def test_call_assoc
     rb = "f(2=>3)"
-    pt = s(:call, nil, :f, s(:hash, s(:lit, 2), s(:lit, 3)))
+    pt = s(:call, nil, :f, s(:bare_hash, s(:lit, 2), s(:lit, 3)))
 
     assert_parse rb, pt
   end
 
   def test_call_assoc_new
     rb = "f(a:3)"
-    pt = s(:call, nil, :f, s(:hash, s(:lit, :a), s(:lit, 3)))
+    pt = s(:call, nil, :f, s(:bare_hash, s(:lit, :a), s(:lit, 3)))
 
     assert_parse rb, pt
   end
@@ -2748,7 +2748,7 @@ module TestRubyParserShared19Plus
   def test_call_assoc_new_if_multiline
     rb = "a(b: if :c\n1\nelse\n2\nend)"
     pt = s(:call, nil, :a,
-           s(:hash,
+           s(:bare_hash,
              s(:lit, :b),
              s(:if, s(:lit, :c), s(:lit, 1).line(2), s(:lit, 2).line(4))))
 
@@ -2757,7 +2757,7 @@ module TestRubyParserShared19Plus
 
   def test_call_assoc_trailing_comma
     rb = "f(1=>2,)"
-    pt = s(:call, nil, :f, s(:hash, s(:lit, 1), s(:lit, 2)))
+    pt = s(:call, nil, :f, s(:bare_hash, s(:lit, 1), s(:lit, 2)))
 
     assert_parse rb, pt
   end
@@ -2897,7 +2897,7 @@ module TestRubyParserShared19Plus
     rb = "1 ? b('') : 2\na d: 3"
     pt = s(:block,
            s(:if, s(:lit, 1), s(:call, nil, :b, s(:str, "")), s(:lit, 2)),
-           s(:call, nil, :a, s(:hash, s(:lit, :d).line(2), s(:lit, 3).line(2)).line(2)).line(2))
+           s(:call, nil, :a, s(:bare_hash, s(:lit, :d).line(2), s(:lit, 3).line(2)).line(2)).line(2))
 
     assert_parse rb, pt
   end
@@ -3200,7 +3200,7 @@ module TestRubyParserShared19Plus
 
   def test_method_call_assoc_trailing_comma
     rb = "a.f(1=>2,)"
-    pt = s(:call, s(:call, nil, :a), :f, s(:hash, s(:lit, 1), s(:lit, 2)))
+    pt = s(:call, s(:call, nil, :a), :f, s(:bare_hash, s(:lit, 1), s(:lit, 2)))
 
     assert_parse rb, pt
   end
@@ -3332,12 +3332,12 @@ module TestRubyParserShared19Plus
   end
 
   def test_multiline_hash_declaration
-    pt = s(:call, nil, :f, s(:hash, s(:lit, :state), s(:hash)))
+    pt = s(:call, nil, :f, s(:bare_hash, s(:lit, :state), s(:hash)))
 
     assert_parse "f(state: {})",     pt
     assert_parse "f(state: {\n})",   pt
 
-    pt = s(:call, nil, :f, s(:hash, s(:lit, :state), s(:hash).line(2)))
+    pt = s(:call, nil, :f, s(:bare_hash, s(:lit, :state), s(:hash).line(2)))
     assert_parse "f(state:\n {\n})", pt
   end
 
@@ -3385,7 +3385,7 @@ module TestRubyParserShared19Plus
 
   def test_parse_opt_call_args_assocs_comma
     rb = "1[2=>3,]"
-    pt = s(:call, s(:lit, 1), :[], s(:hash, s(:lit, 2), s(:lit, 3)))
+    pt = s(:call, s(:lit, 1), :[], s(:bare_hash, s(:lit, 2), s(:lit, 3)))
 
     assert_parse rb, pt
   end
@@ -3448,22 +3448,22 @@ module TestRubyParserShared19Plus
 
   def test_return_call_assocs
     rb = "return y(z:1)"
-    pt = s(:return, s(:call, nil, :y, s(:hash, s(:lit, :z), s(:lit, 1))))
+    pt = s(:return, s(:call, nil, :y, s(:bare_hash, s(:lit, :z), s(:lit, 1))))
 
     assert_parse rb, pt
 
     rb = "return y z:1"
-    pt = s(:return, s(:call, nil, :y, s(:hash, s(:lit, :z), s(:lit, 1))))
+    pt = s(:return, s(:call, nil, :y, s(:bare_hash, s(:lit, :z), s(:lit, 1))))
 
     assert_parse rb, pt
 
     rb = "return y(z=>1)"
-    pt = s(:return, s(:call, nil, :y, s(:hash, s(:call, nil, :z), s(:lit, 1))))
+    pt = s(:return, s(:call, nil, :y, s(:bare_hash, s(:call, nil, :z), s(:lit, 1))))
 
     assert_parse rb, pt
 
     rb = "return y :z=>1"
-    pt = s(:return, s(:call, nil, :y, s(:hash, s(:lit, :z), s(:lit, 1))))
+    pt = s(:return, s(:call, nil, :y, s(:bare_hash, s(:lit, :z), s(:lit, 1))))
 
     assert_parse rb, pt
 
@@ -3471,7 +3471,7 @@ module TestRubyParserShared19Plus
     pt = s(:return,
            s(:array,
              s(:lit, 1),
-             s(:hash, s(:lit, :z), s(:lit, 1))))
+             s(:bare_hash, s(:lit, :z), s(:lit, 1))))
 
     assert_parse rb, pt
 
@@ -3479,7 +3479,7 @@ module TestRubyParserShared19Plus
     pt = s(:return,
            s(:array,
              s(:lit, 1),
-             s(:hash, s(:lit, :z), s(:lit, 1), s(:lit, :w), s(:lit, 2))))
+             s(:bare_hash, s(:lit, :z), s(:lit, 1), s(:lit, :w), s(:lit, 2))))
 
     assert_parse rb, pt
   end
@@ -3553,36 +3553,36 @@ module TestRubyParserShared19Plus
 
   def test_yield_call_assocs
     rb = "yield y(z:1)"
-    pt = s(:yield, s(:call, nil, :y, s(:hash, s(:lit, :z), s(:lit, 1))))
+    pt = s(:yield, s(:call, nil, :y, s(:bare_hash, s(:lit, :z), s(:lit, 1))))
 
     assert_parse rb, pt
 
     rb = "yield y z:1"
-    pt = s(:yield, s(:call, nil, :y, s(:hash, s(:lit, :z), s(:lit, 1))))
+    pt = s(:yield, s(:call, nil, :y, s(:bare_hash, s(:lit, :z), s(:lit, 1))))
 
     assert_parse rb, pt
 
     rb = "yield y(z=>1)"
-    pt = s(:yield, s(:call, nil, :y, s(:hash, s(:call, nil, :z), s(:lit, 1))))
+    pt = s(:yield, s(:call, nil, :y, s(:bare_hash, s(:call, nil, :z), s(:lit, 1))))
 
     assert_parse rb, pt
 
     rb = "yield y :z=>1"
-    pt = s(:yield, s(:call, nil, :y, s(:hash, s(:lit, :z), s(:lit, 1))))
+    pt = s(:yield, s(:call, nil, :y, s(:bare_hash, s(:lit, :z), s(:lit, 1))))
 
     assert_parse rb, pt
 
     rb = "yield 1, :z => 1"
     pt = s(:yield,
            s(:lit, 1),
-           s(:hash, s(:lit, :z), s(:lit, 1)))
+           s(:bare_hash, s(:lit, :z), s(:lit, 1)))
 
     assert_parse rb, pt
 
     rb = "yield 1, :z => 1, :w => 2"
     pt = s(:yield,
            s(:lit, 1),
-           s(:hash, s(:lit, :z), s(:lit, 1), s(:lit, :w), s(:lit, 2)))
+           s(:bare_hash, s(:lit, :z), s(:lit, 1), s(:lit, :w), s(:lit, 2)))
 
     assert_parse rb, pt
   end
@@ -3904,7 +3904,7 @@ module TestRubyParserShared20Plus
                0,
                s(:defn, :initialize, s(:args).line(2), s(:nil).line(2)).line(2)),
              :new).line(4),
-           s(:hash, s(:lit, :at).line(4), s(:str, "endpoint").line(4)).line(4))
+           s(:bare_hash, s(:lit, :at).line(4), s(:str, "endpoint").line(4)).line(4))
 
     assert_parse rb, pt
   end
@@ -3913,21 +3913,21 @@ module TestRubyParserShared20Plus
     rb = "f(1, kw: 2, **3)"
     pt = s(:call, nil, :f,
            s(:lit, 1),
-           s(:hash, s(:lit, :kw), s(:lit, 2), s(:kwsplat, s(:lit, 3))))
+           s(:bare_hash, s(:lit, :kw), s(:lit, 2), s(:kwsplat, s(:lit, 3))))
 
     assert_parse rb, pt
   end
 
   def test_call_arg_kwsplat
     rb = "a(b, **1)"
-    pt = s(:call, nil, :a, s(:call, nil, :b), s(:hash, s(:kwsplat, s(:lit, 1))))
+    pt = s(:call, nil, :a, s(:call, nil, :b), s(:bare_hash, s(:kwsplat, s(:lit, 1))))
 
     assert_parse rb, pt
   end
 
   def test_call_kwsplat
     rb = "a(**1)"
-    pt = s(:call, nil, :a, s(:hash, s(:kwsplat, s(:lit, 1))))
+    pt = s(:call, nil, :a, s(:bare_hash, s(:kwsplat, s(:lit, 1))))
 
     assert_parse rb, pt
   end
@@ -3935,7 +3935,7 @@ module TestRubyParserShared20Plus
   def test_defn_kwarg_env
     rb = "def test(**testing) test_splat(**testing) end"
     pt = s(:defn, :test, s(:args, :"**testing"),
-           s(:call, nil, :test_splat, s(:hash, s(:kwsplat, s(:lvar, :testing)))))
+           s(:call, nil, :test_splat, s(:bare_hash, s(:kwsplat, s(:lvar, :testing)))))
 
     assert_parse rb, pt
   end
@@ -4244,7 +4244,7 @@ module TestRubyParserShared22Plus
   end
 
   def test_call_args_assoc_quoted
-    pt = s(:call, nil, :x, s(:hash, s(:lit, :k), s(:lit, 42)))
+    pt = s(:call, nil, :x, s(:bare_hash, s(:lit, :k), s(:lit, 42)))
 
     rb = "x 'k':42"
     assert_parse rb, pt
@@ -4253,14 +4253,14 @@ module TestRubyParserShared22Plus
     assert_parse rb, pt
 
     rb = 'x "#{k}":42'
-    pt = s(:call, nil, :x, s(:hash, s(:dsym, "", s(:evstr, s(:call, nil, :k))), s(:lit, 42)))
+    pt = s(:call, nil, :x, s(:bare_hash, s(:dsym, "", s(:evstr, s(:call, nil, :k))), s(:lit, 42)))
 
     assert_parse rb, pt
   end
 
   def test_quoted_symbol_hash_arg
     rb = "puts 'a': {}"
-    pt = s(:call, nil, :puts, s(:hash, s(:lit, :a), s(:hash)))
+    pt = s(:call, nil, :puts, s(:bare_hash, s(:lit, :a), s(:hash)))
 
     assert_parse rb, pt
   end
