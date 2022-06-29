@@ -1324,6 +1324,8 @@ SharedPtr<Node> Parser::parse_hash_inner(LocalsHashmap &locals, Precedence prece
             break;
         if (current_token().type() == Token::Type::StarStar) // **kwsplat
             break;
+        if (current_token().type() == Token::Type::Ampersand) // &block
+            break;
         auto key = parse_expression(precedence, locals);
         hash->add_node(key);
         if (!key->is_symbol_key()) {
@@ -2332,6 +2334,9 @@ void Parser::parse_call_args(NodeWithArgs &node, LocalsHashmap &locals, bool bar
                 node.add_arg(arg);
             }
         }
+    }
+    if (current_token().type() == Token::Type::Ampersand) {
+        node.add_arg(parse_block_pass(locals));
     }
     if (bare && node.can_accept_a_block())
         m_call_depth.last()--;
