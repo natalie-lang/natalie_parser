@@ -1117,6 +1117,14 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('x = 10; x -= 1 while x.positive?')).must_equal s(:block, s(:lasgn, :x, s(:lit, 10)), s(:while, s(:call, s(:lvar, :x), :positive?), s(:lasgn, :x, s(:call, s(:lvar, :x), :-, s(:lit, 1))), true))
       end
 
+      it 'parses for' do
+        expect(parse('for foo in bar; end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo))
+        expect(parse('for foo in bar; 1; end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo), s(:lit, 1))
+        # FIXME: support do keyword
+        # expect(parse('for foo in bar do; end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo))
+        expect(parse('for a, b in c; end')).must_equal s(:for, s(:call, nil, :c), s(:masgn, s(:array, s(:lasgn, :a), s(:lasgn, :b))))
+      end
+
       it 'parses post-conditional if/unless' do
         expect(parse('true if true')).must_equal s(:if, s(:true), s(:true), nil)
         expect(parse('true unless true')).must_equal s(:if, s(:true), nil, s(:true))
