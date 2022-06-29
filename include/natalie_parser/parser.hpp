@@ -101,6 +101,7 @@ private:
     SharedPtr<Node> parse_encoding(LocalsHashmap &);
     SharedPtr<Node> parse_end_block(LocalsHashmap &);
     SharedPtr<Node> parse_file_constant(LocalsHashmap &);
+    SharedPtr<Node> parse_for(LocalsHashmap &);
     SharedPtr<Node> parse_forward_args(LocalsHashmap &);
     SharedPtr<Node> parse_group(LocalsHashmap &);
     SharedPtr<Node> parse_hash(LocalsHashmap &);

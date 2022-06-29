@@ -1248,6 +1248,22 @@ SharedPtr<Node> Parser::parse_file_constant(LocalsHashmap &) {
     return new StringNode { token, token.file() };
 }
 
+SharedPtr<Node> Parser::parse_for(LocalsHashmap &locals) {
+    auto token = current_token();
+    advance();
+    auto vars = parse_assignment_identifier(false, locals);
+    if (current_token().type() == Token::Type::Comma) {
+        vars = parse_multiple_assignment_expression(vars, locals);
+    }
+    expect(Token::Type::InKeyword, "for in");
+    advance();
+    auto expr = parse_expression(Precedence::LOWEST, locals);
+    auto body = parse_body(locals, Precedence::LOWEST);
+    expect(Token::Type::EndKeyword, "for end");
+    advance();
+    return new ForNode { token, expr, vars, body };
+}
+
 SharedPtr<Node> Parser::parse_forward_args(LocalsHashmap &locals) {
     auto token = current_token();
     if (!locals.get("..."))
@@ -2770,6 +2786,8 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
         return &Parser::parse_end_block;
     case Type::FILEKeyword:
         return &Parser::parse_file_constant;
+    case Type::ForKeyword:
+        return &Parser::parse_for;
     case Type::LParen:
         return &Parser::parse_group;
     case Type::LCurlyBrace:

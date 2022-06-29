@@ -43,6 +43,7 @@ public:
         False,
         Fixnum,
         Float,
+        For,
         ForwardArgs,
         Hash,
         HashPattern,

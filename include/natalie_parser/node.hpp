@@ -31,6 +31,7 @@
 #include "natalie_parser/node/false_node.hpp"
 #include "natalie_parser/node/fixnum_node.hpp"
 #include "natalie_parser/node/float_node.hpp"
+#include "natalie_parser/node/for_node.hpp"
 #include "natalie_parser/node/forward_args_node.hpp"
 #include "natalie_parser/node/hash_node.hpp"
 #include "natalie_parser/node/hash_pattern_node.hpp"
