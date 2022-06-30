@@ -264,6 +264,7 @@ Token Lexer::build_next_token() {
         case Token::Type::LParen:
         case Token::Type::Match:
         case Token::Type::Newline:
+        case Token::Type::WhenKeyword:
             return consume_regexp('/', '/');
         case Token::Type::DefKeyword:
             return Token { Token::Type::Slash, m_file, m_token_line, m_token_column, m_whitespace_precedes };

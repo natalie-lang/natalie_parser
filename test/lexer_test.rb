@@ -122,6 +122,12 @@ describe 'NatalieParser' do
         { type: :string, literal: "/\\*/\\n" }, # eliminates unneeded \\
         { type: :dregxend },
       ]
+      expect(tokenize('when / foo/')).must_equal [
+        { type: :when },
+        { type: :dregx },
+        { type: :string, literal: ' foo' },
+        { type: :dregxend }
+      ]
       expect(tokenize('/foo #{1+1} bar/')).must_equal [
         { type: :dregx },
         { type: :string, literal: 'foo ' },
