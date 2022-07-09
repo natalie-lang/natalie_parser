@@ -2749,6 +2749,9 @@ SharedPtr<Node> Parser::parse_while(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     SharedPtr<Node> condition = parse_expression(Precedence::LOWEST, locals);
+    if (condition->type() == Node::Type::Regexp) {
+        condition = new MatchNode { condition->token(), condition.static_cast_as<RegexpNode>() };
+    }
     next_expression();
     SharedPtr<BlockNode> body = parse_body(locals, Precedence::LOWEST);
     expect(Token::Type::EndKeyword, "while end");
