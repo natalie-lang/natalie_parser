@@ -2728,6 +2728,9 @@ SharedPtr<Node> Parser::parse_unless(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     SharedPtr<Node> condition = parse_expression(Precedence::LOWEST, locals);
+    if (condition->type() == Node::Type::Regexp) {
+        condition = new MatchNode { condition->token(), condition.static_cast_as<RegexpNode>() };
+    }
     next_expression();
     SharedPtr<Node> false_expr = parse_if_body(locals);
     SharedPtr<Node> true_expr;
