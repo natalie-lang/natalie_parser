@@ -3,6 +3,11 @@
 namespace NatalieParser {
 
 void MatchNode::transform(Creator *creator) const {
+    if (!m_arg) {
+        creator->set_type("match");
+        creator->append(m_regexp.ref());
+        return;
+    }
     if (m_regexp_on_left)
         creator->set_type("match2");
     else

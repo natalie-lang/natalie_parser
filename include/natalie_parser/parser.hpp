@@ -108,6 +108,7 @@ private:
     SharedPtr<Node> parse_hash_inner(LocalsHashmap &, Precedence, Token::Type, bool, SharedPtr<Node> = {});
     SharedPtr<Node> parse_identifier(LocalsHashmap &);
     SharedPtr<Node> parse_if(LocalsHashmap &);
+    SharedPtr<Node> parse_if_branch(LocalsHashmap &, bool);
     void parse_interpolated_body(LocalsHashmap &, InterpolatedNode &, Token::Type);
     SharedPtr<Node> parse_interpolated_regexp(LocalsHashmap &);
     int parse_regexp_options(String &);
