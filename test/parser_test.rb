@@ -494,6 +494,17 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse(%(%r"\\\'"))).must_equal s(:lit, /\'/) # %r"\'"
       end
 
+      it 'parses regexps with leading space preceeded by keywords' do
+        expect(parse("if / foo/; end")).must_equal s(:if, s(:match, s(:lit, / foo/)), nil, nil)
+        expect(parse("if false; elsif / foo/; end")).must_equal s(:if, s(:false), nil, s(:if, s(:lit, / foo/), nil, nil))
+        expect(parse("begin; 1; rescue / foo/; end")).must_equal s(:rescue, s(:lit, 1), s(:resbody, s(:array, s(:lit, / foo/)), nil))
+        expect(parse("return / foo/")).must_equal s(:return, s(:lit, / foo/))
+        expect(parse("unless / foo/; end")).must_equal s(:if, s(:match, s(:lit, / foo/)), nil, nil)
+        expect(parse("case; when / foo/; end")).must_equal s(:case, nil, s(:when, s(:array, s(:lit, / foo/)), nil), nil)
+        expect(parse("while / foo/; end")).must_equal s(:while, s(:match, s(:lit, / foo/)), nil, true)
+        expect(parse("until / foo/; end")).must_equal s(:until, s(:match, s(:lit, / foo/)), nil, true)
+      end
+
       it 'parses multiple expressions' do
         expect(parse("1 + 2\n3 + 4")).must_equal s(:block, s(:call, s(:lit, 1), :+, s(:lit, 2)), s(:call, s(:lit, 3), :+, s(:lit, 4)))
         expect(parse("1 + 2;'foo'")).must_equal s(:block, s(:call, s(:lit, 1), :+, s(:lit, 2)), s(:str, 'foo'))

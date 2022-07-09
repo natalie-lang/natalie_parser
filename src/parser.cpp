@@ -1363,9 +1363,16 @@ SharedPtr<Node> Parser::parse_identifier(LocalsHashmap &locals) {
 };
 
 SharedPtr<Node> Parser::parse_if(LocalsHashmap &locals) {
+    return parse_if_branch(locals, true);
+}
+
+SharedPtr<Node> Parser::parse_if_branch(LocalsHashmap &locals, bool parse_match_condition) {
     auto token = current_token();
     advance();
     SharedPtr<Node> condition = parse_expression(Precedence::LOWEST, locals);
+    if (parse_match_condition && condition->type() == Node::Type::Regexp) {
+        condition = new MatchNode { condition->token(), condition.static_cast_as<RegexpNode>() };
+    }
     if (current_token().type() == Token::Type::ThenKeyword) {
         advance(); // then
     } else {
@@ -1374,7 +1381,7 @@ SharedPtr<Node> Parser::parse_if(LocalsHashmap &locals) {
     SharedPtr<Node> true_expr = parse_if_body(locals);
     SharedPtr<Node> false_expr;
     if (current_token().is_elsif_keyword()) {
-        false_expr = parse_if(locals);
+        false_expr = parse_if_branch(locals, false);
         return new IfNode { current_token(), condition, true_expr, false_expr };
     } else {
         if (current_token().is_else_keyword()) {
@@ -2721,6 +2728,9 @@ SharedPtr<Node> Parser::parse_unless(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     SharedPtr<Node> condition = parse_expression(Precedence::LOWEST, locals);
+    if (condition->type() == Node::Type::Regexp) {
+        condition = new MatchNode { condition->token(), condition.static_cast_as<RegexpNode>() };
+    }
     next_expression();
     SharedPtr<Node> false_expr = parse_if_body(locals);
     SharedPtr<Node> true_expr;
@@ -2739,6 +2749,9 @@ SharedPtr<Node> Parser::parse_while(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     SharedPtr<Node> condition = parse_expression(Precedence::LOWEST, locals);
+    if (condition->type() == Node::Type::Regexp) {
+        condition = new MatchNode { condition->token(), condition.static_cast_as<RegexpNode>() };
+    }
     next_expression();
     SharedPtr<BlockNode> body = parse_body(locals, Precedence::LOWEST);
     expect(Token::Type::EndKeyword, "while end");

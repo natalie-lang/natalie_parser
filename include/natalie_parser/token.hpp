@@ -808,6 +808,22 @@ public:
         }
     }
 
+    bool can_precede_regexp_literal() const {
+        switch (m_type) {
+        case Type::ElsifKeyword:
+        case Type::IfKeyword:
+        case Type::RescueKeyword:
+        case Type::ReturnKeyword:
+        case Type::UnlessKeyword:
+        case Type::UntilKeyword:
+        case Type::WhenKeyword:
+        case Type::WhileKeyword:
+            return true;
+        default:
+            return false;
+        }
+    }
+
     bool can_precede_symbol_key() const {
         switch (m_type) {
         case Type::BareName:

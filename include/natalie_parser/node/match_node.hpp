@@ -13,6 +13,12 @@ using namespace TM;
 
 class MatchNode : public Node {
 public:
+    MatchNode(const Token &token, SharedPtr<RegexpNode> regexp)
+        : Node { token }
+        , m_regexp { regexp } {
+        assert(m_regexp);
+    }
+
     MatchNode(const Token &token, SharedPtr<RegexpNode> regexp, SharedPtr<Node> arg, bool regexp_on_left)
         : Node { token }
         , m_regexp { regexp }

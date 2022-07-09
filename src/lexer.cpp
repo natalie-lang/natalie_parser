@@ -270,7 +270,11 @@ Token Lexer::build_next_token() {
         default: {
             switch (current_char()) {
             case ' ':
-                return Token { Token::Type::Slash, m_file, m_token_line, m_token_column, m_whitespace_precedes };
+                if (m_last_token.is_keyword() && m_last_token.can_precede_regexp_literal()) {
+                    return consume_regexp('/', '/');
+                } else {
+                    return Token { Token::Type::Slash, m_file, m_token_line, m_token_column, m_whitespace_precedes };
+                }
             case '=':
                 advance();
                 return Token { Token::Type::SlashEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
