@@ -167,6 +167,17 @@ describe 'NatalieParser' do
       end
     end
 
+    it 'tokenizes regexps with leading space preceeded by keywords' do
+      %i[elsif if rescue return unless until when while].each do |keyword|
+        expect(tokenize("#{keyword} / foo/")).must_equal [
+          { type: keyword },
+          { type: :dregx },
+          { type: :string, literal: ' foo' },
+          { type: :dregxend }
+        ]
+      end
+    end
+
     it 'tokenizes operators' do
       operators = %w[
         +
