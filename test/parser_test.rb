@@ -1388,6 +1388,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("foo def bar\n x.y do; end\n end")).must_equal s(:call, nil, :foo, s(:defn, :bar, s(:args), s(:iter, s(:call, s(:call, nil, :x), :y), 0)))
         expect(parse("[1,\nfoo do; end,\n 3]")).must_equal s(:array, s(:lit, 1), s(:iter, s(:call, nil, :foo), 0), s(:lit, 3))
         expect(parse("foo(1,\nbar do; end,\n 3)")).must_equal s(:call, nil, :foo, s(:lit, 1), s(:iter, s(:call, nil, :bar), 0), s(:lit, 3))
+        expect(parse("foo do\nbar baz([\n])\nend\nfoo do\nend")).must_equal s(:block, s(:iter, s(:call, nil, :foo), 0, s(:call, nil, :bar, s(:call, nil, :baz, s(:array)))), s(:iter, s(:call, nil, :foo), 0))
+        expect(parse("foo do\nbar baz([\n[ 1, 2 ],\n])\nend\nfoo do\nend")).must_equal s(:block, s(:iter, s(:call, nil, :foo), 0, s(:call, nil, :bar, s(:call, nil, :baz, s(:array, s(:array, s(:lit, 1), s(:lit, 2)))))), s(:iter, s(:call, nil, :foo), 0))
         expect(-> { parse("foo :a { 1 }") }).must_raise SyntaxError
         expect(-> { parse("1 < 2 { 1 }") }).must_raise SyntaxError
         expect(-> { parse("foo 1 < 2 { 3 }") }).must_raise SyntaxError

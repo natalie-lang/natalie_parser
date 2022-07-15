@@ -354,11 +354,17 @@ SharedPtr<Node> Parser::parse_array(LocalsHashmap &locals) {
         return {};
     };
     auto ret = add_node();
-    if (ret) return ret;
+    if (ret) {
+        m_call_depth.pop();
+        return ret;
+    }
     while (current_token().is_comma()) {
         advance();
         ret = add_node();
-        if (ret) return ret;
+        if (ret) {
+            m_call_depth.pop();
+            return ret;
+        }
     }
     expect(Token::Type::RBracket, "array closing bracket");
     advance(); // ]
