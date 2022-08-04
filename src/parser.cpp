@@ -1064,7 +1064,16 @@ SharedPtr<Node> Parser::parse_def(LocalsHashmap &locals) {
 SharedPtr<Node> Parser::parse_defined(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    auto arg = parse_expression(Precedence::BARE_CALL_ARG, locals);
+    bool bare = true;
+    if (current_token().is_lparen()) {
+        advance();
+        bare = false;
+    }
+    auto arg = parse_expression(bare ? Precedence::BARE_CALL_ARG : Precedence::CALL_ARG, locals);
+    if (!bare) {
+        expect(Token::Type::RParen, "defined? closing paren");
+        advance();
+    }
     return new DefinedNode { token, arg };
 }
 

@@ -1654,6 +1654,7 @@ require_relative '../lib/natalie_parser/sexp'
       it 'parses defined?' do
         expect(parse('defined? foo')).must_equal s(:defined, s(:call, nil, :foo))
         expect(parse('defined?(:foo)')).must_equal s(:defined, s(:lit, :foo))
+        expect(parse('defined?(:foo) != "constant"')).must_equal s(:call, s(:defined, s(:lit, :foo)), :!=, s(:str, "constant"))
       end
 
       it 'parses logical and/or with block' do
