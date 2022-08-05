@@ -1341,30 +1341,35 @@ SharedPtr<Node> Parser::parse_hash(LocalsHashmap &locals) {
 SharedPtr<Node> Parser::parse_hash_inner(LocalsHashmap &locals, Precedence precedence, Token::Type closing_token_type, bool bare, SharedPtr<Node> first_key) {
     auto token = current_token();
     SharedPtr<HashNode> hash = new HashNode { token, bare };
+
+    auto add_value = [&](SharedPtr<Node> key) {
+        if (key->is_symbol_key()) {
+            hash->add_node(parse_expression(precedence, locals));
+        } else if (key->type() == Node::Type::KeywordSplat) {
+            // kwsplat already added
+        } else {
+            expect(Token::Type::HashRocket, "hash rocket");
+            advance(); // =>
+            hash->add_node(parse_expression(precedence, locals));
+        }
+    };
+
     if (!first_key)
         first_key = parse_expression(precedence, locals);
     hash->add_node(first_key);
-    if (!first_key->is_symbol_key()) {
-        expect(Token::Type::HashRocket, "hash rocket");
-        advance();
-    }
-    hash->add_node(parse_expression(precedence, locals));
+    add_value(first_key);
+
     while (current_token().is_comma()) {
         advance();
         if (current_token().type() == closing_token_type)
-            break;
-        if (current_token().type() == Token::Type::StarStar) // **kwsplat
             break;
         if (current_token().type() == Token::Type::Ampersand) // &block
             break;
         auto key = parse_expression(precedence, locals);
         hash->add_node(key);
-        if (!key->is_symbol_key()) {
-            expect(Token::Type::HashRocket, "hash rocket");
-            advance();
-        }
-        hash->add_node(parse_expression(precedence, locals));
+        add_value(key);
     }
+
     return hash.static_cast_as<Node>();
 }
 
@@ -1677,12 +1682,6 @@ SharedPtr<Node> Parser::parse_keyword_splat(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
     return new KeywordSplatNode { token, parse_expression(Precedence::SPLAT, locals) };
-}
-
-SharedPtr<Node> Parser::parse_keyword_splat_wrapped_in_hash(LocalsHashmap &locals) {
-    SharedPtr<HashNode> hash = new HashNode { current_token(), true };
-    hash->add_node(parse_keyword_splat(locals));
-    return hash.static_cast_as<Node>();
 }
 
 SharedPtr<String> Parser::parse_method_name(LocalsHashmap &) {
@@ -2353,7 +2352,7 @@ void Parser::parse_call_args(NodeWithArgs &node, LocalsHashmap &locals, bool bar
     if (bare && node.can_accept_a_block())
         m_call_depth.last()++;
     auto arg = parse_expression(bare ? Precedence::BARE_CALL_ARG : Precedence::CALL_ARG, locals);
-    if (current_token().is_hash_rocket() || arg->is_symbol_key()) {
+    if (current_token().is_hash_rocket() || arg->is_symbol_key() || arg->type() == Node::Type::KeywordSplat) {
         node.add_arg(parse_call_hash_args(locals, bare, closing_token_type, arg));
     } else {
         node.add_arg(arg);
@@ -2365,7 +2364,7 @@ void Parser::parse_call_args(NodeWithArgs &node, LocalsHashmap &locals, bool bar
                 break;
             }
             arg = parse_expression(bare ? Precedence::BARE_CALL_ARG : Precedence::CALL_ARG, locals);
-            if (current_token().is_hash_rocket() || arg->is_symbol_key()) {
+            if (current_token().is_hash_rocket() || arg->is_symbol_key() || arg->type() == Node::Type::KeywordSplat) {
                 node.add_arg(parse_call_hash_args(locals, bare, closing_token_type, arg));
                 break;
             } else {
@@ -2842,7 +2841,7 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
     case Type::InterpolatedSymbolBegin:
         return &Parser::parse_interpolated_symbol;
     case Type::StarStar:
-        return &Parser::parse_keyword_splat_wrapped_in_hash;
+        return &Parser::parse_keyword_splat;
     case Type::Bignum:
     case Type::Fixnum:
     case Type::Float:

@@ -1468,6 +1468,9 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('def foo(*args, **kwargs); end')).must_equal s(:defn, :foo, s(:args, :"*args", :"**kwargs"), s(:nil))
         expect(parse('def foo **kwargs; end')).must_equal s(:defn, :foo, s(:args, :'**kwargs'), s(:nil))
         expect(parse('foo(**kwargs)')).must_equal s(:call, nil, :foo, s(bare_hash_type, s(:kwsplat, s(:call, nil, :kwargs))))
+        expect(parse('foo(a, **kwargs)')).must_equal s(:call, nil, :foo, s(:call, nil, :a), s(bare_hash_type, s(:kwsplat, s(:call, nil, :kwargs))))
+        expect(parse('foo(**kwargs, a: 2)')).must_equal s(:call, nil, :foo, s(bare_hash_type, s(:kwsplat, s(:call, nil, :kwargs)), s(:lit, :a), s(:lit, 2)))
+        expect(parse('foo(a: 1, **kwargs, b: 2)')).must_equal s(:call, nil, :foo, s(bare_hash_type, s(:lit, :a), s(:lit, 1), s(:kwsplat, s(:call, nil, :kwargs)), s(:lit, :b), s(:lit, 2)))
         expect(parse('foo(a: :b, **kwargs)')).must_equal s(:call, nil, :foo, s(bare_hash_type, s(:lit, :a), s(:lit, :b), s(:kwsplat, s(:call, nil, :kwargs))))
         expect(-> { parse('foo { |nil| }') }).must_raise SyntaxError
         expect(-> { parse('foo { |*nil| }') }).must_raise SyntaxError
