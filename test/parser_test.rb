@@ -1434,6 +1434,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('super()')).must_equal s(:super)
         expect(parse('super 1')).must_equal s(:super, s(:lit, 1))
         expect(parse('super 1, 2')).must_equal s(:super, s(:lit, 1), s(:lit, 2))
+        expect(parse('super a: b')).must_equal s(:super, s(bare_hash_type, s(:lit, :a), s(:call, nil, :b)))
         expect(parse('super([1, 2])')).must_equal s(:super, s(:array, s(:lit, 1), s(:lit, 2)))
         expect(parse('super if true')).must_equal s(:if, s(:true), s(:zsuper), nil)
         expect(parse('foo { super }')).must_equal s(:iter, s(:call, nil, :foo), 0, s(:zsuper))

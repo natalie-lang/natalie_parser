@@ -787,6 +787,7 @@ describe 'NatalieParser' do
       expect(tokenize("{\nfoo:bar}")).must_include(type: :symbol_key, literal: :foo)
       expect(tokenize('Hash[foo:bar]')).must_include(type: :symbol_key, literal: :foo)
       expect(tokenize('Hash[foo: bar]')).must_include(type: :symbol_key, literal: :foo)
+      expect(tokenize('super foo:bar')).must_include(type: :symbol_key, literal: :foo)
     end
 
     it 'tokenizes local variables' do

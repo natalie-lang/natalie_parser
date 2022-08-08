@@ -834,6 +834,7 @@ public:
         case Type::LParen:
         case Type::Pipe:
         case Type::PipePipe:
+        case Type::SuperKeyword:
             return true;
         default:
             return false;
