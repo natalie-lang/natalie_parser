@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.1.0 (2022-08-12)
+
+- FEAT: Parse for loops
+- FIX: Fix bug parsing defined? with parens
+- FIX: Fix parsing of keyword splat next to other keyword args
+- FIX: Parse block pass after bare/implicit hash
+- FIX: Parse if statements with match conditions
+- FIX: Parse regexps with leading space preceeded by keywords
+- FIX: Parse symbol key after super keyword
+- FIX: Parse unless statements with match conditions
+- FIX: Parse while/until statements with match conditions
+- FIX: Reset block association level inside array
+
 ## 2.0.0 (2022-06-24)
 
 - FEAT: Differentiate between bare/implicit hash and explicit one
