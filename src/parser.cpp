@@ -1085,6 +1085,20 @@ void Parser::parse_def_args(Vector<SharedPtr<Node>> &args, LocalsHashmap &locals
     }
 }
 
+SharedPtr<Node> Parser::parse_arg_default_value(LocalsHashmap &locals) {
+    auto token = current_token();
+    if (token.is_bare_name() && peek_token().is_equal()) {
+        SharedPtr<ArgNode> arg = new ArgNode { token, token.literal_string() };
+        advance();
+        advance(); // =
+        arg->add_to_locals(locals);
+        arg->set_value(parse_arg_default_value(locals));
+        return arg.static_cast_as<Node>();
+    } else {
+        return parse_expression(Precedence::DEF_ARG, locals);
+    }
+}
+
 void Parser::parse_def_single_arg(Vector<SharedPtr<Node>> &args, LocalsHashmap &locals, ArgsContext context) {
     auto args_have_any_splat = [&]() { return !args.is_empty() && args.last()->type() == Node::Type::Arg && args.last().static_cast_as<ArgNode>()->splat_or_kwsplat(); };
     auto args_have_keyword = [&]() { return !args.is_empty() && args.last()->type() == Node::Type::KeywordArg; };
@@ -1105,7 +1119,7 @@ void Parser::parse_def_single_arg(Vector<SharedPtr<Node>> &args, LocalsHashmap &
             if (args_have_any_splat())
                 throw_error(token, "default value after splat");
             advance(); // =
-            arg->set_value(parse_expression(Precedence::DEF_ARG, locals));
+            arg->set_value(parse_arg_default_value(locals));
         }
         args.push(arg.static_cast_as<Node>());
         return;

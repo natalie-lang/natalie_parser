@@ -683,6 +683,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('def foo(a = nil, b = foo, c = FOO); end')).must_equal s(:defn, :foo, s(:args, s(:lasgn, :a, s(:nil)), s(:lasgn, :b, s(:call, nil, :foo)), s(:lasgn, :c, s(:const, :FOO))), s(:nil))
         expect(parse('bar def foo() end')).must_equal s(:call, nil, :bar, s(:defn, :foo, s(:args), s(:nil)))
         expect(parse('def (@foo = bar).===(obj); end')).must_equal s(:defs, s(:iasgn, :@foo, s(:call, nil, :bar)), :===, s(:args, :obj), s(:nil))
+        expect(parse('def foo(a=b=c={}); c; end')).must_equal s(:defn, :foo, s(:args, s(:lasgn, :a, s(:lasgn, :b, s(:lasgn, :c, s(:hash))))), s(:lvar, :c))
 
         # args in wrong order
         expect(-> { parse('def foo(a, *b, c = nil) end') }).must_raise SyntaxError
