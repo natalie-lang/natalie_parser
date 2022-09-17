@@ -97,6 +97,7 @@ private:
         Proc,
     };
     void parse_def_single_arg(Vector<SharedPtr<Node>> &, LocalsHashmap &, ArgsContext);
+    SharedPtr<Node> parse_arg_default_value(LocalsHashmap &);
 
     SharedPtr<Node> parse_encoding(LocalsHashmap &);
     SharedPtr<Node> parse_end_block(LocalsHashmap &);
