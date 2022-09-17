@@ -806,6 +806,7 @@ describe 'NatalieParser' do
     it 'tokenizes global variables' do
       expect(tokenize('$foo')).must_equal [{ type: :gvar, literal: :$foo }]
       expect(tokenize('$0')).must_equal [{ type: :gvar, literal: :$0 }]
+      expect(tokenize('$__a')).must_equal [{ type: :gvar, literal: :$__a }]
       %i[$? $! $= $~ $@ $` $' $+ $/ $\\ $; $< $> $$ $* $. $: $" $_ $,].each do |sym|
         expect(tokenize(sym.to_s)).must_equal [{ type: :gvar, literal: sym }]
       end

@@ -1157,7 +1157,6 @@ Token Lexer::consume_global_variable() {
     case '.':
     case ',':
     case ':':
-    case '_':
     case '~': {
         advance();
         SharedPtr<String> buf = new String("$");
