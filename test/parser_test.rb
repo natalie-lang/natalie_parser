@@ -1414,6 +1414,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('map(&:foo)')).must_equal s(:call, nil, :map, s(:block_pass, s(:lit, :foo)))
         expect(parse('map(&myblock)')).must_equal s(:call, nil, :map, s(:block_pass, s(:call, nil, :myblock)))
         expect(parse('map(&nil)')).must_equal s(:call, nil, :map, s(:block_pass, s(:nil)))
+        expect(parse('map(&5.method(:+))')).must_equal s(:call, nil, :map, s(:block_pass, s(:call, s(:lit, 5), :method, s(:lit, :+))))
       end
 
       it 'parses break, next, super, and yield' do

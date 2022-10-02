@@ -501,7 +501,7 @@ SharedPtr<Node> Parser::parse_beginless_range(LocalsHashmap &locals) {
 SharedPtr<Node> Parser::parse_block_pass(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    auto value = parse_expression(Precedence::UNARY_PLUS, locals);
+    auto value = parse_expression(Precedence::LOWEST, locals);
     return new BlockPassNode { token, value };
 }
 
