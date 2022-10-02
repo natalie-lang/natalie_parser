@@ -1277,6 +1277,12 @@ SharedPtr<Node> Parser::parse_file_constant(LocalsHashmap &) {
     return new StringNode { token, token.file() };
 }
 
+SharedPtr<Node> Parser::parse_line_constant(LocalsHashmap &) {
+    auto token = current_token();
+    advance();
+    return new FixnumNode { token, static_cast<long long>(token.line() + 1) };
+}
+
 SharedPtr<Node> Parser::parse_for(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
@@ -2838,6 +2844,8 @@ Parser::parse_null_fn Parser::null_denotation(Token::Type type) {
         return &Parser::parse_group;
     case Type::LCurlyBrace:
         return &Parser::parse_hash;
+    case Type::LINEKeyword:
+        return &Parser::parse_line_constant;
     case Type::BareName:
     case Type::ClassVariable:
     case Type::Constant:

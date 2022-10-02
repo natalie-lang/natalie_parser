@@ -1454,8 +1454,9 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('self')).must_equal s(:self)
       end
 
-      it 'parses __FILE__ and __dir__' do
+      it 'parses __FILE__, __LINE__ and __dir__' do
         expect(parse('__FILE__', 'foo/bar.rb')).must_equal s(:str, 'foo/bar.rb')
+        expect(parse('__LINE__')).must_equal s(:lit, 1)
         expect(parse('__dir__')).must_equal s(:call, nil, :__dir__)
       end
 
@@ -1554,7 +1555,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("case 1\nin (1...)\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:dot3, s(:lit, 1), nil), nil), nil)
         expect(parse("case 1\nin 1.. then 1\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:dot2, s(:lit, 1), nil), s(:lit, 1)), nil)
 
-        # variable 
+        # variable
         expect(parse("case 1\nin x\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lvar, :x), s(:lit, :a)), nil)
         expect(parse("case 1\nin x then :a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lvar, :x), s(:lit, :a)), nil)
 
@@ -1788,7 +1789,7 @@ require_relative '../lib/natalie_parser/sexp'
         {
           class: :class,
           def: :defn,
-          module: :module 
+          module: :module
         }.each do |keyword, sexp_type|
           doc = <<-END.gsub(/^\s+/, '')
             =begin
@@ -1829,7 +1830,7 @@ require_relative '../lib/natalie_parser/sexp'
         {
           class: :class,
           def: :defn,
-          module: :module 
+          module: :module
         }.each do |keyword, sexp_type|
           doc = "# embedded doc\n" \
                 "\n" \
