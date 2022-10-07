@@ -1158,6 +1158,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("class Foo < Bar; 3\n 4\n end")).must_equal s(:class, :Foo, s(:const, :Bar), s(:lit, 3), s(:lit, 4))
         expect(parse("class Foo < bar; 3\n 4\n end")).must_equal s(:class, :Foo, s(:call, nil, :bar), s(:lit, 3), s(:lit, 4))
         expect(parse('class Foo::Bar; end')).must_equal s(:class, s(:colon2, s(:const, :Foo), :Bar), nil)
+        expect(parse('class foo::Bar; end')).must_equal s(:class, s(:colon2, s(:call, nil, :foo), :Bar), nil)
         expect(parse('class ::Foo; end')).must_equal s(:class, s(:colon3, :Foo), nil)
       end
 
@@ -1173,6 +1174,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('module FooBar; 1; 2; end')).must_equal s(:module, :FooBar, s(:lit, 1), s(:lit, 2))
         expect_raise_with_message(-> { parse('module foo;end') }, SyntaxError, 'class/module name must be CONSTANT')
         expect(parse('module Foo::Bar; end')).must_equal s(:module, s(:colon2, s(:const, :Foo), :Bar))
+        expect(parse('module foo::Bar; end')).must_equal s(:module, s(:colon2, s(:call, nil, :foo), :Bar))
         expect(parse('module ::Foo; end')).must_equal s(:module, s(:colon3, :Foo))
       end
 
