@@ -80,11 +80,18 @@ protected:
     Token consume_nth_ref();
     long long consume_hex_number(int max_length = 0, bool allow_underscore = false);
     long long consume_octal_number(int max_length = 0, bool allow_underscore = false);
-    Token consume_double_quoted_string(char, char, Token::Type begin_type = Token::Type::InterpolatedStringBegin, Token::Type end_type = Token::Type::InterpolatedStringEnd);
+    Token consume_double_quoted_string(char, char, Token::Type begin_type, Token::Type end_type);
     Token consume_single_quoted_string(char, char);
     Token consume_quoted_array_without_interpolation(char start_char, char stop_char, Token::Type type);
     Token consume_quoted_array_with_interpolation(char start_char, char stop_char, Token::Type type);
     Token consume_regexp(char start_char, char stop_char);
+    Token consume_interpolated_string(char start_char, char stop_char);
+    Token consume_interpolated_shell(char start_char, char stop_char);
+    Token consume_percent_lower_w(char start_char, char stop_char);
+    Token consume_percent_upper_w(char start_char, char stop_char);
+    Token consume_percent_lower_i(char start_char, char stop_char);
+    Token consume_percent_upper_i(char start_char, char stop_char);
+    Token consume_percent_string(Token (Lexer::*consumer)(char start_char, char stop_char));
     SharedPtr<String> consume_non_whitespace();
 
     void utf32_codepoint_to_utf8(String &buf, long long codepoint);

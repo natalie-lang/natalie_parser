@@ -295,211 +295,42 @@ Token Lexer::build_next_token() {
             advance();
             return Token { Token::Type::PercentEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         case 'q':
-            switch (peek()) {
-            case '[':
-                advance(2);
-                return consume_single_quoted_string('[', ']');
-            case '{':
-                advance(2);
-                return consume_single_quoted_string('{', '}');
-            case '<':
-                advance(2);
-                return consume_single_quoted_string('<', '>');
-            case '(':
-                advance(2);
-                return consume_single_quoted_string('(', ')');
-            default: {
-                char c = peek();
-                if (char_can_be_string_or_regexp_delimiter(c)) {
-                    advance(2);
-                    return consume_single_quoted_string(c, c);
-                } else {
-                    return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };
-                }
-            }
-            }
+            return consume_percent_string(&Lexer::consume_single_quoted_string);
         case 'Q':
-            switch (peek()) {
-            case '[':
-                advance(2);
-                return consume_double_quoted_string('[', ']');
-            case '{':
-                advance(2);
-                return consume_double_quoted_string('{', '}');
-            case '<':
-                advance(2);
-                return consume_double_quoted_string('<', '>');
-            case '(':
-                advance(2);
-                return consume_double_quoted_string('(', ')');
-            default: {
-                char c = peek();
-                if (char_can_be_string_or_regexp_delimiter(c)) {
-                    advance(2);
-                    return consume_double_quoted_string(c, c);
-                } else {
-                    return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };
-                }
-            }
-            }
+            return consume_percent_string(&Lexer::consume_interpolated_string);
         case 'r':
-            switch (peek()) {
-            case '[':
-                advance(2);
-                return consume_regexp('[', ']');
-            case '{':
-                advance(2);
-                return consume_regexp('{', '}');
-            case '(':
-                advance(2);
-                return consume_regexp('(', ')');
-            case '<':
-                advance(2);
-                return consume_regexp('<', '>');
-            default: {
-                char c = peek();
-                if (char_can_be_string_or_regexp_delimiter(c)) {
-                    advance(2);
-                    return consume_regexp(c, c);
-                } else {
-                    return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };
-                }
-            }
-            }
+            return consume_percent_string(&Lexer::consume_regexp);
         case 'x':
-            switch (peek()) {
-            case '/': {
-                advance(2);
-                return consume_double_quoted_string('/', '/', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
-            }
-            case '[': {
-                advance(2);
-                return consume_double_quoted_string('[', ']', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
-            }
-            case '{': {
-                advance(2);
-                return consume_double_quoted_string('{', '}', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
-            }
-            case '(': {
-                advance(2);
-                return consume_double_quoted_string('(', ')', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
-            }
-            default:
-                return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };
-            }
+            return consume_percent_string(&Lexer::consume_interpolated_shell);
         case 'w':
-            switch (peek()) {
-            case '/':
-            case '|': {
-                char c = next();
-                advance();
-                return consume_quoted_array_without_interpolation(c, c, Token::Type::PercentLowerW);
-            }
-            case '[':
-                advance(2);
-                return consume_quoted_array_without_interpolation('[', ']', Token::Type::PercentLowerW);
-            case '{':
-                advance(2);
-                return consume_quoted_array_without_interpolation('{', '}', Token::Type::PercentLowerW);
-            case '<':
-                advance(2);
-                return consume_quoted_array_without_interpolation('<', '>', Token::Type::PercentLowerW);
-            case '(':
-                advance(2);
-                return consume_quoted_array_without_interpolation('(', ')', Token::Type::PercentLowerW);
-            default:
-                return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };
-            }
+            return consume_percent_string(&Lexer::consume_percent_lower_w);
         case 'W':
-            switch (peek()) {
-            case '/':
-            case '|': {
-                char c = next();
-                advance();
-                return consume_quoted_array_with_interpolation(0, c, Token::Type::PercentUpperW);
-            }
-            case '[':
-                advance(2);
-                return consume_quoted_array_with_interpolation('[', ']', Token::Type::PercentUpperW);
-            case '{':
-                advance(2);
-                return consume_quoted_array_with_interpolation('{', '}', Token::Type::PercentUpperW);
-            case '<':
-                advance(2);
-                return consume_quoted_array_with_interpolation('<', '>', Token::Type::PercentUpperW);
-            case '(':
-                advance(2);
-                return consume_quoted_array_with_interpolation('(', ')', Token::Type::PercentUpperW);
-            default:
-                return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };
-            }
+            return consume_percent_string(&Lexer::consume_percent_upper_w);
         case 'i':
-            switch (peek()) {
-            case '|':
-            case '/': {
-                char c = next();
-                advance();
-                return consume_quoted_array_without_interpolation(c, c, Token::Type::PercentLowerI);
-            }
-            case '[':
-                advance(2);
-                return consume_quoted_array_without_interpolation('[', ']', Token::Type::PercentLowerI);
-            case '{':
-                advance(2);
-                return consume_quoted_array_without_interpolation('{', '}', Token::Type::PercentLowerI);
-            case '<':
-                advance(2);
-                return consume_quoted_array_without_interpolation('<', '>', Token::Type::PercentLowerI);
-            case '(':
-                advance(2);
-                return consume_quoted_array_without_interpolation('(', ')', Token::Type::PercentLowerI);
-            default:
-                return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };
-            }
+            return consume_percent_string(&Lexer::consume_percent_lower_i);
         case 'I':
-            switch (peek()) {
-            case '|':
-            case '/': {
-                char c = next();
-                advance();
-                return consume_quoted_array_with_interpolation(0, c, Token::Type::PercentUpperI);
-            }
-            case '[':
-                advance(2);
-                return consume_quoted_array_with_interpolation('[', ']', Token::Type::PercentUpperI);
-            case '{':
-                advance(2);
-                return consume_quoted_array_with_interpolation('{', '}', Token::Type::PercentUpperI);
-            case '<':
-                advance(2);
-                return consume_quoted_array_with_interpolation('<', '>', Token::Type::PercentUpperI);
-            case '(':
-                advance(2);
-                return consume_quoted_array_with_interpolation('(', ')', Token::Type::PercentUpperI);
-            default:
-                return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };
-            }
+            return consume_percent_string(&Lexer::consume_percent_upper_i);
         case '[':
             advance();
-            return consume_double_quoted_string('[', ']');
+            return consume_interpolated_string('[', ']');
         case '{':
             advance();
-            return consume_double_quoted_string('{', '}');
+            return consume_interpolated_string('{', '}');
         case '<':
             advance();
-            return consume_double_quoted_string('<', '>');
+            return consume_interpolated_string('<', '>');
         case '(':
             if (m_last_token.type() == Token::Type::DefKeyword || m_last_token.type() == Token::Type::Dot) {
                 // It's a trap! This looks like a %(string) but it's a method def/call!
                 break;
             }
             advance();
-            return consume_double_quoted_string('(', ')');
+            return consume_interpolated_string('(', ')');
         default: {
             auto c = current_char();
             if (char_can_be_string_or_regexp_delimiter(c)) {
                 advance();
-                return consume_double_quoted_string(c, c);
+                return consume_interpolated_string(c, c);
             }
             break;
         }
@@ -793,13 +624,13 @@ Token Lexer::build_next_token() {
         return Token { Token::Type::Comma, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     case '"':
         advance();
-        return consume_double_quoted_string('"', '"');
+        return consume_interpolated_string('"', '"');
     case '\'':
         advance();
         return consume_single_quoted_string('\'', '\'');
     case '`': {
         advance();
-        return consume_double_quoted_string('`', '`', Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
+        return consume_interpolated_shell('`', '`');
     }
     case '#':
         if (token_is_first_on_line()) {
@@ -1721,6 +1552,55 @@ Token Lexer::consume_quoted_array_with_interpolation(char start_char, char stop_
 Token Lexer::consume_regexp(char start_char, char stop_char) {
     m_nested_lexer = new RegexpLexer { *this, start_char, stop_char };
     return Token { Token::Type::InterpolatedRegexpBegin, start_char, m_file, m_token_line, m_token_column, m_whitespace_precedes };
+}
+
+Token Lexer::consume_interpolated_string(char start_char, char stop_char) {
+    return consume_double_quoted_string(start_char, stop_char, Token::Type::InterpolatedStringBegin, Token::Type::InterpolatedStringEnd);
+}
+
+Token Lexer::consume_interpolated_shell(char start_char, char stop_char) {
+    return consume_double_quoted_string(start_char, stop_char, Token::Type::InterpolatedShellBegin, Token::Type::InterpolatedShellEnd);
+}
+
+Token Lexer::consume_percent_lower_w(char start_char, char stop_char) {
+    return consume_quoted_array_without_interpolation(start_char, stop_char, Token::Type::PercentLowerW);
+}
+
+Token Lexer::consume_percent_upper_w(char start_char, char stop_char) {
+    return consume_quoted_array_with_interpolation(start_char, stop_char, Token::Type::PercentUpperW);
+}
+
+Token Lexer::consume_percent_lower_i(char start_char, char stop_char) {
+    return consume_quoted_array_without_interpolation(start_char, stop_char, Token::Type::PercentLowerI);
+}
+
+Token Lexer::consume_percent_upper_i(char start_char, char stop_char) {
+    return consume_quoted_array_with_interpolation(start_char, stop_char, Token::Type::PercentUpperI);
+}
+
+Token Lexer::consume_percent_string(Token (Lexer::*consumer)(char start_char, char stop_char)) {
+    char c = peek();
+    switch (c) {
+    case '[':
+        advance(2);
+        return (this->*consumer)('[', ']');
+    case '{':
+        advance(2);
+        return (this->*consumer)('{', '}');
+    case '<':
+        advance(2);
+        return (this->*consumer)('<', '>');
+    case '(':
+        advance(2);
+        return (this->*consumer)('(', ')');
+    default:
+        if (char_can_be_string_or_regexp_delimiter(c)) {
+            advance(2);
+            return (this->*consumer)(c, c);
+        } else {
+            return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };
+        }
+    }
 }
 
 SharedPtr<String> Lexer::consume_non_whitespace() {
