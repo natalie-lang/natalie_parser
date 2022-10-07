@@ -1110,9 +1110,13 @@ require_relative '../lib/natalie_parser/sexp'
       it 'parses while/until' do
         expect(parse('while true; end')).must_equal s(:while, s(:true), nil, true)
         expect(parse('while true; 1; end')).must_equal s(:while, s(:true), s(:lit, 1), true)
+        expect(parse('while true do end')).must_equal s(:while, s(:true), nil, true)
+        expect(parse('while true do 1; end')).must_equal s(:while, s(:true), s(:lit, 1), true)
         expect(parse('while true; 1; 2; end')).must_equal s(:while, s(:true), s(:block, s(:lit, 1), s(:lit, 2)), true)
         expect(parse('until true; end')).must_equal s(:until, s(:true), nil, true)
         expect(parse('until true; 1; end')).must_equal s(:until, s(:true), s(:lit, 1), true)
+        expect(parse('until true do end')).must_equal s(:until, s(:true), nil, true)
+        expect(parse('until true do 1; end')).must_equal s(:until, s(:true), s(:lit, 1), true)
         expect(parse('until true; 1; 2; end')).must_equal s(:until, s(:true), s(:block, s(:lit, 1), s(:lit, 2)), true)
         expect(parse('foo while true')).must_equal s(:while, s(:true), s(:call, nil, :foo), true)
         expect(parse('begin; foo; end while true')).must_equal s(:while, s(:true), s(:call, nil, :foo), false)
@@ -1132,6 +1136,8 @@ require_relative '../lib/natalie_parser/sexp'
       it 'parses for' do
         expect(parse('for foo in bar; end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo))
         expect(parse('for foo in bar; 1; end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo), s(:lit, 1))
+        expect(parse('for foo in bar do end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo))
+        expect(parse('for foo in bar do 1; end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo), s(:lit, 1))
         # FIXME: support do keyword
         # expect(parse('for foo in bar do; end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo))
         expect(parse('for a, b in c; end')).must_equal s(:for, s(:call, nil, :c), s(:masgn, s(:array, s(:lasgn, :a), s(:lasgn, :b))))

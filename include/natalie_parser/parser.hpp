@@ -52,13 +52,13 @@ public:
     SharedPtr<Node> tree();
 
 private:
-    bool higher_precedence(Token &token, SharedPtr<Node> left, Precedence current_precedence);
+    bool higher_precedence(Token &token, SharedPtr<Node> left, Precedence current_precedence, bool allow_block);
 
     Precedence get_precedence(Token &token, SharedPtr<Node> left = {});
 
     bool is_first_arg_of_call_without_parens(SharedPtr<Node>, Token &);
 
-    SharedPtr<Node> parse_expression(Precedence, LocalsHashmap &);
+    SharedPtr<Node> parse_expression(Precedence, LocalsHashmap &, bool = true);
 
     SharedPtr<BlockNode> parse_body(LocalsHashmap &, Precedence, std::function<bool(Token::Type)>, bool = false);
     SharedPtr<BlockNode> parse_body(LocalsHashmap &, Precedence, Token::Type = Token::Type::EndKeyword, bool = false);

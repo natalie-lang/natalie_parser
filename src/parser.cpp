@@ -46,7 +46,7 @@ enum class Parser::Precedence {
     REF, // foo[1] / foo[1] = 2
 };
 
-bool Parser::higher_precedence(Token &token, SharedPtr<Node> left, Precedence current_precedence) {
+bool Parser::higher_precedence(Token &token, SharedPtr<Node> left, Precedence current_precedence, bool allow_block) {
     auto next_precedence = get_precedence(token, left);
 
     // printf("token %d, left %d, current_precedence %d, next_precedence %d\n", (int)token.type(), (int)left->type(), (int)current_precedence, (int)next_precedence);
@@ -83,7 +83,7 @@ bool Parser::higher_precedence(Token &token, SharedPtr<Node> left, Precedence cu
         // NOTE: `m_call_depth` should probably be called
         // `m_call_that_can_accept_a_block_depth`, but that's a bit long.
         //
-        return m_call_depth.last() == 0;
+        return allow_block && m_call_depth.last() == 0;
     }
 
     if (next_precedence == Precedence::ITER_CURLY)
@@ -198,7 +198,7 @@ Parser::Precedence Parser::get_precedence(Token &token, SharedPtr<Node> left) {
     return Precedence::LOWEST;
 }
 
-SharedPtr<Node> Parser::parse_expression(Parser::Precedence precedence, LocalsHashmap &locals) {
+SharedPtr<Node> Parser::parse_expression(Parser::Precedence precedence, LocalsHashmap &locals, bool allow_block) {
     skip_newlines();
 
     m_precedence_stack.push(precedence);
@@ -211,7 +211,7 @@ SharedPtr<Node> Parser::parse_expression(Parser::Precedence precedence, LocalsHa
 
     while (current_token().is_valid()) {
         auto token = current_token();
-        if (!higher_precedence(token, left, precedence))
+        if (!higher_precedence(token, left, precedence, allow_block))
             break;
         auto left_fn = left_denotation(token, left, precedence);
         if (!left_fn)
@@ -1296,7 +1296,10 @@ SharedPtr<Node> Parser::parse_for(LocalsHashmap &locals) {
     }
     expect(Token::Type::InKeyword, "for in");
     advance();
-    auto expr = parse_expression(Precedence::LOWEST, locals);
+    auto expr = parse_expression(Precedence::LOWEST, locals, false);
+    if (current_token().type() == Token::Type::DoKeyword) {
+        advance();
+    }
     auto body = parse_body(locals, Precedence::LOWEST);
     expect(Token::Type::EndKeyword, "for end");
     advance();
@@ -2786,11 +2789,15 @@ SharedPtr<Node> Parser::parse_unless(LocalsHashmap &locals) {
 SharedPtr<Node> Parser::parse_while(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    SharedPtr<Node> condition = parse_expression(Precedence::LOWEST, locals);
+    SharedPtr<Node> condition = parse_expression(Precedence::LOWEST, locals, false);
     if (condition->type() == Node::Type::Regexp) {
         condition = new MatchNode { condition->token(), condition.static_cast_as<RegexpNode>() };
     }
-    next_expression();
+    if (current_token().type() == Token::Type::DoKeyword) {
+        advance();
+    } else {
+        next_expression();
+    }
     SharedPtr<BlockNode> body = parse_body(locals, Precedence::LOWEST);
     expect(Token::Type::EndKeyword, "while end");
     advance();
