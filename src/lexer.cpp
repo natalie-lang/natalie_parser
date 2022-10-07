@@ -83,6 +83,11 @@ Token Lexer::next_token() {
     return build_next_token();
 }
 
+bool is_name_start_char(char c) {
+    if (!c) return false;
+    return (c >= 'a' && c <= 'z') || c == '_' || (unsigned int)c >= 128;
+}
+
 bool is_identifier_char(char c) {
     if (!c) return false;
     return isalnum(c) || c == '_' || (unsigned int)c >= 128;
@@ -795,7 +800,7 @@ Token Lexer::build_next_token() {
     }
 
     auto c = current_char();
-    if ((c >= 'a' && c <= 'z') || c == '_') {
+    if (is_name_start_char(c)) {
         return consume_bare_name();
     } else if (c >= 'A' && c <= 'Z') {
         return consume_constant();
