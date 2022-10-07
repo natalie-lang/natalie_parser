@@ -1194,5 +1194,10 @@ describe 'NatalieParser' do
         { type: :name, literal: :baz, line: 2, column: 4 },
       ]
     end
+
+    it 'tokenizes names starting with extended ASCII characters' do
+      expect(tokenize('ë')).must_equal [{:type=>:name, :literal=>:ë}]
+      expect(tokenize('öld')).must_equal [{:type=>:name, :literal=>:öld}]
+    end
   end
 end
