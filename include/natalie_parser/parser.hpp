@@ -49,16 +49,22 @@ public:
 
     enum class Precedence;
 
+    enum class IterAllow {
+        NONE,
+        CURLY_ONLY,
+        CURLY_AND_BLOCK,
+    };
+
     SharedPtr<Node> tree();
 
 private:
-    bool higher_precedence(Token &token, SharedPtr<Node> left, Precedence current_precedence, bool allow_block);
+    bool higher_precedence(Token &token, SharedPtr<Node> left, Precedence current_precedence, IterAllow iter_allow);
 
     Precedence get_precedence(Token &token, SharedPtr<Node> left = {});
 
     bool is_first_arg_of_call_without_parens(SharedPtr<Node>, Token &);
 
-    SharedPtr<Node> parse_expression(Precedence, LocalsHashmap &, bool = true);
+    SharedPtr<Node> parse_expression(Precedence, LocalsHashmap &, IterAllow = IterAllow::CURLY_AND_BLOCK);
 
     SharedPtr<BlockNode> parse_body(LocalsHashmap &, Precedence, std::function<bool(Token::Type)>, bool = false);
     SharedPtr<BlockNode> parse_body(LocalsHashmap &, Precedence, Token::Type = Token::Type::EndKeyword, bool = false);
@@ -96,8 +102,8 @@ private:
         Method,
         Proc,
     };
-    void parse_def_single_arg(Vector<SharedPtr<Node>> &, LocalsHashmap &, ArgsContext);
-    SharedPtr<Node> parse_arg_default_value(LocalsHashmap &);
+    void parse_def_single_arg(Vector<SharedPtr<Node>> &, LocalsHashmap &, ArgsContext, IterAllow = IterAllow::CURLY_AND_BLOCK);
+    SharedPtr<Node> parse_arg_default_value(LocalsHashmap &, IterAllow);
 
     SharedPtr<Node> parse_encoding(LocalsHashmap &);
     SharedPtr<Node> parse_end_block(LocalsHashmap &);
@@ -126,7 +132,7 @@ private:
     SharedPtr<Node> parse_nil(LocalsHashmap &);
     SharedPtr<Node> parse_not(LocalsHashmap &);
     SharedPtr<Node> parse_nth_ref(LocalsHashmap &);
-    void parse_proc_args(Vector<SharedPtr<Node>> &, LocalsHashmap &);
+    void parse_proc_args(Vector<SharedPtr<Node>> &, LocalsHashmap &, IterAllow);
     SharedPtr<Node> parse_redo(LocalsHashmap &);
     SharedPtr<Node> parse_retry(LocalsHashmap &);
     SharedPtr<Node> parse_return(LocalsHashmap &);
