@@ -743,6 +743,19 @@ public:
         }
     }
 
+    bool can_be_first_arg_of_def() const {
+        switch (m_type) {
+        case Token::Type::Ampersand:
+        case Token::Type::BareName:
+        case Token::Type::Star:
+        case Token::Type::StarStar:
+        case Token::Type::SymbolKey:
+            return true;
+        default:
+            return false;
+        }
+    }
+
     bool can_be_first_arg_of_implicit_call() const {
         switch (m_type) {
         case Token::Type::Arrow:
@@ -826,6 +839,7 @@ public:
 
     bool can_precede_symbol_key() const {
         switch (m_type) {
+        case Type::Arrow:
         case Type::BareName:
         case Type::Comma:
         case Type::Constant:
