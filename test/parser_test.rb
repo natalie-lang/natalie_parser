@@ -1391,6 +1391,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("-> &foo { 1 }")).must_equal s(:iter, s(:lambda), s(:args, :"&foo"), s(:lit, 1))
         expect(parse("-> foo = bar { 1 }")).must_equal s(:iter, s(:lambda), s(:args, s(:lasgn, :foo, s(:call, nil, :bar))), s(:lit, 1))
         expect(parse("-> foo: bar { 1 }")).must_equal s(:iter, s(:lambda), s(:args, s(:kwarg, :foo, s(:call, nil, :bar))), s(:lit, 1))
+        expect(parse("-> foo: { 1 }")).must_equal s(:iter, s(:lambda), s(:args, s(:kwarg, :foo)), s(:lit, 1))
         expect(parse("!foo { 1 }")).must_equal s(:call, s(:iter, s(:call, nil, :foo), 0, s(:lit, 1)), :!)
         expect(parse("yield foo(arg) do |bar| end")).must_equal s(:yield, s(:iter, s(:call, nil, :foo, s(:call, nil, :arg)), s(:args, :bar)))
         expect(parse("foo(yield(bar)) do |bar| end")).must_equal s(:iter, s(:call, nil, :foo, s(:yield, s(:call, nil, :bar))), s(:args, :bar))

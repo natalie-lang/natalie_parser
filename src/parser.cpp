@@ -1194,6 +1194,10 @@ void Parser::parse_def_single_arg(Vector<SharedPtr<Node>> &args, LocalsHashmap &
         case Token::Type::RParen:
         case Token::Type::Semicolon:
             break;
+        case Token::Type::LCurlyBrace:
+            if (iter_allow < IterAllow::CURLY_ONLY)
+                break;
+            [[fallthrough]];
         default:
             arg->set_value(parse_expression(Precedence::DEF_ARG, locals, iter_allow));
         }
