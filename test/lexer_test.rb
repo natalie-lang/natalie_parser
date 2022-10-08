@@ -977,6 +977,8 @@ describe 'NatalieParser' do
         { type: :'.' },
         { type: :name, literal: :nil? },
       ]
+      expect(tokenize("def `")).must_equal [{ type: :def }, { type: :operator, literal: :` }]
+      expect(tokenize("foo.`")).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :operator, literal: :` }]
     end
 
     it 'tokenizes method names using keywords' do
@@ -1005,7 +1007,7 @@ describe 'NatalieParser' do
     end
 
     it 'tokenizes method aliases' do
-      %i[+@ -@ ~@ !@].each do |op|
+      %i[+@ -@ ~@ !@ `].each do |op|
         expect(tokenize("alias #{op} foo")).must_equal [{:type=>:alias}, {:type=>:operator, :literal=>op}, {:type=>:name, :literal=>:foo}]
         expect(tokenize("alias foo #{op}")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>:foo}, {:type=>:operator, :literal=>op}]
       end
