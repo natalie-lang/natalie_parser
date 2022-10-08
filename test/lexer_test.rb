@@ -1004,6 +1004,43 @@ describe 'NatalieParser' do
       expect(tokenize("foo.%(x)")).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :% }, { type: :"(" }, { type: :name, literal: :x }, { type: :")" }]
     end
 
+    it 'tokenizes method aliases' do
+      %i[+@ -@ ~@ !@].each do |op|
+        expect(tokenize("alias #{op} foo")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>op}, {:type=>:name, :literal=>:foo}]
+        expect(tokenize("alias foo #{op}")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>:foo}, {:type=>:name, :literal=>op}]
+      end
+      %i(& ^ <=> == === > >= [] []= << < <= =~ - != !~ % | + >> / * ** ~).each do |op|
+        expect(tokenize("alias #{op} foo")).must_equal [{:type=>:alias}, {:type=>op}, {:type=>:name, :literal=>:foo}]
+        expect(tokenize("alias foo #{op}")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>:foo}, {:type=>op}]
+      end
+      %i[BEGIN END].each do |keyword|
+        expect(tokenize("alias #{keyword} foo")).must_equal [{:type=>:alias}, {:type=>:constant, :literal=>keyword}, {:type=>:name, :literal=>:foo}]
+        expect(tokenize("alias foo #{keyword}")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>:foo}, {:type=>:constant, :literal=>keyword}]
+      end
+      %i[
+        __ENCODING__ __LINE__ __FILE__
+        alias and
+        begin break
+        case class
+        defined? def do
+        else elsif end ensure
+        false for
+        if in
+        module
+        next nil not
+        or
+        redo rescue retry return
+        self super
+        then true
+        undef unless until
+        when while
+        yield
+      ].each do |keyword|
+        expect(tokenize("alias #{keyword} foo")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>keyword}, {:type=>:name, :literal=>:foo}]
+        expect(tokenize("alias foo #{keyword}")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>:foo}, {:type=>:name, :literal=>keyword}]
+      end
+    end
+
     it 'tokenizes argument forwarding shorthand' do
       expect(tokenize("...")).must_equal [{ type: :'...' }]
     end

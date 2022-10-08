@@ -138,5 +138,7 @@ protected:
     // then increment m_pair_depth
     char m_start_char { 0 };
     int m_pair_depth { 0 };
+
+    size_t m_remaining_method_names { 0 };
 };
 }

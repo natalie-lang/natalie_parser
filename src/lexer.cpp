@@ -80,7 +80,21 @@ Token Lexer::next_token() {
     m_whitespace_precedes = skip_whitespace();
     m_token_line = m_cursor_line;
     m_token_column = m_cursor_column;
-    return build_next_token();
+    Token token = build_next_token();
+    switch (token.type()) {
+    case Token::Type::AliasKeyword:
+        m_remaining_method_names = 2;
+        break;
+    case Token::Type::DefKeyword:
+    case Token::Type::Dot:
+        m_remaining_method_names = 1;
+        break;
+    default:
+        if (m_remaining_method_names > 0)
+            m_remaining_method_names--;
+        break;
+    }
+    return token;
 }
 
 bool is_name_start_char(char c) {
@@ -209,7 +223,7 @@ Token Lexer::build_next_token() {
             advance();
             return Token { Token::Type::PlusEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         case '@':
-            if (m_last_token.is_def_keyword() || m_last_token.is_dot()) {
+            if (m_remaining_method_names > 0) {
                 advance();
                 SharedPtr<String> lit = new String("+@");
                 return Token { Token::Type::BareName, lit, m_file, m_token_line, m_token_column, m_whitespace_precedes };
@@ -229,7 +243,7 @@ Token Lexer::build_next_token() {
             advance();
             return Token { Token::Type::MinusEqual, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         case '@':
-            if (m_last_token.is_def_keyword() || m_last_token.is_dot()) {
+            if (m_remaining_method_names > 0) {
                 advance();
                 SharedPtr<String> lit = new String("-@");
                 return Token { Token::Type::BareName, lit, m_file, m_token_line, m_token_column, m_whitespace_precedes };
@@ -261,6 +275,8 @@ Token Lexer::build_next_token() {
         advance();
         if (!m_last_token)
             return consume_regexp('/', '/');
+        if (m_remaining_method_names > 0)
+            return Token { Token::Type::Slash, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         switch (m_last_token.type()) {
         case Token::Type::Comma:
         case Token::Type::Doc:
@@ -270,8 +286,6 @@ Token Lexer::build_next_token() {
         case Token::Type::Match:
         case Token::Type::Newline:
             return consume_regexp('/', '/');
-        case Token::Type::DefKeyword:
-            return Token { Token::Type::Slash, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         default: {
             switch (current_char()) {
             case ' ':
@@ -325,7 +339,7 @@ Token Lexer::build_next_token() {
             advance();
             return consume_interpolated_string('<', '>');
         case '(':
-            if (m_last_token.type() == Token::Type::DefKeyword || m_last_token.type() == Token::Type::Dot) {
+            if (m_remaining_method_names > 0) {
                 // It's a trap! This looks like a %(string) but it's a method def/call!
                 break;
             }
@@ -351,7 +365,7 @@ Token Lexer::build_next_token() {
             advance();
             return Token { Token::Type::NotMatch, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         case '@':
-            if (m_last_token.is_def_keyword() || m_last_token.is_dot()) {
+            if (m_remaining_method_names > 0) {
                 advance();
                 SharedPtr<String> lit = new String("!@");
                 return Token { Token::Type::BareName, lit, m_file, m_token_line, m_token_column, m_whitespace_precedes };
@@ -489,7 +503,7 @@ Token Lexer::build_next_token() {
         advance();
         switch (current_char()) {
         case '@':
-            if (m_last_token.is_def_keyword() || m_last_token.is_dot()) {
+            if (m_remaining_method_names > 0) {
                 advance();
                 SharedPtr<String> lit = new String("~@");
                 return Token { Token::Type::BareName, lit, m_file, m_token_line, m_token_column, m_whitespace_precedes };
@@ -705,7 +719,7 @@ Token Lexer::build_next_token() {
             rewind(4);
     }
 
-    if (!m_last_token.is_dot() && !m_last_token.is_def_keyword()) {
+    if (m_remaining_method_names == 0) {
         if (match(12, "__ENCODING__"))
             keyword_token = { Token::Type::ENCODINGKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else if (match(8, "__LINE__"))
