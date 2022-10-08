@@ -80,6 +80,7 @@ VALUE token_to_ruby(NatalieParser::Token token, bool include_location_info) {
     case NatalieParser::Token::Type::Constant:
     case NatalieParser::Token::Type::GlobalVariable:
     case NatalieParser::Token::Type::InstanceVariable:
+    case NatalieParser::Token::Type::OperatorName:
     case NatalieParser::Token::Type::Symbol:
     case NatalieParser::Token::Type::SymbolKey: {
         auto literal = token.literal_string();
