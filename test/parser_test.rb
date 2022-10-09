@@ -1108,6 +1108,8 @@ require_relative '../lib/natalie_parser/sexp'
 
       it 'parses unless' do
         expect(parse('unless false; 1; else; 2; end')).must_equal s(:if, s(:false), s(:lit, 2), s(:lit, 1))
+        expect(parse("unless true then 'foo'\nend")).must_equal s(:if, s(:true), nil, s(:str, "foo"))
+        expect(parse("unless true then 'foo' else 'bar'\nend")).must_equal s(:if, s(:true), s(:str, "bar"), s(:str, "foo"))
       end
 
       it 'parses while/until' do
