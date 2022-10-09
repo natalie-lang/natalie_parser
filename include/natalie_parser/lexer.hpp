@@ -85,13 +85,14 @@ protected:
     Token consume_quoted_array_without_interpolation(char start_char, char stop_char, Token::Type type);
     Token consume_quoted_array_with_interpolation(char start_char, char stop_char, Token::Type type);
     Token consume_regexp(char start_char, char stop_char);
+    Token consume_percent_symbol(char start_char, char stop_char);
     Token consume_interpolated_string(char start_char, char stop_char);
     Token consume_interpolated_shell(char start_char, char stop_char);
     Token consume_percent_lower_w(char start_char, char stop_char);
     Token consume_percent_upper_w(char start_char, char stop_char);
     Token consume_percent_lower_i(char start_char, char stop_char);
     Token consume_percent_upper_i(char start_char, char stop_char);
-    Token consume_percent_string(Token (Lexer::*consumer)(char start_char, char stop_char));
+    Token consume_percent_string(Token (Lexer::*consumer)(char start_char, char stop_char), bool is_lettered = true);
     SharedPtr<String> consume_non_whitespace();
 
     void utf32_codepoint_to_utf8(String &buf, long long codepoint);
@@ -102,7 +103,7 @@ protected:
     bool token_is_first_on_line() const;
 
     bool char_can_be_string_or_regexp_delimiter(char c) const {
-        return (c >= '!' && c <= '/') || c == ':' || c == '?' || c == '@' || c == '~' || c == '|' || (c >= '^' && c <= '`');
+        return (c >= '!' && c <= '/') || c == ':' || c == ';' || c == '=' || c == '?' || c == '@' || c == '\\' || c == '~' || c == '|' || (c >= '^' && c <= '`');
     }
 
     SharedPtr<String> m_input;
