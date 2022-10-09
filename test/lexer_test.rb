@@ -160,9 +160,7 @@ describe 'NatalieParser' do
       expect(tokenize("%r(a/b/c)")).must_equal [ { type: :dregx }, { type: :string, literal: "a/b/c" }, { type: :dregxend } ]
       expect(tokenize("%r[a/b/c]")).must_equal [ { type: :dregx }, { type: :string, literal: "a/b/c" }, { type: :dregxend } ]
       expect(tokenize("%r<a/b/c>")).must_equal [ { type: :dregx }, { type: :string, literal: "a/b/c" }, { type: :dregxend } ]
-      # TODO: support %r=foo=
-      # TODO: support %r;foo;
-      %w[~ ` | ! @ # $ % ^ & * , . ? : ' " - _ +].each do |sym|
+      %w[~ ` | ! @ # $ % ^ & * , . ? : ' " - _ + \\ ; =].each do |sym|
         expect(tokenize("%r#{sym}a/b/c#{sym}")).must_equal [ { type: :dregx }, { type: :string, literal: "a/b/c" }, { type: :dregxend } ]
       end
     end
@@ -444,10 +442,19 @@ describe 'NatalieParser' do
       ]
 
       # different delimiters
-      expect(tokenize('%q(foo)')).must_equal [{ type: :string, literal: 'foo' }]
-      expect(tokenize('%q[foo]')).must_equal [{ type: :string, literal: 'foo' }]
-      expect(tokenize('%q{foo}')).must_equal [{ type: :string, literal: 'foo' }]
-      expect(tokenize('%q<foo>')).must_equal [{ type: :string, literal: 'foo' }]
+      [
+        ['q', { type: :string, literal: 'foo' }],
+        ['s', { type: :symbol, literal: :foo }],
+      ].each do |(char, token)|
+        expect(tokenize("%#{char}(foo)")).must_equal [token]
+        expect(tokenize("%#{char}[foo]")).must_equal [token]
+        expect(tokenize("%#{char}{foo}")).must_equal [token]
+        expect(tokenize("%#{char}<foo>")).must_equal [token]
+        %w[~ ` | / ! @ # $ % ^ & * , . ? : ' " - _ + \\ ; =].each do |sym|
+          expect(tokenize("%#{char}#{sym}foo#{sym}")).must_equal [token]
+        end
+      end
+
       expect(tokenize('%Q[foo [#{bar}] baz]')).must_equal [
         { type: :dstr },
         { type: :string, literal: 'foo [' },
@@ -457,11 +464,6 @@ describe 'NatalieParser' do
         { type: :string, literal: '] baz' },
         { type: :dstrend },
       ]
-      # TODO: support %q=foo=
-      # TODO: support %q;foo;
-      %w[~ ` | / ! @ # $ % ^ & * , . ? : ' " - _ +].each do |sym|
-        expect(tokenize("%q#{sym}foo#{sym}")).must_equal [{ type: :string, literal: 'foo' }]
-      end
 
       [
         ['', :dstr, :dstrend],
@@ -475,8 +477,7 @@ describe 'NatalieParser' do
         expect(tokenize("%#{char}{foo}")).must_equal [{ type: start }, { type: :string, literal: 'foo' }, { type: stop }]
         expect(tokenize("%#{char}<foo>")).must_equal [{ type: start }, { type: :string, literal: 'foo' }, { type: stop }]
         # TODO: support %=foo=
-        # TODO: support %;foo;
-        %w[~ ` | / ! @ # $ % ^ & * , . ? : ' " - _ +].each do |sym|
+        %w[~ ` | / ! @ # $ % ^ & * , . ? : ' " - _ + \\ ;].each do |sym|
           expect(tokenize("%#{char}#{sym}foo#{sym}")).must_equal [{ type: start }, { type: :string, literal: 'foo' }, { type: stop }]
         end
       end

@@ -319,6 +319,8 @@ Token Lexer::build_next_token() {
             return consume_percent_string(&Lexer::consume_interpolated_string);
         case 'r':
             return consume_percent_string(&Lexer::consume_regexp);
+        case 's':
+            return consume_percent_string(&Lexer::consume_percent_symbol);
         case 'x':
             return consume_percent_string(&Lexer::consume_interpolated_shell);
         case 'w':
@@ -329,32 +331,9 @@ Token Lexer::build_next_token() {
             return consume_percent_string(&Lexer::consume_percent_lower_i);
         case 'I':
             return consume_percent_string(&Lexer::consume_percent_upper_i);
-        case '[':
-            advance();
-            return consume_interpolated_string('[', ']');
-        case '{':
-            advance();
-            return consume_interpolated_string('{', '}');
-        case '<':
-            advance();
-            return consume_interpolated_string('<', '>');
-        case '(':
-            if (m_remaining_method_names > 0) {
-                // It's a trap! This looks like a %(string) but it's a method def/call!
-                break;
-            }
-            advance();
-            return consume_interpolated_string('(', ')');
-        default: {
-            auto c = current_char();
-            if (char_can_be_string_or_regexp_delimiter(c)) {
-                advance();
-                return consume_interpolated_string(c, c);
-            }
-            break;
+        default:
+            return consume_percent_string(&Lexer::consume_interpolated_string, false);
         }
-        }
-        return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };
     case '!':
         advance();
         switch (current_char()) {
@@ -1531,7 +1510,7 @@ Token Lexer::consume_single_quoted_string(char start_char, char stop_char) {
     SharedPtr<String> buf = new String("");
     char c = current_char();
     while (c) {
-        if (c == '\\') {
+        if (c == '\\' && stop_char != '\\') {
             c = next();
             if (c == stop_char || c == '\\') {
                 buf->append_char(c);
@@ -1578,6 +1557,12 @@ Token Lexer::consume_regexp(char start_char, char stop_char) {
     return Token { Token::Type::InterpolatedRegexpBegin, start_char, m_file, m_token_line, m_token_column, m_whitespace_precedes };
 }
 
+Token Lexer::consume_percent_symbol(char start_char, char stop_char) {
+    Token token = consume_single_quoted_string(start_char, stop_char);
+    token.set_type(Token::Type::Symbol);
+    return token;
+}
+
 Token Lexer::consume_interpolated_string(char start_char, char stop_char) {
     return consume_double_quoted_string(start_char, stop_char, Token::Type::InterpolatedStringBegin, Token::Type::InterpolatedStringEnd);
 }
@@ -1602,24 +1587,28 @@ Token Lexer::consume_percent_upper_i(char start_char, char stop_char) {
     return consume_quoted_array_with_interpolation(start_char, stop_char, Token::Type::PercentUpperI);
 }
 
-Token Lexer::consume_percent_string(Token (Lexer::*consumer)(char start_char, char stop_char)) {
-    char c = peek();
+Token Lexer::consume_percent_string(Token (Lexer::*consumer)(char start_char, char stop_char), bool is_lettered) {
+    if (m_remaining_method_names > 0) {
+        return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };
+    }
+    char c = is_lettered ? peek() : current_char();
+    size_t bytes = is_lettered ? 2 : 1;
     switch (c) {
     case '[':
-        advance(2);
+        advance(bytes);
         return (this->*consumer)('[', ']');
     case '{':
-        advance(2);
+        advance(bytes);
         return (this->*consumer)('{', '}');
     case '<':
-        advance(2);
+        advance(bytes);
         return (this->*consumer)('<', '>');
     case '(':
-        advance(2);
+        advance(bytes);
         return (this->*consumer)('(', ')');
     default:
         if (char_can_be_string_or_regexp_delimiter(c)) {
-            advance(2);
+            advance(bytes);
             return (this->*consumer)(c, c);
         } else {
             return Token { Token::Type::Percent, m_file, m_token_line, m_token_column, m_whitespace_precedes };

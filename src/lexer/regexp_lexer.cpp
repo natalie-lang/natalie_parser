@@ -38,7 +38,7 @@ Token RegexpLexer::build_next_token() {
 Token RegexpLexer::consume_regexp() {
     SharedPtr<String> buf = new String;
     while (auto c = current_char()) {
-        if (c == '\\') {
+        if (c == '\\' && m_stop_char != '\\') {
             c = next();
             switch (c) {
             case '/':

@@ -38,7 +38,7 @@ Token WordArrayLexer::build_next_token() {
 Token WordArrayLexer::consume_array() {
     m_buffer = new String;
     while (auto c = current_char()) {
-        if (c == '\\') {
+        if (c == '\\' && m_stop_char != '\\') {
             c = next();
             advance();
             if (c == ' ') {

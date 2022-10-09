@@ -22,7 +22,7 @@ Token InterpolatedStringLexer::build_next_token() {
 Token InterpolatedStringLexer::consume_string() {
     SharedPtr<String> buf = new String;
     while (auto c = current_char()) {
-        if (c == '\\') {
+        if (c == '\\' && m_stop_char != '\\') {
             advance(); // backslash
             auto result = consume_escaped_byte(*buf);
             if (!result.first)
