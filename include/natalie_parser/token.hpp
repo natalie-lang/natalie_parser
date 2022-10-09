@@ -816,6 +816,7 @@ public:
         switch (m_type) {
         case Token::Type::Equal:
         case Token::Type::LBracket:
+        case Token::Type::LParen:
             return true;
         default:
             if (is_operator())
