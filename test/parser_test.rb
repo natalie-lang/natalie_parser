@@ -1722,6 +1722,7 @@ require_relative '../lib/natalie_parser/sexp'
           foo
         END
         expect(parse(doc2)).must_equal s(:call, nil, :foo, s(:lit, 1), s(:str, " 1\n2\n"), s(:lit, 2))
+        expect(parse("foo(<<FOO)\nFOO")).must_equal s(:call, nil, :foo, s(:str, ""))
 
         # interpolation
         doc3 = <<~'END'
