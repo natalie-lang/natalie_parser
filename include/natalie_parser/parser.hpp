@@ -39,6 +39,7 @@ public:
         , m_file { file } {
         m_tokens = Lexer { m_code, m_file }.tokens();
         m_call_depth.push(0);
+        m_iter_allow_stack.push(IterAllow::CURLY_AND_BLOCK);
     }
 
     ~Parser() {
@@ -58,13 +59,13 @@ public:
     SharedPtr<Node> tree();
 
 private:
-    bool higher_precedence(Token &token, SharedPtr<Node> left, Precedence current_precedence, IterAllow iter_allow);
+    bool higher_precedence(Token &token, SharedPtr<Node> left, Precedence current_precedence);
 
     Precedence get_precedence(Token &token, SharedPtr<Node> left = {});
 
     bool is_first_arg_of_call_without_parens(SharedPtr<Node>, Token &);
 
-    SharedPtr<Node> parse_expression(Precedence, LocalsHashmap &, IterAllow = IterAllow::CURLY_AND_BLOCK);
+    SharedPtr<Node> parse_expression(Precedence, LocalsHashmap &);
 
     SharedPtr<BlockNode> parse_body(LocalsHashmap &, Precedence, std::function<bool(Token::Type)>, bool = false);
     SharedPtr<BlockNode> parse_body(LocalsHashmap &, Precedence, Token::Type = Token::Type::EndKeyword, bool = false);
@@ -102,8 +103,8 @@ private:
         Method,
         Proc,
     };
-    void parse_def_single_arg(Vector<SharedPtr<Node>> &, LocalsHashmap &, ArgsContext, IterAllow = IterAllow::CURLY_AND_BLOCK);
-    SharedPtr<Node> parse_arg_default_value(LocalsHashmap &, IterAllow);
+    void parse_def_single_arg(Vector<SharedPtr<Node>> &, LocalsHashmap &, ArgsContext);
+    SharedPtr<Node> parse_arg_default_value(LocalsHashmap &);
 
     SharedPtr<Node> parse_encoding(LocalsHashmap &);
     SharedPtr<Node> parse_end_block(LocalsHashmap &);
@@ -132,7 +133,7 @@ private:
     SharedPtr<Node> parse_nil(LocalsHashmap &);
     SharedPtr<Node> parse_not(LocalsHashmap &);
     SharedPtr<Node> parse_nth_ref(LocalsHashmap &);
-    void parse_proc_args(Vector<SharedPtr<Node>> &, LocalsHashmap &, IterAllow);
+    void parse_proc_args(Vector<SharedPtr<Node>> &, LocalsHashmap &);
     SharedPtr<Node> parse_redo(LocalsHashmap &);
     SharedPtr<Node> parse_retry(LocalsHashmap &);
     SharedPtr<Node> parse_return(LocalsHashmap &);
@@ -237,5 +238,6 @@ private:
 
     Vector<Precedence> m_precedence_stack {};
     Vector<unsigned int> m_call_depth {};
+    Vector<IterAllow> m_iter_allow_stack {};
 };
 }

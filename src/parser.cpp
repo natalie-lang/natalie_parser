@@ -46,7 +46,7 @@ enum class Parser::Precedence {
     REF, // foo[1] / foo[1] = 2
 };
 
-bool Parser::higher_precedence(Token &token, SharedPtr<Node> left, Precedence current_precedence, IterAllow iter_allow) {
+bool Parser::higher_precedence(Token &token, SharedPtr<Node> left, Precedence current_precedence) {
     auto next_precedence = get_precedence(token, left);
 
     // printf("token %d, left %d, current_precedence %d, next_precedence %d\n", (int)token.type(), (int)left->type(), (int)current_precedence, (int)next_precedence);
@@ -83,11 +83,11 @@ bool Parser::higher_precedence(Token &token, SharedPtr<Node> left, Precedence cu
         // NOTE: `m_call_depth` should probably be called
         // `m_call_that_can_accept_a_block_depth`, but that's a bit long.
         //
-        return iter_allow == IterAllow::CURLY_AND_BLOCK && m_call_depth.last() == 0;
+        return m_iter_allow_stack.last() == IterAllow::CURLY_AND_BLOCK && m_call_depth.last() == 0;
     }
 
     if (next_precedence == Precedence::ITER_CURLY)
-        return iter_allow >= IterAllow::CURLY_ONLY && left->is_callable();
+        return m_iter_allow_stack.last() >= IterAllow::CURLY_ONLY && left->is_callable();
 
     return next_precedence > current_precedence;
 }
@@ -198,7 +198,7 @@ Parser::Precedence Parser::get_precedence(Token &token, SharedPtr<Node> left) {
     return Precedence::LOWEST;
 }
 
-SharedPtr<Node> Parser::parse_expression(Parser::Precedence precedence, LocalsHashmap &locals, IterAllow iter_allow) {
+SharedPtr<Node> Parser::parse_expression(Parser::Precedence precedence, LocalsHashmap &locals) {
     skip_newlines();
 
     m_precedence_stack.push(precedence);
@@ -211,7 +211,7 @@ SharedPtr<Node> Parser::parse_expression(Parser::Precedence precedence, LocalsHa
 
     while (current_token().is_valid()) {
         auto token = current_token();
-        if (!higher_precedence(token, left, precedence, iter_allow))
+        if (!higher_precedence(token, left, precedence))
             break;
         auto left_fn = left_denotation(token, left, precedence);
         if (!left_fn)
@@ -1092,21 +1092,21 @@ void Parser::parse_def_args(Vector<SharedPtr<Node>> &args, LocalsHashmap &locals
     }
 }
 
-SharedPtr<Node> Parser::parse_arg_default_value(LocalsHashmap &locals, IterAllow iter_allow) {
+SharedPtr<Node> Parser::parse_arg_default_value(LocalsHashmap &locals) {
     auto token = current_token();
     if (token.is_bare_name() && peek_token().is_equal()) {
         SharedPtr<ArgNode> arg = new ArgNode { token, token.literal_string() };
         advance();
         advance(); // =
         arg->add_to_locals(locals);
-        arg->set_value(parse_arg_default_value(locals, iter_allow));
+        arg->set_value(parse_arg_default_value(locals));
         return arg.static_cast_as<Node>();
     } else {
-        return parse_expression(Precedence::DEF_ARG, locals, iter_allow);
+        return parse_expression(Precedence::DEF_ARG, locals);
     }
 }
 
-void Parser::parse_def_single_arg(Vector<SharedPtr<Node>> &args, LocalsHashmap &locals, ArgsContext context, IterAllow iter_allow) {
+void Parser::parse_def_single_arg(Vector<SharedPtr<Node>> &args, LocalsHashmap &locals, ArgsContext context) {
     auto args_have_any_splat = [&]() { return !args.is_empty() && args.last()->type() == Node::Type::Arg && args.last().static_cast_as<ArgNode>()->splat_or_kwsplat(); };
     auto args_have_keyword = [&]() { return !args.is_empty() && args.last()->type() == Node::Type::KeywordArg; };
 
@@ -1126,7 +1126,7 @@ void Parser::parse_def_single_arg(Vector<SharedPtr<Node>> &args, LocalsHashmap &
             if (args_have_any_splat())
                 throw_error(token, "default value after splat");
             advance(); // =
-            arg->set_value(parse_arg_default_value(locals, iter_allow));
+            arg->set_value(parse_arg_default_value(locals));
         }
         args.push(arg.static_cast_as<Node>());
         return;
@@ -1198,11 +1198,11 @@ void Parser::parse_def_single_arg(Vector<SharedPtr<Node>> &args, LocalsHashmap &
         case Token::Type::Semicolon:
             break;
         case Token::Type::LCurlyBrace:
-            if (iter_allow < IterAllow::CURLY_ONLY)
+            if (m_iter_allow_stack.last() < IterAllow::CURLY_ONLY)
                 break;
             [[fallthrough]];
         default:
-            arg->set_value(parse_expression(Precedence::DEF_ARG, locals, iter_allow));
+            arg->set_value(parse_expression(Precedence::DEF_ARG, locals));
         }
         arg->add_to_locals(locals);
         args.push(arg.static_cast_as<Node>());
@@ -1303,7 +1303,9 @@ SharedPtr<Node> Parser::parse_for(LocalsHashmap &locals) {
     }
     expect(Token::Type::InKeyword, "for in");
     advance();
-    auto expr = parse_expression(Precedence::LOWEST, locals, IterAllow::CURLY_ONLY);
+    m_iter_allow_stack.push(IterAllow::CURLY_ONLY);
+    auto expr = parse_expression(Precedence::LOWEST, locals);
+    m_iter_allow_stack.pop();
     if (current_token().type() == Token::Type::DoKeyword) {
         advance();
     }
@@ -1801,15 +1803,15 @@ SharedPtr<Node> Parser::parse_nth_ref(LocalsHashmap &) {
     return new NthRefNode { token, token.get_fixnum() };
 }
 
-void Parser::parse_proc_args(Vector<SharedPtr<Node>> &args, LocalsHashmap &locals, IterAllow iter_allow) {
+void Parser::parse_proc_args(Vector<SharedPtr<Node>> &args, LocalsHashmap &locals) {
     if (current_token().is_semicolon()) {
         parse_shadow_variables_in_args(args, locals);
         return;
     }
-    parse_def_single_arg(args, locals, ArgsContext::Proc, iter_allow);
+    parse_def_single_arg(args, locals, ArgsContext::Proc);
     while (current_token().is_comma()) {
         advance();
-        parse_def_single_arg(args, locals, ArgsContext::Proc, iter_allow);
+        parse_def_single_arg(args, locals, ArgsContext::Proc);
     }
     if (current_token().is_semicolon()) {
         parse_shadow_variables_in_args(args, locals);
@@ -1922,13 +1924,17 @@ SharedPtr<Node> Parser::parse_stabby_proc(LocalsHashmap &locals) {
         if (current_token().is_rparen()) {
             advance(); // )
         } else {
-            parse_proc_args(args, locals, IterAllow::CURLY_AND_BLOCK);
+            m_iter_allow_stack.push(IterAllow::CURLY_AND_BLOCK);
+            parse_proc_args(args, locals);
+            m_iter_allow_stack.pop();
             expect(Token::Type::RParen, "proc args closing paren");
             advance(); // )
         }
     } else if (current_token().can_be_first_arg_of_def()) {
         has_args = true;
-        parse_proc_args(args, locals, IterAllow::NONE);
+        m_iter_allow_stack.push(IterAllow::NONE);
+        parse_proc_args(args, locals);
+        m_iter_allow_stack.pop();
     }
     if (current_token().type() != Token::Type::DoKeyword && current_token().type() != Token::Type::LCurlyBrace)
         throw_unexpected("block");
@@ -2803,7 +2809,9 @@ SharedPtr<Node> Parser::parse_unless(LocalsHashmap &locals) {
 SharedPtr<Node> Parser::parse_while(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    SharedPtr<Node> condition = parse_expression(Precedence::LOWEST, locals, IterAllow::CURLY_ONLY);
+    m_iter_allow_stack.push(IterAllow::CURLY_ONLY);
+    SharedPtr<Node> condition = parse_expression(Precedence::LOWEST, locals);
+    m_iter_allow_stack.pop();
     if (condition->type() == Node::Type::Regexp) {
         condition = new MatchNode { condition->token(), condition.static_cast_as<RegexpNode>() };
     }
