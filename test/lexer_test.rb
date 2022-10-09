@@ -977,6 +977,8 @@ describe 'NatalieParser' do
         { type: :'.' },
         { type: :name, literal: :nil? },
       ]
+      expect(tokenize("def `")).must_equal [{ type: :def }, { type: :operator, literal: :` }]
+      expect(tokenize("foo.`")).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :operator, literal: :` }]
     end
 
     it 'tokenizes method names using keywords' do
@@ -995,19 +997,19 @@ describe 'NatalieParser' do
       %w[+ - ~ !].each do |op|
         expect(tokenize("foo #{op}@bar")).must_equal [{ type: :name, literal: :foo }, { type: op.to_sym }, { type: :ivar, literal: :@bar }]
         expect(tokenize("foo #{op} @bar")).must_equal [{ type: :name, literal: :foo }, { type: op.to_sym }, { type: :ivar, literal: :@bar }]
-        expect(tokenize("def #{op}@")).must_equal [{ type: :def }, { type: :name, literal: :"#{op}@" }]
-        expect(tokenize("def self.#{op}@")).must_equal [{ type: :def }, { type: :self }, { type: :'.' }, { type: :name, literal: :"#{op}@" }]
-        expect(tokenize("foo.#{op}@")).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :name, literal: :"#{op}@" }]
-        expect(tokenize("foo.#{op}@bar")).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :name, literal: :"#{op}@" }, { type: :name, literal: :bar }]
+        expect(tokenize("def #{op}@")).must_equal [{ type: :def }, { type: :operator, literal: :"#{op}@" }]
+        expect(tokenize("def self.#{op}@")).must_equal [{ type: :def }, { type: :self }, { type: :'.' }, { type: :operator, literal: :"#{op}@" }]
+        expect(tokenize("foo.#{op}@")).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :operator, literal: :"#{op}@" }]
+        expect(tokenize("foo.#{op}@bar")).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :operator, literal: :"#{op}@" }, { type: :name, literal: :bar }]
         expect(tokenize("foo.#{op} @bar")).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: op.to_sym }, { type: :ivar, literal: :@bar }]
       end
       expect(tokenize("foo.%(x)")).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :% }, { type: :"(" }, { type: :name, literal: :x }, { type: :")" }]
     end
 
     it 'tokenizes method aliases' do
-      %i[+@ -@ ~@ !@].each do |op|
-        expect(tokenize("alias #{op} foo")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>op}, {:type=>:name, :literal=>:foo}]
-        expect(tokenize("alias foo #{op}")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>:foo}, {:type=>:name, :literal=>op}]
+      %i[+@ -@ ~@ !@ `].each do |op|
+        expect(tokenize("alias #{op} foo")).must_equal [{:type=>:alias}, {:type=>:operator, :literal=>op}, {:type=>:name, :literal=>:foo}]
+        expect(tokenize("alias foo #{op}")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>:foo}, {:type=>:operator, :literal=>op}]
       end
       %i(& ^ <=> == === > >= [] []= << < <= =~ - != !~ % | + >> / * ** ~).each do |op|
         expect(tokenize("alias #{op} foo")).must_equal [{:type=>:alias}, {:type=>op}, {:type=>:name, :literal=>:foo}]

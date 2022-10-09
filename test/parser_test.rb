@@ -695,6 +695,7 @@ require_relative '../lib/natalie_parser/sexp'
         # operators
         expect(parse('def -@; end')).must_equal s(:defn, :-@, s(:args), s(:nil))
         expect(parse('def +@; end')).must_equal s(:defn, :+@, s(:args), s(:nil))
+        expect(-> { parse('def +@.foo; end') }).must_raise SyntaxError
         if parser == 'NatalieParser'
           expect(parse('def ~@; end')).must_equal s(:defn, :'~@', s(:args), s(:nil))
         else

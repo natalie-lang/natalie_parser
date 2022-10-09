@@ -103,6 +103,7 @@ public:
         NotKeyword,
         NotMatch,
         NthRef,
+        OperatorName,
         OrKeyword,
         Percent,
         PercentEqual,
@@ -431,6 +432,8 @@ public:
             return "!";
         case Type::NthRef:
             return "nth_ref";
+        case Type::OperatorName:
+            return "operator";
         case Type::OrKeyword:
             return "or";
         case Type::Percent:

@@ -290,10 +290,10 @@ SharedPtr<SymbolNode> Parser::parse_alias_arg(LocalsHashmap &locals, const char 
     auto token = current_token();
     switch (token.type()) {
         // TODO: handle Constant too
-    case Token::Type::BareName: {
+    case Token::Type::BareName:
+    case Token::Type::OperatorName:
         advance();
         return new SymbolNode { token, token.literal_string() };
-    }
     case Token::Type::Symbol:
         return parse_symbol(locals).static_cast_as<SymbolNode>();
     case Token::Type::InterpolatedSymbolBegin:
@@ -1006,6 +1006,9 @@ SharedPtr<Node> Parser::parse_def(LocalsHashmap &locals) {
             self_node = parse_constant(locals);
             advance(); // dot
         }
+        name = parse_method_name(locals);
+        break;
+    case Token::Type::OperatorName:
         name = parse_method_name(locals);
         break;
     case Token::Type::SelfKeyword:
@@ -1721,6 +1724,7 @@ SharedPtr<String> Parser::parse_method_name(LocalsHashmap &) {
     switch (token.type()) {
     case Token::Type::BareName:
     case Token::Type::Constant:
+    case Token::Type::OperatorName:
         name = current_token().literal_string();
         break;
     default:
@@ -2708,6 +2712,7 @@ SharedPtr<Node> Parser::parse_safe_send_expression(SharedPtr<Node> left, LocalsH
         break;
     case Token::Type::BareName:
     case Token::Type::Constant:
+    case Token::Type::OperatorName:
         name = name_token.literal_string();
         advance();
         break;
@@ -2734,6 +2739,7 @@ SharedPtr<Node> Parser::parse_send_expression(SharedPtr<Node> left, LocalsHashma
     switch (name_token.type()) {
     case Token::Type::BareName:
     case Token::Type::Constant:
+    case Token::Type::OperatorName:
         name = name_token.literal_string();
         advance();
         break;

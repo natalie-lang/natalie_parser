@@ -226,7 +226,7 @@ Token Lexer::build_next_token() {
             if (m_remaining_method_names > 0) {
                 advance();
                 SharedPtr<String> lit = new String("+@");
-                return Token { Token::Type::BareName, lit, m_file, m_token_line, m_token_column, m_whitespace_precedes };
+                return Token { Token::Type::OperatorName, lit, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             } else {
                 return Token { Token::Type::Plus, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
@@ -246,7 +246,7 @@ Token Lexer::build_next_token() {
             if (m_remaining_method_names > 0) {
                 advance();
                 SharedPtr<String> lit = new String("-@");
-                return Token { Token::Type::BareName, lit, m_file, m_token_line, m_token_column, m_whitespace_precedes };
+                return Token { Token::Type::OperatorName, lit, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             } else {
                 return Token { Token::Type::Minus, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
@@ -368,7 +368,7 @@ Token Lexer::build_next_token() {
             if (m_remaining_method_names > 0) {
                 advance();
                 SharedPtr<String> lit = new String("!@");
-                return Token { Token::Type::BareName, lit, m_file, m_token_line, m_token_column, m_whitespace_precedes };
+                return Token { Token::Type::OperatorName, lit, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             } else {
                 return Token { Token::Type::Not, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
@@ -506,7 +506,7 @@ Token Lexer::build_next_token() {
             if (m_remaining_method_names > 0) {
                 advance();
                 SharedPtr<String> lit = new String("~@");
-                return Token { Token::Type::BareName, lit, m_file, m_token_line, m_token_column, m_whitespace_precedes };
+                return Token { Token::Type::OperatorName, lit, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             } else {
                 return Token { Token::Type::Tilde, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             }
@@ -649,7 +649,12 @@ Token Lexer::build_next_token() {
         return consume_single_quoted_string('\'', '\'');
     case '`': {
         advance();
-        return consume_interpolated_shell('`', '`');
+        if (m_remaining_method_names > 0) {
+            SharedPtr<String> lit = new String("`");
+            return Token { Token::Type::OperatorName, lit, m_file, m_token_line, m_token_column, m_whitespace_precedes };
+        } else {
+            return consume_interpolated_shell('`', '`');
+        }
     }
     case '#':
         if (token_is_first_on_line()) {
