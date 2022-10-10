@@ -295,11 +295,14 @@ Token Lexer::build_next_token() {
         switch (m_last_token.type()) {
         case Token::Type::Comma:
         case Token::Type::Doc:
+        case Token::Type::Equal:
         case Token::Type::LBracket:
         case Token::Type::LCurlyBrace:
         case Token::Type::LParen:
         case Token::Type::Match:
         case Token::Type::Newline:
+        case Token::Type::Not:
+        case Token::Type::Pipe:
             return consume_regexp('/', '/');
         default: {
             switch (current_char()) {
