@@ -104,6 +104,27 @@ describe 'NatalieParser' do
         { type: :string, literal: '2' },
         { type: :dregxend },
       ]
+      expect(tokenize('foo = / /')).must_equal [
+        {:type=>:name, :literal=>:foo},
+        {:type=>:"="},
+        {:type=>:dregx},
+        {:type=>:string, :literal=>" "},
+        {:type=>:dregxend}
+      ]
+      expect(tokenize('!/foo/')).must_equal [
+        {:type=>:"!"},
+        {:type=>:dregx},
+        {:type=>:string, :literal=>"foo"},
+        {:type=>:dregxend}
+      ]
+      expect(tokenize('|foo| /=/')).must_equal [
+        {:type=>:"|"},
+        {:type=>:name, :literal=>:foo},
+        {:type=>:"|"},
+        {:type=>:dregx},
+        {:type=>:string, :literal=>"="},
+        {:type=>:dregxend}
+      ]
     end
 
     it 'tokenizes regexps' do
