@@ -311,16 +311,14 @@ SharedPtr<SymbolNode> Parser::parse_alias_arg(LocalsHashmap &locals, const char 
     case Token::Type::BareName:
     case Token::Type::Constant:
     case Token::Type::OperatorName:
-        advance();
-        return new SymbolNode { token, token.literal_string() };
+        return new SymbolNode { token, parse_method_name(locals) };
     case Token::Type::Symbol:
         return parse_symbol(locals).static_cast_as<SymbolNode>();
     case Token::Type::InterpolatedSymbolBegin:
         return parse_interpolated_symbol(locals).static_cast_as<SymbolNode>();
     default:
         if (token.is_operator() || token.is_keyword()) {
-            advance();
-            return new SymbolNode { token, new String(token.type_value()) };
+            return new SymbolNode { token, parse_method_name(locals) };
         } else {
             throw_unexpected(expected_message);
         }

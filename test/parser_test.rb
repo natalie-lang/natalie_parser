@@ -733,6 +733,11 @@ require_relative '../lib/natalie_parser/sexp'
         multiple_args_result = parse('undef foo, :bar')
         expect(multiple_args_result).must_equal s(:block, s(:undef, s(:lit, :foo)), s(:undef, s(:lit, :bar)))
         expect(parse("undef <<\ndef foo; end")).must_equal s(:block, s(:undef, s(:lit, :<<)), s(:defn, :foo, s(:args), s(:nil)))
+        if parser == 'NatalieParser'
+          expect(parse("undef foo=, and=\ndef foo; end")).must_equal s(:block, s(:block, s(:undef, s(:lit, :foo=)), s(:undef, s(:lit, :and=))), s(:defn, :foo, s(:args), s(:nil)))
+        else
+          expect(parse("undef foo=, and=\ndef foo; end")).must_equal s(:block, s(:undef, s(:lit, :foo=)), s(:undef, s(:lit, :and=)), s(:defn, :foo, s(:args), s(:nil)))
+        end
       end
 
       it 'parses operator method definitions' do
@@ -1678,6 +1683,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("alias << write\ndef foo; end")).must_equal s(:block, s(:alias, s(:lit, :<<), s(:lit, :write)), s(:defn, :foo, s(:args), s(:nil)))
         expect(parse("alias yield <<\ndef foo; end")).must_equal s(:block, s(:alias, s(:lit, :yield), s(:lit, :<<)), s(:defn, :foo, s(:args), s(:nil)))
         expect(parse("alias << yield\ndef foo; end")).must_equal s(:block, s(:alias, s(:lit, :<<), s(:lit, :yield)), s(:defn, :foo, s(:args), s(:nil)))
+        expect(parse("alias foo= and=\ndef foo; end")).must_equal s(:block, s(:alias, s(:lit, :foo=), s(:lit, :and=)), s(:defn, :foo, s(:args), s(:nil)))
       end
 
       it 'parses defined?' do
