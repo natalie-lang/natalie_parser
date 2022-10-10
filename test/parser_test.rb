@@ -734,7 +734,7 @@ require_relative '../lib/natalie_parser/sexp'
       end
 
       it 'parses operator method definitions' do
-        operators = %i[+ - * ** / % == === != =~ !~ > >= < <= <=> & | ^ ~ << >> [] []=]
+        operators = %i[+ - * ** / % == === != =~ !~ > >= < <= <=> & | ^ ~ << >> [] []= !]
         operators.each do |operator|
           expect(parse("def #{operator}; end")).must_equal s(:defn, operator, s(:args), s(:nil))
           expect(parse("def #{operator}(x)\nend")).must_equal s(:defn, operator, s(:args, :x), s(:nil))
