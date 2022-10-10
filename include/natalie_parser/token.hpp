@@ -639,6 +639,7 @@ public:
     bool is_closing_token() const { return m_type == Type::RBracket || m_type == Type::RCurlyBrace || m_type == Type::RParen; }
     bool is_comma() const { return m_type == Type::Comma; }
     bool is_comment() const { return m_type == Type::Comment; }
+    bool is_constant_resolution() const { return m_type == Type::ConstantResolution; }
     bool is_def_keyword() const { return m_type == Type::DefKeyword; }
     bool is_doc() const { return m_type == Type::Doc; }
     bool is_dot() const { return m_type == Type::Dot; }
