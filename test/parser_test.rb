@@ -1257,6 +1257,7 @@ require_relative '../lib/natalie_parser/sexp'
           expect_raise_with_message(-> { parse('[1 => 2, 3]') }, SyntaxError, '(string):1 :: parse error on value "]" (tRBRACK)')
           expect_raise_with_message(-> { parse('[0, 1 => 2, 3]') }, SyntaxError, '(string):1 :: parse error on value "]" (tRBRACK)')
         end
+        expect(parse('{a: a = 1, b: 2}')).must_equal s(:hash, s(:lit, :a), s(:lasgn, :a, s(:lit, 1)), s(:lit, :b), s(:lit, 2))
       end
 
       it 'ignores comments' do
