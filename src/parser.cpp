@@ -1030,10 +1030,6 @@ SharedPtr<Node> Parser::parse_def(LocalsHashmap &locals) {
         }
     }
     }
-    if (current_token().is_equal() && !current_token().whitespace_precedes()) {
-        advance();
-        name->append_char('=');
-    }
     auto args = Vector<SharedPtr<Node>> {};
     if (current_token().is_lparen()) {
         advance();
@@ -1722,20 +1718,31 @@ SharedPtr<Node> Parser::parse_keyword_splat(LocalsHashmap &locals) {
 
 SharedPtr<String> Parser::parse_method_name(LocalsHashmap &) {
     SharedPtr<String> name = new String("");
+    bool include_suffix_equal;
     auto token = current_token();
     switch (token.type()) {
     case Token::Type::BareName:
     case Token::Type::Constant:
+        name = current_token().literal_string();
+        include_suffix_equal = true;
+        break;
     case Token::Type::OperatorName:
         name = current_token().literal_string();
+        include_suffix_equal = false;
         break;
     default:
-        if (token.is_operator() || token.is_keyword())
+        if (token.is_operator() || token.is_keyword()) {
             name = new String(current_token().type_value());
-        else
+            include_suffix_equal = token.is_keyword();
+        } else {
             throw_unexpected("method name");
+        }
     }
     advance();
+    if (include_suffix_equal && current_token().is_equal() && !current_token().whitespace_precedes()) {
+        advance();
+        name->append_char('=');
+    }
     return name;
 }
 
