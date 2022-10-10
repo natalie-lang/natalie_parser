@@ -2950,7 +2950,7 @@ Parser::parse_left_fn Parser::left_denotation(Token &token, SharedPtr<Node> left
     using Type = Token::Type;
     switch (token.type()) {
     case Type::Equal:
-        if (precedence == Precedence::ARRAY || precedence == Precedence::BARE_CALL_ARG || precedence == Precedence::CALL_ARG)
+        if (precedence == Precedence::ARRAY || precedence == Precedence::HASH || precedence == Precedence::BARE_CALL_ARG || precedence == Precedence::CALL_ARG)
             return &Parser::parse_assignment_expression_without_multiple_values;
         else
             return &Parser::parse_assignment_expression;
