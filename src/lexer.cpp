@@ -720,7 +720,7 @@ Token Lexer::build_next_token() {
     Token keyword_token;
 
     if (!m_last_token.is_dot() && match(4, "self")) {
-        if (current_char() == '.')
+        if (current_char() == '.' || (current_char() == ':' && peek() == ':'))
             keyword_token = { Token::Type::SelfKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else
             rewind(4);

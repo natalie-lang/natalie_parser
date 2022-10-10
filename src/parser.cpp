@@ -998,14 +998,14 @@ SharedPtr<Node> Parser::parse_def(LocalsHashmap &locals) {
     auto token = current_token();
     switch (token.type()) {
     case Token::Type::BareName:
-        if (peek_token().type() == Token::Type::Dot) {
+        if (peek_token().is_dot() || peek_token().is_constant_resolution()) {
             self_node = parse_identifier(locals);
             advance(); // dot
         }
         name = parse_method_name(locals);
         break;
     case Token::Type::Constant:
-        if (peek_token().type() == Token::Type::Dot) {
+        if (peek_token().is_dot() || peek_token().is_constant_resolution()) {
             self_node = parse_constant(locals);
             advance(); // dot
         }
@@ -1015,7 +1015,7 @@ SharedPtr<Node> Parser::parse_def(LocalsHashmap &locals) {
         name = parse_method_name(locals);
         break;
     case Token::Type::SelfKeyword:
-        if (peek_token().type() == Token::Type::Dot) {
+        if (peek_token().is_dot() || peek_token().is_constant_resolution()) {
             self_node = new SelfNode { current_token() };
             advance(); // self
             advance(); // dot
