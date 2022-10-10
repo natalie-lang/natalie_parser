@@ -278,44 +278,47 @@ SharedPtr<BlockNode> Parser::parse_def_body(LocalsHashmap &locals) {
     return parse_body(locals, Precedence::LOWEST, Token::Type::EndKeyword, true);
 }
 
+void Parser::restore_collapsed_newline() {
+    auto token = previous_token();
+    if (token.can_precede_collapsible_newline()) {
+        // Some operators at the end of a line cause the newlines to be collapsed:
+        //
+        //     foo <<
+        //       bar
+        //
+        // ...but in this case (an alias), collapsing the newline was a mistake:
+        //
+        //     alias foo <<
+        //     def bar; end
+        //
+        // So, we'll put the newline back.
+        m_tokens->insert(m_index, Token { Token::Type::Newline, token.file(), token.line(), token.column(), token.whitespace_precedes() });
+    }
+}
+
 SharedPtr<Node> Parser::parse_alias(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    SharedPtr<SymbolNode> new_name = parse_alias_arg(locals, "alias new name (first argument)", false);
-    auto existing_name = parse_alias_arg(locals, "alias existing name (second argument)", true);
+    auto new_name = parse_alias_arg(locals, "alias new name (first argument)");
+    auto existing_name = parse_alias_arg(locals, "alias existing name (second argument)");
+    restore_collapsed_newline();
     return new AliasNode { token, new_name, existing_name };
 }
 
-SharedPtr<SymbolNode> Parser::parse_alias_arg(LocalsHashmap &locals, const char *expected_message, bool reinsert_collapsed_newline) {
+SharedPtr<SymbolNode> Parser::parse_alias_arg(LocalsHashmap &locals, const char *expected_message) {
     auto token = current_token();
     switch (token.type()) {
         // TODO: handle Constant too
     case Token::Type::BareName:
     case Token::Type::OperatorName:
-        advance();
-        return new SymbolNode { token, token.literal_string() };
+        return new SymbolNode { token, parse_method_name(locals) };
     case Token::Type::Symbol:
         return parse_symbol(locals).static_cast_as<SymbolNode>();
     case Token::Type::InterpolatedSymbolBegin:
         return parse_interpolated_symbol(locals).static_cast_as<SymbolNode>();
     default:
         if (token.is_operator() || token.is_keyword()) {
-            advance();
-            if (token.can_precede_collapsible_newline() && reinsert_collapsed_newline) {
-                // Some operators at the end of a line cause the newlines to be collapsed:
-                //
-                //     foo <<
-                //       bar
-                //
-                // ...but in this case (an alias), collapsing the newline was a mistake:
-                //
-                //     alias foo <<
-                //     def bar; end
-                //
-                // So, we'll put the newline back.
-                m_tokens->insert(m_index, Token { Token::Type::Newline, token.file(), token.line(), token.column(), token.whitespace_precedes() });
-            }
-            return new SymbolNode { token, new String(token.type_value()) };
+            return new SymbolNode { token, parse_method_name(locals) };
         } else {
             throw_unexpected(expected_message);
         }

@@ -1674,6 +1674,10 @@ require_relative '../lib/natalie_parser/sexp'
 
       it 'parses alias' do
         expect(parse('alias foo bar')).must_equal s(:alias, s(:lit, :foo), s(:lit, :bar))
+        expect(parse('alias foo= bar=')).must_equal s(:alias, s(:lit, :foo=), s(:lit, :bar=))
+        expect(parse('alias and= or=')).must_equal s(:alias, s(:lit, :and=), s(:lit, :or=))
+        expect(parse("alias foo= bar=\ndef foo; end")).must_equal s(:block, s(:alias, s(:lit, :foo=), s(:lit, :bar=)), s(:defn, :foo, s(:args), s(:nil)))
+        expect(parse("alias and= or=\ndef foo; end")).must_equal s(:block, s(:alias, s(:lit, :and=), s(:lit, :or=)), s(:defn, :foo, s(:args), s(:nil)))
         expect(parse('alias :foo :bar')).must_equal s(:alias, s(:lit, :foo), s(:lit, :bar))
         expect(parse('alias :"foo" :"bar"')).must_equal s(:alias, s(:lit, :foo), s(:lit, :bar))
         expect(parse("alias write <<\ndef foo; end")).must_equal s(:block, s(:alias, s(:lit, :write), s(:lit, :<<)), s(:defn, :foo, s(:args), s(:nil)))

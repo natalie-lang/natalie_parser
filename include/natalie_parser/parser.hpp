@@ -74,8 +74,9 @@ private:
     SharedPtr<Node> parse_if_body(LocalsHashmap &);
     SharedPtr<BlockNode> parse_def_body(LocalsHashmap &);
 
+    void restore_collapsed_newline();
     SharedPtr<Node> parse_alias(LocalsHashmap &);
-    SharedPtr<SymbolNode> parse_alias_arg(LocalsHashmap &, const char *, bool);
+    SharedPtr<SymbolNode> parse_alias_arg(LocalsHashmap &, const char *);
     SharedPtr<Node> parse_array(LocalsHashmap &);
     SharedPtr<Node> parse_back_ref(LocalsHashmap &);
     SharedPtr<Node> parse_begin_block(LocalsHashmap &);
