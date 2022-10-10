@@ -762,6 +762,7 @@ public:
     bool can_be_first_arg_of_implicit_call() const {
         switch (m_type) {
         case Token::Type::Arrow:
+        case Token::Type::BackRef:
         case Token::Type::BareName:
         case Token::Type::BeginKeyword:
         case Token::Type::Bignum:
