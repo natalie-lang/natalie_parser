@@ -617,6 +617,7 @@ public:
         case Token::Type::LessThanOrEqual:
         case Token::Type::Match:
         case Token::Type::Minus:
+        case Token::Type::Not:
         case Token::Type::NotEqual:
         case Token::Type::NotMatch:
         case Token::Type::Percent:
