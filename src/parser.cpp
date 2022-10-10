@@ -308,8 +308,8 @@ SharedPtr<Node> Parser::parse_alias(LocalsHashmap &locals) {
 SharedPtr<SymbolNode> Parser::parse_alias_arg(LocalsHashmap &locals, const char *expected_message) {
     auto token = current_token();
     switch (token.type()) {
-        // TODO: handle Constant too
     case Token::Type::BareName:
+    case Token::Type::Constant:
     case Token::Type::OperatorName:
         return new SymbolNode { token, parse_method_name(locals) };
     case Token::Type::Symbol:
@@ -2116,37 +2116,26 @@ SharedPtr<Node> Parser::parse_unary_operator(LocalsHashmap &locals) {
 SharedPtr<Node> Parser::parse_undef(LocalsHashmap &locals) {
     auto undef_token = current_token();
     advance();
-    auto symbol_from_token = [&](Token &token) -> SharedPtr<Node> {
-        switch (token.type()) {
-        case Token::Type::BareName:
-        case Token::Type::Constant:
-            advance();
-            return new SymbolNode { token, token.literal_string() };
-        case Token::Type::Symbol:
-            return parse_symbol(locals);
-        case Token::Type::InterpolatedSymbolBegin: {
-            return parse_interpolated_symbol(locals);
-        }
-        default:
-            throw_unexpected("method name for undef");
-        }
-    };
     SharedPtr<UndefNode> undef_node = new UndefNode { undef_token };
-    auto token = current_token();
-    undef_node->add_arg(symbol_from_token(token));
+    auto arg = parse_alias_arg(locals, "method name for undef");
+    undef_node->add_arg(arg.static_cast_as<Node>());
+    SharedPtr<Node> node;
     if (current_token().is_comma()) {
         SharedPtr<BlockNode> block = new BlockNode { undef_token };
         block->add_node(undef_node.static_cast_as<Node>());
         while (current_token().is_comma()) {
             advance();
-            token = current_token();
             SharedPtr<UndefNode> undef_node = new UndefNode { undef_token };
-            undef_node->add_arg(symbol_from_token(token));
+            auto arg = parse_alias_arg(locals, "method name for undef");
+            undef_node->add_arg(arg.static_cast_as<Node>());
             block->add_node(undef_node.static_cast_as<Node>());
         }
-        return block.static_cast_as<Node>();
+        node = block.static_cast_as<Node>();
+    } else {
+        node = undef_node.static_cast_as<Node>();
     }
-    return undef_node.static_cast_as<Node>();
+    restore_collapsed_newline();
+    return node;
 };
 
 SharedPtr<Node> Parser::parse_word_array(LocalsHashmap &locals) {

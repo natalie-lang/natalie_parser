@@ -87,6 +87,7 @@ Token Lexer::next_token() {
         break;
     case Token::Type::DefKeyword:
     case Token::Type::Dot:
+    case Token::Type::UndefKeyword: // TODO: multiple methods given to undef
         m_remaining_method_names = 1;
         break;
     default:
