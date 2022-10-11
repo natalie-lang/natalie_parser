@@ -731,6 +731,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('undef Foo')).must_equal s(:undef, s(:lit, :Foo))
         multiple_args_result = parse('undef foo, :bar')
         expect(multiple_args_result).must_equal s(:block, s(:undef, s(:lit, :foo)), s(:undef, s(:lit, :bar)))
+        expect(parse("undef <<\ndef foo; end")).must_equal s(:block, s(:undef, s(:lit, :<<)), s(:defn, :foo, s(:args), s(:nil)))
       end
 
       it 'parses operator method definitions' do
@@ -1668,6 +1669,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('alias foo bar')).must_equal s(:alias, s(:lit, :foo), s(:lit, :bar))
         expect(parse('alias :foo :bar')).must_equal s(:alias, s(:lit, :foo), s(:lit, :bar))
         expect(parse('alias :"foo" :"bar"')).must_equal s(:alias, s(:lit, :foo), s(:lit, :bar))
+        expect(parse('alias Foo Bar')).must_equal s(:alias, s(:lit, :Foo), s(:lit, :Bar))
         expect(parse("alias write <<\ndef foo; end")).must_equal s(:block, s(:alias, s(:lit, :write), s(:lit, :<<)), s(:defn, :foo, s(:args), s(:nil)))
         expect(parse("alias << write\ndef foo; end")).must_equal s(:block, s(:alias, s(:lit, :<<), s(:lit, :write)), s(:defn, :foo, s(:args), s(:nil)))
         expect(parse("alias yield <<\ndef foo; end")).must_equal s(:block, s(:alias, s(:lit, :yield), s(:lit, :<<)), s(:defn, :foo, s(:args), s(:nil)))

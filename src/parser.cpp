@@ -278,19 +278,38 @@ SharedPtr<BlockNode> Parser::parse_def_body(LocalsHashmap &locals) {
     return parse_body(locals, Precedence::LOWEST, Token::Type::EndKeyword, true);
 }
 
+void Parser::reinsert_collapsed_newline() {
+    auto token = previous_token();
+    if (token.can_precede_collapsible_newline()) {
+        // Some operators at the end of a line cause the newlines to be collapsed:
+        //
+        //     foo <<
+        //       bar
+        //
+        // ...but in this case (an alias), collapsing the newline was a mistake:
+        //
+        //     alias foo <<
+        //     def bar; end
+        //
+        // So, we'll put the newline back.
+        m_tokens->insert(m_index, Token { Token::Type::Newline, token.file(), token.line(), token.column(), token.whitespace_precedes() });
+    }
+}
+
 SharedPtr<Node> Parser::parse_alias(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    SharedPtr<SymbolNode> new_name = parse_alias_arg(locals, "alias new name (first argument)", false);
-    auto existing_name = parse_alias_arg(locals, "alias existing name (second argument)", true);
+    auto new_name = parse_alias_arg(locals, "alias new name (first argument)");
+    auto existing_name = parse_alias_arg(locals, "alias existing name (second argument)");
+    reinsert_collapsed_newline();
     return new AliasNode { token, new_name, existing_name };
 }
 
-SharedPtr<SymbolNode> Parser::parse_alias_arg(LocalsHashmap &locals, const char *expected_message, bool reinsert_collapsed_newline) {
+SharedPtr<SymbolNode> Parser::parse_alias_arg(LocalsHashmap &locals, const char *expected_message) {
     auto token = current_token();
     switch (token.type()) {
-        // TODO: handle Constant too
     case Token::Type::BareName:
+    case Token::Type::Constant:
     case Token::Type::OperatorName:
         advance();
         return new SymbolNode { token, token.literal_string() };
@@ -301,20 +320,6 @@ SharedPtr<SymbolNode> Parser::parse_alias_arg(LocalsHashmap &locals, const char 
     default:
         if (token.is_operator() || token.is_keyword()) {
             advance();
-            if (token.can_precede_collapsible_newline() && reinsert_collapsed_newline) {
-                // Some operators at the end of a line cause the newlines to be collapsed:
-                //
-                //     foo <<
-                //       bar
-                //
-                // ...but in this case (an alias), collapsing the newline was a mistake:
-                //
-                //     alias foo <<
-                //     def bar; end
-                //
-                // So, we'll put the newline back.
-                m_tokens->insert(m_index, Token { Token::Type::Newline, token.file(), token.line(), token.column(), token.whitespace_precedes() });
-            }
             return new SymbolNode { token, new String(token.type_value()) };
         } else {
             throw_unexpected(expected_message);
@@ -2100,36 +2105,23 @@ SharedPtr<Node> Parser::parse_unary_operator(LocalsHashmap &locals) {
 SharedPtr<Node> Parser::parse_undef(LocalsHashmap &locals) {
     auto undef_token = current_token();
     advance();
-    auto symbol_from_token = [&](Token &token) -> SharedPtr<Node> {
-        switch (token.type()) {
-        case Token::Type::BareName:
-        case Token::Type::Constant:
-            advance();
-            return new SymbolNode { token, token.literal_string() };
-        case Token::Type::Symbol:
-            return parse_symbol(locals);
-        case Token::Type::InterpolatedSymbolBegin: {
-            return parse_interpolated_symbol(locals);
-        }
-        default:
-            throw_unexpected("method name for undef");
-        }
-    };
     SharedPtr<UndefNode> undef_node = new UndefNode { undef_token };
-    auto token = current_token();
-    undef_node->add_arg(symbol_from_token(token));
+    auto arg = parse_alias_arg(locals, "method name for undef");
+    undef_node->add_arg(arg.static_cast_as<Node>());
     if (current_token().is_comma()) {
         SharedPtr<BlockNode> block = new BlockNode { undef_token };
         block->add_node(undef_node.static_cast_as<Node>());
         while (current_token().is_comma()) {
             advance();
-            token = current_token();
             SharedPtr<UndefNode> undef_node = new UndefNode { undef_token };
-            undef_node->add_arg(symbol_from_token(token));
+            auto arg = parse_alias_arg(locals, "method name for undef");
+            undef_node->add_arg(arg.static_cast_as<Node>());
             block->add_node(undef_node.static_cast_as<Node>());
         }
+        reinsert_collapsed_newline();
         return block.static_cast_as<Node>();
     }
+    reinsert_collapsed_newline();
     return undef_node.static_cast_as<Node>();
 };
 

@@ -141,5 +141,7 @@ protected:
     int m_pair_depth { 0 };
 
     size_t m_remaining_method_names { 0 };
+    Token::Type m_method_name_separator { Token::Type::Invalid };
+    Token m_last_method_name {};
 };
 }
