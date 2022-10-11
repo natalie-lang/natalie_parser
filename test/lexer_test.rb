@@ -1007,18 +1007,21 @@ describe 'NatalieParser' do
       expect(tokenize("foo.%(x)")).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :% }, { type: :"(" }, { type: :name, literal: :x }, { type: :")" }]
     end
 
-    it 'tokenizes method aliases' do
+    it 'tokenizes method aliases and undef' do
       %i[+@ -@ ~@ !@ `].each do |op|
         expect(tokenize("alias #{op} foo")).must_equal [{:type=>:alias}, {:type=>:operator, :literal=>op}, {:type=>:name, :literal=>:foo}]
         expect(tokenize("alias foo #{op}")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>:foo}, {:type=>:operator, :literal=>op}]
+        expect(tokenize("undef #{op}")).must_equal [{:type=>:undef}, {:type=>:operator, :literal=>op}]
       end
       %i(& ^ <=> == === > >= [] []= << < <= =~ - != !~ % | + >> / * ** ~).each do |op|
         expect(tokenize("alias #{op} foo")).must_equal [{:type=>:alias}, {:type=>op}, {:type=>:name, :literal=>:foo}]
         expect(tokenize("alias foo #{op}")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>:foo}, {:type=>op}]
+        expect(tokenize("undef #{op}")).must_equal [{:type=>:undef}, {:type=>op}]
       end
       %i[BEGIN END].each do |keyword|
         expect(tokenize("alias #{keyword} foo")).must_equal [{:type=>:alias}, {:type=>:constant, :literal=>keyword}, {:type=>:name, :literal=>:foo}]
         expect(tokenize("alias foo #{keyword}")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>:foo}, {:type=>:constant, :literal=>keyword}]
+        expect(tokenize("undef #{keyword}")).must_equal [{:type=>:undef}, {:type=>:constant, :literal=>keyword}]
       end
       %i[
         __ENCODING__ __LINE__ __FILE__
@@ -1041,7 +1044,29 @@ describe 'NatalieParser' do
       ].each do |keyword|
         expect(tokenize("alias #{keyword} foo")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>keyword}, {:type=>:name, :literal=>:foo}]
         expect(tokenize("alias foo #{keyword}")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>:foo}, {:type=>:name, :literal=>keyword}]
+        expect(tokenize("undef #{keyword}")).must_equal [{:type=>:undef}, {:type=>:name, :literal=>keyword}]
       end
+
+      expect(tokenize("undef +@, -@, `, &, ^, BEGIN, END, alias, and")).must_equal [
+        {:type=>:undef},
+        {:type=>:operator, :literal=>:"+@"},
+        {:type=>:","},
+        {:type=>:operator, :literal=>:"-@"},
+        {:type=>:","},
+        {:type=>:operator, :literal=>:"`"},
+        {:type=>:","},
+        {:type=>:"&"},
+        {:type=>:","},
+        {:type=>:"^"},
+        {:type=>:","},
+        {:type=>:constant, :literal=>:BEGIN},
+        {:type=>:","},
+        {:type=>:constant, :literal=>:END},
+        {:type=>:","},
+        {:type=>:name, :literal=>:alias},
+        {:type=>:","},
+        {:type=>:name, :literal=>:and},
+      ]
     end
 
     it 'tokenizes argument forwarding shorthand' do

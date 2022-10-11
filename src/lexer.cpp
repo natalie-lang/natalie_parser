@@ -89,9 +89,24 @@ Token Lexer::next_token() {
     case Token::Type::Dot:
         m_remaining_method_names = 1;
         break;
+    case Token::Type::UndefKeyword:
+        m_remaining_method_names = SIZE_MAX;
+        m_method_name_separator = Token::Type::Comma;
+        break;
     default:
-        if (m_remaining_method_names > 0)
+        if (m_method_name_separator != Token::Type::Invalid) {
+            if (m_last_method_name) {
+                m_last_method_name = {};
+                if (token.type() != m_method_name_separator) {
+                    m_remaining_method_names = 0;
+                    m_method_name_separator = Token::Type::Invalid;
+                }
+            } else {
+                m_last_method_name = token;
+            }
+        } else if (m_remaining_method_names > 0) {
             m_remaining_method_names--;
+        }
         break;
     }
     return token;
