@@ -90,7 +90,7 @@ Token Lexer::next_token() {
         m_remaining_method_names = 1;
         break;
     case Token::Type::UndefKeyword:
-        m_remaining_method_names = SIZE_MAX;
+        m_remaining_method_names = std::numeric_limits<size_t>::max();
         m_method_name_separator = Token::Type::Comma;
         break;
     default:
