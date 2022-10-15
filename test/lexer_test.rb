@@ -948,13 +948,12 @@ describe 'NatalieParser' do
       ]
       expect(tokenize('def foo?')).must_equal [{ type: :def }, { type: :name, literal: :foo? }]
       expect(tokenize('def foo!')).must_equal [{ type: :def }, { type: :name, literal: :foo! }]
-      expect(tokenize('def foo=')).must_equal [{ type: :def }, { type: :name, literal: :foo }, { type: :'=' }]
+      expect(tokenize('def foo=')).must_equal [{ type: :def }, { type: :name, literal: :foo= }]
       expect(tokenize('def self.foo=')).must_equal [
         { type: :def },
         { type: :self },
         { type: :'.' },
-        { type: :name, literal: :foo },
-        { type: :'=' },
+        { type: :name, literal: :foo= },
       ]
       expect(tokenize('def /')).must_equal [
         { type: :def },
@@ -1032,16 +1031,19 @@ describe 'NatalieParser' do
       %i[+@ -@ ~@ !@ `].each do |op|
         expect(tokenize("alias #{op} foo")).must_equal [{:type=>:alias}, {:type=>:operator, :literal=>op}, {:type=>:name, :literal=>:foo}]
         expect(tokenize("alias foo #{op}")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>:foo}, {:type=>:operator, :literal=>op}]
+        expect(tokenize("alias foo= #{op}")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>:foo=}, {:type=>:operator, :literal=>op}]
         expect(tokenize("undef #{op}")).must_equal [{:type=>:undef}, {:type=>:operator, :literal=>op}]
       end
       %i(& ^ <=> == === > >= [] []= << < <= =~ - != !~ % | + >> / * ** ~).each do |op|
         expect(tokenize("alias #{op} foo")).must_equal [{:type=>:alias}, {:type=>op}, {:type=>:name, :literal=>:foo}]
         expect(tokenize("alias foo #{op}")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>:foo}, {:type=>op}]
+        expect(tokenize("alias foo= #{op}")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>:foo=}, {:type=>op}]
         expect(tokenize("undef #{op}")).must_equal [{:type=>:undef}, {:type=>op}]
       end
       %i[BEGIN END].each do |keyword|
         expect(tokenize("alias #{keyword} foo")).must_equal [{:type=>:alias}, {:type=>:constant, :literal=>keyword}, {:type=>:name, :literal=>:foo}]
         expect(tokenize("alias foo #{keyword}")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>:foo}, {:type=>:constant, :literal=>keyword}]
+        expect(tokenize("alias foo= #{keyword}")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>:foo=}, {:type=>:constant, :literal=>keyword}]
         expect(tokenize("undef #{keyword}")).must_equal [{:type=>:undef}, {:type=>:constant, :literal=>keyword}]
       end
       %i[
@@ -1065,6 +1067,7 @@ describe 'NatalieParser' do
       ].each do |keyword|
         expect(tokenize("alias #{keyword} foo")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>keyword}, {:type=>:name, :literal=>:foo}]
         expect(tokenize("alias foo #{keyword}")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>:foo}, {:type=>:name, :literal=>keyword}]
+        expect(tokenize("alias foo= #{keyword}")).must_equal [{:type=>:alias}, {:type=>:name, :literal=>:foo=}, {:type=>:name, :literal=>keyword}]
         expect(tokenize("undef #{keyword}")).must_equal [{:type=>:undef}, {:type=>:name, :literal=>keyword}]
       end
 

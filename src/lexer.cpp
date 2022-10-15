@@ -86,6 +86,9 @@ Token Lexer::next_token() {
         m_remaining_method_names = 2;
         break;
     case Token::Type::DefKeyword:
+        m_remaining_method_names = 1;
+        m_allow_assignment_method = true;
+        break;
     case Token::Type::Dot:
         m_remaining_method_names = 1;
         break;
@@ -106,6 +109,8 @@ Token Lexer::next_token() {
             }
         } else if (m_remaining_method_names > 0) {
             m_remaining_method_names--;
+        } else {
+            m_allow_assignment_method = false;
         }
         break;
     }
@@ -961,6 +966,12 @@ Token Lexer::consume_word(Token::Type type) {
     case '!':
         advance();
         buf->append_char(c);
+        break;
+    case '=':
+        if (m_allow_assignment_method || (!m_last_token.is_dot() && m_remaining_method_names > 0)) {
+            advance();
+            buf->append_char(c);
+        }
         break;
     default:
         break;
