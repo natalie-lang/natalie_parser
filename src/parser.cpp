@@ -1719,31 +1719,21 @@ SharedPtr<Node> Parser::parse_keyword_splat(LocalsHashmap &locals) {
 
 SharedPtr<String> Parser::parse_method_name(LocalsHashmap &) {
     SharedPtr<String> name = new String("");
-    bool assignable;
     auto token = current_token();
     switch (token.type()) {
     case Token::Type::BareName:
     case Token::Type::Constant:
-        name = current_token().literal_string();
-        assignable = true;
-        break;
     case Token::Type::OperatorName:
         name = current_token().literal_string();
-        assignable = false;
         break;
     default:
         if (token.is_operator() || token.is_keyword()) {
             name = new String(current_token().type_value());
-            assignable = token.is_keyword();
         } else {
             throw_unexpected("method name");
         }
     }
     advance();
-    if (assignable && current_token().is_equal() && !current_token().whitespace_precedes()) {
-        advance();
-        name->append_char('=');
-    }
     return name;
 }
 
