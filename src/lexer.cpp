@@ -517,7 +517,7 @@ Token Lexer::build_next_token() {
         }
     case '?': {
         auto c = next();
-        if (isspace(c)) {
+        if (isspace(c) || c == 0) {
             m_open_ternary = true;
             return Token { Token::Type::TernaryQuestion, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         } else {
@@ -547,7 +547,7 @@ Token Lexer::build_next_token() {
             advance();
             auto string = consume_single_quoted_string('\'', '\'');
             return Token { Token::Type::Symbol, string.literal(), m_file, m_token_line, m_token_column, m_whitespace_precedes };
-        } else if (isspace(c)) {
+        } else if (isspace(c) || c == 0) {
             m_open_ternary = false;
             auto token = Token { Token::Type::TernaryColon, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             return token;

@@ -247,6 +247,11 @@ describe 'NatalieParser' do
       expect(tokenize(operators.join(' '))).must_equal operators.map { |o| { type: o.to_sym } }
     end
 
+    it 'tokenizes unterminated ternary at EOF' do
+      expect(tokenize('?')).must_equal [{ type: :'?' }]
+      expect(tokenize(':')).must_equal [{ type: :':' }]
+    end
+
     it 'tokenizes bignums' do
       expect(tokenize('100000000000000000000 0d100000000000000000000 0xFFFFFFFFFFFFFFFF 0o7777777777777777777777 0b1111111111111111111111111111111111111111111111111111111111111111')).must_equal [
         { type: :bignum, literal: '100000000000000000000' },
