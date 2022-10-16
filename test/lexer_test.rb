@@ -247,6 +247,11 @@ describe 'NatalieParser' do
       expect(tokenize(operators.join(' '))).must_equal operators.map { |o| { type: o.to_sym } }
     end
 
+    it 'tokenizes unterminated ternary at EOF' do
+      expect(tokenize('?')).must_equal [{ type: :'?' }]
+      expect(tokenize(':')).must_equal [{ type: :':' }]
+    end
+
     it 'tokenizes bignums' do
       expect(tokenize('100000000000000000000 0d100000000000000000000 0xFFFFFFFFFFFFFFFF 0o7777777777777777777777 0b1111111111111111111111111111111111111111111111111111111111111111')).must_equal [
         { type: :bignum, literal: '100000000000000000000' },
@@ -827,14 +832,20 @@ describe 'NatalieParser' do
 
     it 'tokenizes class variables' do
       expect(tokenize('@@foo')).must_equal [{ type: :cvar, literal: :@@foo }]
+      expect(tokenize('@@foo?')).must_equal [{ type: :cvar, literal: :@@foo }, { type: :"?" }]
+      expect(tokenize('@@foo!')).must_equal [{ type: :cvar, literal: :@@foo }, { type: :"!" }]
     end
 
     it 'tokenizes instance variables' do
       expect(tokenize('@foo')).must_equal [{ type: :ivar, literal: :@foo }]
+      expect(tokenize('@foo?')).must_equal [{ type: :ivar, literal: :@foo }, { type: :"?" }]
+      expect(tokenize('@foo!')).must_equal [{ type: :ivar, literal: :@foo }, { type: :"!" }]
     end
 
     it 'tokenizes global variables' do
       expect(tokenize('$foo')).must_equal [{ type: :gvar, literal: :$foo }]
+      expect(tokenize('$foo?')).must_equal [{ type: :gvar, literal: :$foo }, { type: :"?" }]
+      expect(tokenize('$foo!')).must_equal [{ type: :gvar, literal: :$foo }, { type: :"!" }]
       expect(tokenize('$0')).must_equal [{ type: :gvar, literal: :$0 }]
       expect(tokenize('$__a')).must_equal [{ type: :gvar, literal: :$__a }]
       %i[$? $! $= $~ $@ $` $' $+ $/ $\\ $; $< $> $$ $* $. $: $" $_ $,].each do |sym|

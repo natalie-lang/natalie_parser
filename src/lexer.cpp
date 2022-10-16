@@ -517,7 +517,7 @@ Token Lexer::build_next_token() {
         }
     case '?': {
         auto c = next();
-        if (isspace(c)) {
+        if (isspace(c) || c == 0) {
             m_open_ternary = true;
             return Token { Token::Type::TernaryQuestion, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         } else {
@@ -547,7 +547,7 @@ Token Lexer::build_next_token() {
             advance();
             auto string = consume_single_quoted_string('\'', '\'');
             return Token { Token::Type::Symbol, string.literal(), m_file, m_token_line, m_token_column, m_whitespace_precedes };
-        } else if (isspace(c)) {
+        } else if (isspace(c) || c == 0) {
             m_open_ternary = false;
             auto token = Token { Token::Type::TernaryColon, m_file, m_token_line, m_token_column, m_whitespace_precedes };
             return token;
@@ -822,9 +822,9 @@ Token Lexer::build_next_token() {
 
     auto c = current_char();
     if (is_name_start_char(c)) {
-        return consume_bare_name();
+        return consume_bare_name_or_constant(Token::Type::BareName);
     } else if (c >= 'A' && c <= 'Z') {
-        return consume_constant();
+        return consume_bare_name_or_constant(Token::Type::Constant);
     } else {
         auto buf = consume_non_whitespace();
         auto token = Token { Token::Type::Invalid, buf, m_file, m_token_line, m_token_column, m_whitespace_precedes };
@@ -954,13 +954,23 @@ Token Lexer::consume_symbol() {
     return Token { Token::Type::Symbol, buf, m_file, m_token_line, m_token_column, m_whitespace_precedes };
 }
 
-Token Lexer::consume_word(Token::Type type) {
+SharedPtr<String> Lexer::consume_word() {
     char c = current_char();
     SharedPtr<String> buf = new String("");
     do {
         buf->append_char(c);
         c = next();
     } while (is_identifier_char(c));
+    return buf;
+}
+
+Token Lexer::consume_word(Token::Type type) {
+    return Token { type, consume_word(), m_file, m_token_line, m_token_column, m_whitespace_precedes };
+}
+
+Token Lexer::consume_bare_name_or_constant(Token::Type type) {
+    auto buf = consume_word();
+    auto c = current_char();
     switch (c) {
     case '?':
     case '!':
@@ -973,30 +983,16 @@ Token Lexer::consume_word(Token::Type type) {
             buf->append_char(c);
         }
         break;
+    case ':':
+        if (peek() != ':' && m_last_token.can_precede_symbol_key()) {
+            advance();
+            type = Token::Type::SymbolKey;
+        }
+        break;
     default:
         break;
     }
     return Token { type, buf, m_file, m_token_line, m_token_column, m_whitespace_precedes };
-}
-
-Token Lexer::consume_bare_name() {
-    auto token = consume_word(Token::Type::BareName);
-    auto c = current_char();
-    if (c == ':' && peek() != ':' && m_last_token.can_precede_symbol_key()) {
-        advance();
-        token.set_type(Token::Type::SymbolKey);
-    }
-    return token;
-}
-
-Token Lexer::consume_constant() {
-    auto token = consume_word(Token::Type::Constant);
-    auto c = current_char();
-    if (c == ':' && peek() != ':' && m_last_token.can_precede_symbol_key()) {
-        advance();
-        token.set_type(Token::Type::SymbolKey);
-    }
-    return token;
 }
 
 Token Lexer::consume_global_variable() {
@@ -1143,7 +1139,7 @@ Token Lexer::consume_heredoc() {
         }
         advance();
     } else {
-        heredoc_name = String(consume_word(Token::Type::BareName).literal());
+        heredoc_name = *consume_word();
     }
 
     SharedPtr<String> doc = new String("");

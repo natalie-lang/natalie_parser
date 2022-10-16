@@ -70,9 +70,9 @@ protected:
     virtual bool skip_whitespace();
     virtual Token build_next_token();
     Token consume_symbol();
+    SharedPtr<String> consume_word();
     Token consume_word(Token::Type type);
-    Token consume_bare_name();
-    Token consume_constant();
+    Token consume_bare_name_or_constant(Token::Type type);
     Token consume_global_variable();
     Token consume_heredoc();
     Token consume_numeric();
