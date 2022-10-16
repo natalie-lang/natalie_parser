@@ -515,6 +515,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('foo::Bar')).must_equal s(:colon2, s(:call, nil, :foo), :Bar)
         expect(parse('foo::()')).must_equal s(:call, s(:call, nil, :foo), :call)
         expect(parse('foo::(1, 2)')).must_equal s(:call, s(:call, nil, :foo), :call, s(:lit, 1), s(:lit, 2))
+        expect(parse('foo::-@')).must_equal s(:call, s(:call, nil, :foo), :-@)
+        expect(parse('foo::-')).must_equal s(:call, s(:call, nil, :foo), :-)
       end
 
       it 'parses assignment' do

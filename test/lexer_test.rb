@@ -1004,14 +1004,23 @@ describe 'NatalieParser' do
 
     it 'tokenizes method names using keywords' do
       expect(tokenize('def self')).must_equal [{ type: :def }, { type: :name, literal: :self }]
-      expect(tokenize('def self.self')).must_equal [{ type: :def }, { type: :self }, { type: :"." }, { type: :name, literal: :self }]
-      expect(tokenize('foo.self')).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :name, literal: :self }]
       expect(tokenize('def def')).must_equal [{ type: :def }, { type: :name, literal: :def }]
-      expect(tokenize('def self.def')).must_equal [{ type: :def }, { type: :self }, { type: :"." }, { type: :name, literal: :def }]
-      expect(tokenize('foo.def')).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :name, literal: :def }]
       expect(tokenize('def while')).must_equal [{ type: :def }, { type: :name, literal: :while }]
-      expect(tokenize('def self.while')).must_equal [{ type: :def }, { type: :self }, { type: :"." }, { type: :name, literal: :while }]
-      expect(tokenize('foo.while')).must_equal [{ type: :name, literal: :foo }, { type: :"." }, { type: :name, literal: :while }]
+      %i[. ::].each do |op|
+        expect(tokenize("def self#{op}self")).must_equal [{ type: :def }, { type: :self }, { type: op }, { type: :name, literal: :self }]
+        expect(tokenize("foo#{op}self")).must_equal [{ type: :name, literal: :foo }, { type: op }, { type: :name, literal: :self }]
+        expect(tokenize("def self#{op}def")).must_equal [{ type: :def }, { type: :self }, { type: op }, { type: :name, literal: :def }]
+        expect(tokenize("foo#{op}def")).must_equal [{ type: :name, literal: :foo }, { type: op }, { type: :name, literal: :def }]
+        expect(tokenize("def self#{op}while")).must_equal [{ type: :def }, { type: :self }, { type: op }, { type: :name, literal: :while }]
+        expect(tokenize("foo#{op}while")).must_equal [{ type: :name, literal: :foo }, { type: op }, { type: :name, literal: :while }]
+        expect(tokenize("foo#{op}self#{op}bar")).must_equal [
+          { type: :name, literal: :foo },
+          { type: op },
+          { type: :name, literal: :self },
+          { type: op },
+          { type: :name, literal: :bar },
+        ]
+      end
     end
 
     it 'tokenizes unary operator method names' do

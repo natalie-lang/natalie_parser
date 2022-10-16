@@ -85,6 +85,7 @@ Token Lexer::next_token() {
     case Token::Type::AliasKeyword:
         m_remaining_method_names = 2;
         break;
+    case Token::Type::ConstantResolution:
     case Token::Type::DefKeyword:
         m_remaining_method_names = 1;
         m_allow_assignment_method = true;
@@ -719,7 +720,7 @@ Token Lexer::build_next_token() {
 
     Token keyword_token;
 
-    if (!m_last_token.is_dot() && match(4, "self")) {
+    if (!m_last_token.is_dot() && !m_last_token.is_constant_resolution() && match(4, "self")) {
         if (current_char() == '.' || (current_char() == ':' && peek() == ':'))
             keyword_token = { Token::Type::SelfKeyword, m_file, m_token_line, m_token_column, m_whitespace_precedes };
         else

@@ -2438,6 +2438,7 @@ SharedPtr<Node> Parser::parse_constant_resolution_expression(SharedPtr<Node> lef
     SharedPtr<Node> node;
     switch (name_token.type()) {
     case Token::Type::BareName:
+    case Token::Type::OperatorName:
         advance();
         node = new CallNode { name_token, left, name_token.literal_string() };
         break;
@@ -2456,7 +2457,12 @@ SharedPtr<Node> Parser::parse_constant_resolution_expression(SharedPtr<Node> lef
         break;
     }
     default:
-        throw_unexpected(name_token, ":: identifier name");
+        if (name_token.is_operator() || name_token.is_keyword()) {
+            advance();
+            node = new CallNode { name_token, left, new String(name_token.type_value()) };
+        } else {
+            throw_unexpected(name_token, ":: identifier name");
+        }
     }
     return node;
 }
