@@ -515,6 +515,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('foo::Bar')).must_equal s(:colon2, s(:call, nil, :foo), :Bar)
         expect(parse('foo::()')).must_equal s(:call, s(:call, nil, :foo), :call)
         expect(parse('foo::(1, 2)')).must_equal s(:call, s(:call, nil, :foo), :call, s(:lit, 1), s(:lit, 2))
+        expect(parse('foo::-@')).must_equal s(:call, s(:call, nil, :foo), :-@)
+        expect(parse('foo::-')).must_equal s(:call, s(:call, nil, :foo), :-)
       end
 
       it 'parses assignment' do
@@ -675,6 +677,9 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('def self.foo=; end')).must_equal s(:defs, s(:self), :foo=, s(:args), s(:nil))
         expect(parse('def foo.bar=; end')).must_equal s(:defs, s(:call, nil, :foo), :bar=, s(:args), s(:nil))
         expect(parse('def Foo.foo; end')).must_equal s(:defs, s(:const, :Foo), :foo, s(:args), s(:nil))
+        expect(parse('def foo::bar; end')).must_equal s(:defs, s(:call, nil, :foo), :bar, s(:args), s(:nil))
+        expect(parse('def Foo::bar; end')).must_equal s(:defs, s(:const, :Foo), :bar, s(:args), s(:nil))
+        expect(parse('def self::bar; end')).must_equal s(:defs, s(:self), :bar, s(:args), s(:nil))
         expect(parse('foo=o; def foo.bar; end')).must_equal s(:block, s(:lasgn, :foo, s(:call, nil, :o)), s(:defs, s(:lvar, :foo), :bar, s(:args), s(:nil)))
         expect(parse('def foo(*); end')).must_equal s(:defn, :foo, s(:args, :*), s(:nil))
         expect(parse('def foo(*x); end')).must_equal s(:defn, :foo, s(:args, :'*x'), s(:nil))

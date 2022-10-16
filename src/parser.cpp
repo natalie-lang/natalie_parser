@@ -998,14 +998,14 @@ SharedPtr<Node> Parser::parse_def(LocalsHashmap &locals) {
     auto token = current_token();
     switch (token.type()) {
     case Token::Type::BareName:
-        if (peek_token().type() == Token::Type::Dot) {
+        if (peek_token().is_dot() || peek_token().is_constant_resolution()) {
             self_node = parse_identifier(locals);
             advance(); // dot
         }
         name = parse_method_name(locals);
         break;
     case Token::Type::Constant:
-        if (peek_token().type() == Token::Type::Dot) {
+        if (peek_token().is_dot() || peek_token().is_constant_resolution()) {
             self_node = parse_constant(locals);
             advance(); // dot
         }
@@ -1015,7 +1015,7 @@ SharedPtr<Node> Parser::parse_def(LocalsHashmap &locals) {
         name = parse_method_name(locals);
         break;
     case Token::Type::SelfKeyword:
-        if (peek_token().type() == Token::Type::Dot) {
+        if (peek_token().is_dot() || peek_token().is_constant_resolution()) {
             self_node = new SelfNode { current_token() };
             advance(); // self
             advance(); // dot
@@ -2438,6 +2438,7 @@ SharedPtr<Node> Parser::parse_constant_resolution_expression(SharedPtr<Node> lef
     SharedPtr<Node> node;
     switch (name_token.type()) {
     case Token::Type::BareName:
+    case Token::Type::OperatorName:
         advance();
         node = new CallNode { name_token, left, name_token.literal_string() };
         break;
@@ -2456,7 +2457,12 @@ SharedPtr<Node> Parser::parse_constant_resolution_expression(SharedPtr<Node> lef
         break;
     }
     default:
-        throw_unexpected(name_token, ":: identifier name");
+        if (name_token.is_operator() || name_token.is_keyword()) {
+            advance();
+            node = new CallNode { name_token, left, new String(name_token.type_value()) };
+        } else {
+            throw_unexpected(name_token, ":: identifier name");
+        }
     }
     return node;
 }
