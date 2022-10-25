@@ -1302,7 +1302,9 @@ SharedPtr<Node> Parser::parse_for(LocalsHashmap &locals) {
     }
     expect(Token::Type::InKeyword, "for in");
     advance();
-    auto expr = parse_expression(Precedence::LOWEST, locals, IterAllow::CURLY_ONLY);
+    m_call_depth.last()++;
+    auto expr = parse_expression(Precedence::BARE_CALL_ARG, locals, IterAllow::CURLY_ONLY);
+    m_call_depth.last()--;
     if (current_token().type() == Token::Type::DoKeyword) {
         advance();
     }
