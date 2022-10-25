@@ -1155,8 +1155,9 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('for foo in bar; 1; end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo), s(:lit, 1))
         expect(parse('for foo in bar do end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo))
         expect(parse('for foo in bar do 1; end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo), s(:lit, 1))
-        # FIXME: support do keyword
-        # expect(parse('for foo in bar do; end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo))
+        expect(parse('for foo in bar do; end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo))
+        expect(parse("for foo in bar do\nend")).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo))
+        expect(parse("for foo in 1...height do\nend")).must_equal s(:for, s(:dot3, s(:lit, 1), s(:call, nil, :height)), s(:lasgn, :foo))
         expect(parse('for a, b in c; end')).must_equal s(:for, s(:call, nil, :c), s(:masgn, s(:array, s(:lasgn, :a), s(:lasgn, :b))))
       end
 
@@ -1315,6 +1316,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("case 1\nwhen 1\n2..\nwhen 2\n3...\nwhen 4\n5..\nend")).must_equal s(:case, s(:lit, 1), s(:when, s(:array, s(:lit, 1)), s(:dot2, s(:lit, 2), nil)), s(:when, s(:array, s(:lit, 2)), s(:dot3, s(:lit, 3), nil)), s(:when, s(:array, s(:lit, 4)), s(:dot2, s(:lit, 5), nil)), nil)
         expect(parse("case 1\nwhen 1..2 then 1\nwhen 3.. then 3\nend")).must_equal s(:case, s(:lit, 1), s(:when, s(:array, s(:lit, 1..2)), s(:lit, 1)), s(:when, s(:array, s(:dot2, s(:lit, 3), nil)), s(:lit, 3)), nil)
         expect(parse("ruby_version_is ''...'3.0' do\nend")).must_equal s(:iter, s(:call, nil, :ruby_version_is, s(:dot3, s(:str, ''), s(:str, '3.0'))), 0)
+        expect(parse("foo 1...height do\nend")).must_equal s(:iter, s(:call, nil, :foo, s(:dot3, s(:lit, 1), s(:call, nil, :height))), 0)
       end
 
       it 'parses argument forwarding shorthand' do
