@@ -1,5 +1,35 @@
 # Changelog
 
+## 2.2.0 (2022-10-24)
+
+- FIX: Allow backreference as first arg of implicit call
+- FIX: Exclude `?` and `!` from class/instance/global variable name
+- FIX: Fix parsing of hashes containing assignments
+- FIX: Parse aliases of unary operators and methods named as keywords
+- FIX: Parse alias of keyword-like method to assignment method
+- FIX: Parse alias/undef of assignment methods
+- FIX: Parse backtick as method name
+- FIX: Parse class/module definition in dynamic class/module
+- FIX: Parse `def !`
+- FIX: Parse `def foo::bar`
+- FIX: Parse `foo(<<FOO)`
+- FIX: Parse `for ... do` and `while ... do`
+- FIX: Parse global variables beginning with `$_`
+- FIX: Parse keywords/operators as method names for `::`
+- FIX: Parse __LINE__ constant
+- FIX: Parse more percent strings
+- FIX: Parse more regexes
+- FIX: Parse more stabby procs without parentheses
+- FIX: Parse multiple parameters set to the same default value
+- FIX: Parse parentheses-less stabby proc with keyword arg
+- FIX: Parse undef of methods with special names
+- FIX: Parse `unless ... then`
+- FIX: Parse variable names starting with extended ASCII characters
+- FIX: Raise SyntaxError for `def ====`
+- FIX: Raise syntax error for `def +@.foo`
+- FIX: Tokenize unterminated ternary at EOF
+- FIX: Use lower precedence for block pass
+
 ## 2.1.0 (2022-08-12)
 
 - FEAT: Parse for loops
