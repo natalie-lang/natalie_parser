@@ -38,13 +38,13 @@ parser = Parser::CurrentRuby
 
 iterations = 1000
 
-Benchmark.bm(15) do |x|
-  x.report('RubyParser') { iterations.times { ruby_parser.parse(source) } }
-  x.report('Parser')     { iterations.times { parser.parse(source) } }
-  x.report('SyntaxTree') { iterations.times { SyntaxTree.parse(source) } }
+Benchmark.bm(25) do |x|
+  x.report("RubyParser #{RubyParserStuff::VERSION}") { iterations.times { ruby_parser.parse(source) } }
+  x.report("Parser #{Parser::VERSION}")              { iterations.times { parser.parse(source) } }
+  x.report("SyntaxTree #{SyntaxTree::VERSION}")      { iterations.times { SyntaxTree.parse(source) } }
 
   # we have to load this here because our Sexp overwrites RubyParser's
   # and breaks RubyParser :-(
   require 'natalie_parser'
-  x.report('NatalieParser') { iterations.times { NatalieParser.parse(source) } }
+  x.report("NatalieParser #{NatalieParser::VERSION}") { iterations.times { NatalieParser.parse(source) } }
 end
