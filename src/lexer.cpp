@@ -975,6 +975,10 @@ Token Lexer::consume_bare_name_or_constant(Token::Type type) {
     switch (c) {
     case '?':
     case '!':
+        if (peek() == ':' && m_last_token.can_precede_symbol_key()) {
+            advance();
+            type = Token::Type::SymbolKey;
+        }
         advance();
         buf->append_char(c);
         break;

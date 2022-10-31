@@ -820,6 +820,8 @@ describe 'NatalieParser' do
       expect(tokenize('p{|x|foo:bar}')).must_include(type: :symbol_key, literal: :foo)
       expect(tokenize('p{||foo:bar}')).must_include(type: :symbol_key, literal: :foo)
       expect(tokenize("{\nfoo:bar}")).must_include(type: :symbol_key, literal: :foo)
+      expect(tokenize("{\nfoo?:bar}")).must_include(type: :symbol_key, literal: :foo?)
+      expect(tokenize("{\nfoo!:bar}")).must_include(type: :symbol_key, literal: :foo!)
       expect(tokenize('Hash[foo:bar]')).must_include(type: :symbol_key, literal: :foo)
       expect(tokenize('Hash[foo: bar]')).must_include(type: :symbol_key, literal: :foo)
       expect(tokenize('super foo:bar')).must_include(type: :symbol_key, literal: :foo)
