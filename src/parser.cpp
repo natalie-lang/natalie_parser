@@ -1300,6 +1300,16 @@ SharedPtr<Node> Parser::parse_for(LocalsHashmap &locals) {
     if (current_token().is_comma() || vars->type() == Node::Type::Splat) {
         vars = parse_multiple_assignment_expression(vars, locals);
     }
+    switch (vars->type()) {
+    case Node::Type::Identifier:
+        vars.static_cast_as<IdentifierNode>()->add_to_locals(locals);
+        break;
+    case Node::Type::MultipleAssignment:
+        vars.static_cast_as<MultipleAssignmentNode>()->add_locals(locals);
+        break;
+    default:
+        break;
+    }
     expect(Token::Type::InKeyword, "for in");
     advance();
     m_call_depth.last()++;
