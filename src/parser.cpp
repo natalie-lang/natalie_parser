@@ -910,7 +910,7 @@ SharedPtr<Node> Parser::parse_multiple_assignment_expression(SharedPtr<Node> lef
     list->add_node(left);
     while (current_token().is_comma()) {
         advance();
-        if (current_token().is_rparen() || current_token().is_equal()) {
+        if (current_token().is_rparen() || current_token().is_equal() || current_token().type() == Token::Type::InKeyword) {
             // trailing comma with no additional identifier
             break;
         }
