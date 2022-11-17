@@ -1296,8 +1296,8 @@ SharedPtr<Node> Parser::parse_line_constant(LocalsHashmap &) {
 SharedPtr<Node> Parser::parse_for(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    auto vars = parse_assignment_identifier(false, locals);
-    if (current_token().type() == Token::Type::Comma) {
+    auto vars = parse_assignment_identifier(true, locals);
+    if (current_token().is_comma() || vars->type() == Node::Type::Splat) {
         vars = parse_multiple_assignment_expression(vars, locals);
     }
     expect(Token::Type::InKeyword, "for in");

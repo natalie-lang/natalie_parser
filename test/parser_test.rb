@@ -1152,6 +1152,7 @@ require_relative '../lib/natalie_parser/sexp'
 
       it 'parses for' do
         expect(parse('for foo in bar; end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo))
+        expect(parse('for *foo in bar; end')).must_equal s(:for, s(:call, nil, :bar), s(:masgn, s(:array, s(:splat, s(:lasgn, :foo)))))
         expect(parse('for foo in bar; 1; end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo), s(:lit, 1))
         expect(parse('for foo in bar do end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo))
         expect(parse('for foo in bar do 1; end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo), s(:lit, 1))
