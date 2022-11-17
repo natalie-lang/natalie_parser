@@ -161,6 +161,7 @@ private:
     SharedPtr<Node> parse_assignment_expression(SharedPtr<Node>, LocalsHashmap &);
     SharedPtr<Node> parse_assignment_expression_without_multiple_values(SharedPtr<Node>, LocalsHashmap &);
     SharedPtr<Node> parse_assignment_expression(SharedPtr<Node>, LocalsHashmap &, bool);
+    void add_assignment_locals(SharedPtr<Node>, LocalsHashmap &);
     SharedPtr<Node> parse_assignment_expression_value(bool, LocalsHashmap &, bool);
     SharedPtr<Node> parse_assignment_identifier(bool, LocalsHashmap &);
     SharedPtr<Node> parse_call_expression_without_parens(SharedPtr<Node>, LocalsHashmap &);

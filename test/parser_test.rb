@@ -524,7 +524,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('x = 1 + 2')).must_equal s(:lasgn, :x, s(:call, s(:lit, 1), :+, s(:lit, 2)))
         if parser == 'NatalieParser'
           expect_raise_with_message(-> { parse('x =') }, SyntaxError, "(string)#1: syntax error, unexpected end-of-input (expected: 'expression')")
-          expect_raise_with_message(-> { parse('[1] = 2') }, SyntaxError, "(string)#1: syntax error, unexpected '[' (expected: 'left side of assignment')")
+          expect_raise_with_message(-> { parse('[1] = 2') }, SyntaxError, "(string)#1: syntax error, unexpected '[' (expected: 'assignment identifier')")
         else
           expect_raise_with_message(-> { parse('x =') }, SyntaxError, '(string):1 :: parse error on value "$" ($end)')
           expect_raise_with_message(-> { parse('[1] = 2') }, SyntaxError, '(string):1 :: parse error on value "=" (tEQL)')
@@ -606,7 +606,7 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('x = 1 && 2 && 3')).must_equal s(:lasgn, :x, s(:and, s(:lit, 1), s(:and, s(:lit, 2), s(:lit, 3))))
         expect(parse('x = 1 and 2 and 3')).must_equal s(:and, s(:lasgn, :x, s(:lit, 1)), s(:and, s(:lit, 2), s(:lit, 3)))
         if parser == 'NatalieParser'
-          expect_raise_with_message(-> { parse('x, y+z = 1, 2') }, SyntaxError, "(string)#1: syntax error, unexpected '+' (expected: 'left side of assignment')")
+          expect_raise_with_message(-> { parse('x, y+z = 1, 2') }, SyntaxError, "(string)#1: syntax error, unexpected '+' (expected: 'assignment identifier')")
           expect_raise_with_message(-> { parse('-x, y = 1, 2') }, SyntaxError, "(string)#1: syntax error, unexpected ',' (expected: 'assignment =')")
           expect_raise_with_message(-> { parse('foo, (bar=1, baz) = buz') }, SyntaxError, "(string)#1: syntax error, unexpected '=' (expected: 'closing paren for multiple assignment')")
         else
@@ -1669,6 +1669,13 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("module Foo;rescue;1;else;2;ensure;3;end")).must_equal s(:module, :Foo, s(:ensure, s(:rescue, s(:resbody, s(:array), s(:lit, 1)), s(:lit, 2)), s(:lit, 3)))
         expect(parse("h[k]=begin\n42\nend")).must_equal s(:attrasgn, s(:call, nil, :h), :[]=, s(:call, nil, :k), s(:lit, 42))
         expect(parse("a begin\nb.c do end\nend")).must_equal s(:call, nil, :a, s(:iter, s(:call, s(:call, nil, :b), :c), 0))
+        expect(parse("begin; rescue => @@captured_error; end")).must_equal s(:rescue, s(:resbody, s(:array, s(:cvdecl, :@@captured_error, s(:gvar, :$!))), nil))
+        expect(parse("begin; rescue => CapturedError; end")).must_equal s(:rescue, s(:resbody, s(:array, s(:cdecl, :CapturedError, s(:gvar, :$!))), nil))
+        expect(parse("begin; rescue => $captured_error; end")).must_equal s(:rescue, s(:resbody, s(:array, s(:gasgn, :$captured_error, s(:gvar, :$!))), nil))
+        expect(parse("begin; rescue => @captured_error; end")).must_equal s(:rescue, s(:resbody, s(:array, s(:iasgn, :@captured_error, s(:gvar, :$!))), nil))
+        expect(parse("begin; rescue => self&.captured_error; end")).must_equal s(:rescue, s(:resbody, s(:array, s(:safe_attrasgn, s(:self), :captured_error=, s(:gvar, :$!))), nil))
+        expect(parse("begin; rescue => self.captured_error; end")).must_equal s(:rescue, s(:resbody, s(:array, s(:attrasgn, s(:self), :captured_error=, s(:gvar, :$!))), nil))
+        expect(parse("begin; rescue => self[:error]; end")).must_equal s(:rescue, s(:resbody, s(:array, s(:attrasgn, s(:self), :[]=, s(:lit, :error), s(:gvar, :$!))), nil))
       end
 
       it 'parses inline rescue' do
