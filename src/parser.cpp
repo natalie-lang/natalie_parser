@@ -910,7 +910,7 @@ SharedPtr<Node> Parser::parse_multiple_assignment_expression(SharedPtr<Node> lef
     list->add_node(left);
     while (current_token().is_comma()) {
         advance();
-        if (current_token().is_rparen() || current_token().is_equal()) {
+        if (current_token().is_rparen() || current_token().is_equal() || current_token().type() == Token::Type::InKeyword) {
             // trailing comma with no additional identifier
             break;
         }
@@ -1296,9 +1296,19 @@ SharedPtr<Node> Parser::parse_line_constant(LocalsHashmap &) {
 SharedPtr<Node> Parser::parse_for(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    auto vars = parse_assignment_identifier(false, locals);
-    if (current_token().type() == Token::Type::Comma) {
+    auto vars = parse_assignment_identifier(true, locals);
+    if (current_token().is_comma() || vars->type() == Node::Type::Splat) {
         vars = parse_multiple_assignment_expression(vars, locals);
+    }
+    switch (vars->type()) {
+    case Node::Type::Identifier:
+        vars.static_cast_as<IdentifierNode>()->add_to_locals(locals);
+        break;
+    case Node::Type::MultipleAssignment:
+        vars.static_cast_as<MultipleAssignmentNode>()->add_locals(locals);
+        break;
+    default:
+        break;
     }
     expect(Token::Type::InKeyword, "for in");
     advance();

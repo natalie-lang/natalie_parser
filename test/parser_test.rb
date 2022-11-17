@@ -1152,6 +1152,8 @@ require_relative '../lib/natalie_parser/sexp'
 
       it 'parses for' do
         expect(parse('for foo in bar; end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo))
+        expect(parse('for foo in bar; foo; end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo), s(:lvar, :foo))
+        expect(parse('for *foo in bar; end')).must_equal s(:for, s(:call, nil, :bar), s(:masgn, s(:array, s(:splat, s(:lasgn, :foo)))))
         expect(parse('for foo in bar; 1; end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo), s(:lit, 1))
         expect(parse('for foo in bar do end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo))
         expect(parse('for foo in bar do 1; end')).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo), s(:lit, 1))
@@ -1159,6 +1161,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("for foo in bar do\nend")).must_equal s(:for, s(:call, nil, :bar), s(:lasgn, :foo))
         expect(parse("for foo in 1...height do\nend")).must_equal s(:for, s(:dot3, s(:lit, 1), s(:call, nil, :height)), s(:lasgn, :foo))
         expect(parse('for a, b in c; end')).must_equal s(:for, s(:call, nil, :c), s(:masgn, s(:array, s(:lasgn, :a), s(:lasgn, :b))))
+        expect(parse('for a, b, in c; end')).must_equal s(:for, s(:call, nil, :c), s(:masgn, s(:array, s(:lasgn, :a), s(:lasgn, :b))))
+        expect(parse('for a, b in c; a; end')).must_equal s(:for, s(:call, nil, :c), s(:masgn, s(:array, s(:lasgn, :a), s(:lasgn, :b))), s(:lvar, :a))
       end
 
       it 'parses post-conditional if/unless' do
