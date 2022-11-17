@@ -434,16 +434,8 @@ void Parser::parse_rest_of_begin(BeginNode &begin_node, LocalsHashmap &locals) {
             }
             if (current_token().is_hash_rocket()) {
                 advance();
-                SharedPtr<IdentifierNode> name;
-                switch (current_token().type()) {
-                case Token::Type::BareName:
-                    name = new IdentifierNode { current_token(), current_token().literal_string() };
-                    advance();
-                    break;
-                default:
-                    throw_unexpected("exception name");
-                }
-                name->add_to_locals(locals);
+                auto name = parse_expression(Precedence::ASSIGNMENT_LHS, locals);
+                add_assignment_locals(name, locals);
                 rescue_node->set_exception_name(name);
             }
             next_expression();
@@ -1300,16 +1292,7 @@ SharedPtr<Node> Parser::parse_for(LocalsHashmap &locals) {
     if (current_token().is_comma() || vars->type() == Node::Type::Splat) {
         vars = parse_multiple_assignment_expression(vars, locals);
     }
-    switch (vars->type()) {
-    case Node::Type::Identifier:
-        vars.static_cast_as<IdentifierNode>()->add_to_locals(locals);
-        break;
-    case Node::Type::MultipleAssignment:
-        vars.static_cast_as<MultipleAssignmentNode>()->add_locals(locals);
-        break;
-    default:
-        break;
-    }
+    add_assignment_locals(vars, locals);
     expect(Token::Type::InKeyword, "for in");
     advance();
     m_call_depth.last()++;
@@ -2189,32 +2172,34 @@ SharedPtr<Node> Parser::parse_assignment_expression(SharedPtr<Node> left, Locals
     if (left->type() == Node::Type::Splat) {
         return parse_multiple_assignment_expression(left, locals);
     }
+    add_assignment_locals(left, locals);
+    advance();
+    bool to_array = left->type() == Node::Type::MultipleAssignment;
+    auto value = parse_assignment_expression_value(to_array, locals, allow_multiple);
+    return new AssignmentNode { token, left, value };
+}
+
+void Parser::add_assignment_locals(SharedPtr<Node> left, LocalsHashmap &locals) {
     switch (left->type()) {
     case Node::Type::Identifier: {
         auto left_identifier = left.static_cast_as<IdentifierNode>();
         left_identifier->add_to_locals(locals);
-        advance();
-        auto value = parse_assignment_expression_value(false, locals, allow_multiple);
-        return new AssignmentNode { token, left, value };
+        break;
     }
     case Node::Type::Call:
     case Node::Type::Colon2:
     case Node::Type::Colon3:
     case Node::Type::SafeCall: {
-        advance();
-        auto value = parse_assignment_expression_value(false, locals, allow_multiple);
-        return new AssignmentNode { token, left, value };
+        break;
     }
     case Node::Type::MultipleAssignment: {
         left.static_cast_as<MultipleAssignmentNode>()->add_locals(locals);
-        advance();
-        auto value = parse_assignment_expression_value(true, locals, allow_multiple);
-        return new AssignmentNode { token, left, value };
+        break;
     }
     default:
-        throw_unexpected(left->token(), "left side of assignment");
+        throw_unexpected(left->token(), "assignment identifier");
     }
-};
+}
 
 SharedPtr<Node> Parser::parse_assignment_expression_value(bool to_array, LocalsHashmap &locals, bool allow_multiple) {
     auto token = current_token();
