@@ -185,7 +185,8 @@ file "ext/natalie_parser/natalie_parser.#{so_ext}" => [
   else
     cxx_hacky = cxx
   end
-  sh "CC=#{cc.inspect} CXX=#{cxx_hacky.inspect} make -C #{build_dir} -j -e V=1 2>&1 | tee #{log_file}"
+  make = system('which gmake 2>&1 > /dev/null') ? 'gmake' : 'make'
+  sh "CC=#{cc.inspect} CXX=#{cxx_hacky.inspect} #{make} -C #{build_dir} -j -e V=1 2>&1 | tee #{log_file}"
 end
 
   file 'build/fragments.hpp' => ['test/parser_test.rb', 'test/support/extract_parser_test_fragments.rb'] do
