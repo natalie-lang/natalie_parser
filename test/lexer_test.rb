@@ -1,4 +1,3 @@
-# coding: utf-8
 # skip-ruby
 
 require_relative './test_helper'
@@ -268,7 +267,7 @@ describe 'NatalieParser' do
     end
 
     it 'tokenizes fixnums' do
-      expect(tokenize('1 123 +1 -456 - 0 100_000_000 0d5 0D6 0o10 0O11 0777 07654321 0xff 0XFF 0b110 0B111')).must_equal [
+      expect(tokenize('1 123 +1 -456 - 0 100_000_000 0d5 0D6 0o10 0O11 0xff 0XFF 0b110 0B111')).must_equal [
         { type: :fixnum, literal: 1 },
         { type: :fixnum, literal: 123 },
         { type: :'+' },
@@ -282,8 +281,6 @@ describe 'NatalieParser' do
         { type: :fixnum, literal: 6 }, # 0D6
         { type: :fixnum, literal: 8 }, # 0o10
         { type: :fixnum, literal: 9 }, # 0O11
-        { type: :fixnum, literal: 511 }, # 0777
-        { type: :fixnum, literal: 2054353}, #07654321
         { type: :fixnum, literal: 255 }, # 0xff
         { type: :fixnum, literal: 255 }, # 0XFF
         { type: :fixnum, literal: 6 }, # 0b110
