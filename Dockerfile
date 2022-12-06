@@ -8,7 +8,8 @@ ENV LC_ALL C.UTF-8
 
 WORKDIR natalie_parser
 
-COPY Gemfile /natalie_parser/ 
+COPY Gemfile /natalie_parser/
+COPY Gemfile.lock /natalie_parser/
 RUN bundle install
 
 ARG CC=gcc
