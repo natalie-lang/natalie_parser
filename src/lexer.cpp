@@ -1288,7 +1288,26 @@ Token Lexer::consume_numeric() {
             break;
         }
         default:
-            token = consume_decimal_digits_and_build_token();
+            char c = peek();
+
+            if (isdigit(c)) {
+                // bare octal case, e.g. 0777.
+                // If starts with a 0 but next number is not 0..7 then that's an error.
+                if (!(c >= '0' && c <= '7'))
+                    return Token { Token::Type::Invalid, c, m_file, m_cursor_line,
+                        m_cursor_column, m_whitespace_precedes };
+                chars->append_char(c);
+                c = next();
+                do {
+                    chars->append_char(c);
+                    c = next();
+                    if (c == '_')
+                        c = next();
+                } while (c >= '0' && c <= '7');
+                token = chars_to_fixnum_or_bignum_token(chars, 8, 1);
+            } else {
+                token = consume_decimal_digits_and_build_token();
+            }
         }
     } else {
         token = consume_decimal_digits_and_build_token();
