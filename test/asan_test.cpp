@@ -116,7 +116,9 @@ int main() {
     }
     test_fragments_with_syntax_errors();
     srand(time(NULL));
-    test_fragments_with_fuzzing(rand());
+    int seed = rand();
+    // seed = 1106784158;
+    test_fragments_with_fuzzing(seed);
     printf("\n");
     return 0;
 }

@@ -1163,6 +1163,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse('for a, b in c; end')).must_equal s(:for, s(:call, nil, :c), s(:masgn, s(:array, s(:lasgn, :a), s(:lasgn, :b))))
         expect(parse('for a, b, in c; end')).must_equal s(:for, s(:call, nil, :c), s(:masgn, s(:array, s(:lasgn, :a), s(:lasgn, :b))))
         expect(parse('for a, b in c; a; end')).must_equal s(:for, s(:call, nil, :c), s(:masgn, s(:array, s(:lasgn, :a), s(:lasgn, :b))), s(:lvar, :a))
+        expect(parse('for a.b in c; a.b; end')).must_equal s(:for, s(:call, nil, :c), s(:attrasgn, s(:call, nil, :a), :b=), s(:call, s(:call, nil, :a), :b))
+        expect(parse('for A in c; a; end')).must_equal s(:for, s(:call, nil, :c), s(:cdecl, :A), s(:call, nil, :a))
       end
 
       it 'parses post-conditional if/unless' do
