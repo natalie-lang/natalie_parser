@@ -21,6 +21,7 @@ COPY ext ext
 COPY lib lib
 COPY src src
 COPY include include
+COPY external external
 RUN rake
 
 COPY test test

@@ -13,8 +13,11 @@ Gem::Specification.new do |spec|
   spec.homepage      = 'https://github.com/natalie-lang/natalie_parser'
   spec.license       = 'MIT'
 
+
   spec.files         = Dir.chdir(File.expand_path(__dir__)) do
-    `git ls-files`.split("\n").reject { |f| f.match(%r{^(test|\.)}) }
+    main_files = `git ls-files`.split("\n").reject { |f| f.match(%r{^(test|\.)}) }
+    tm_files = `git -C external/tm ls-files`.split("\n").grep(%r{^include/}).map { |p| "external/tm/#{p}" }
+    main_files + tm_files
   end
 
   spec.require_paths = ['lib', 'ext']
