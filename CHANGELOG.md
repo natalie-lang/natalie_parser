@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.3.0 (2022-12-31)
+
+- FIX: Add for loop variables to local scope
+- FIX: Add lexer support for leading-zero (bare) octal - e.g. 0777
+- FIX: Allow non-local variable in rescue
+- FIX: Allow trailing comma after for loop variables
+- FIX: Fix for-loop with attr assignment
+- FIX: Fix lexing of symbol keys with trailing punctuation
+- FIX: Fix precedence of 'do' keyword in use with 'for'
+- FIX: Parse for loop with splat assignment
+- FIX: Use proper make on OpenBSD
+
 ## 2.2.0 (2022-10-24)
 
 - FIX: Allow backreference as first arg of implicit call
