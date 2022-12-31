@@ -194,7 +194,8 @@ end
 end
 
 file 'build/asan_test' => ['test/asan_test.cpp', 'build/fragments.hpp', :library] do |t|
-  sh "#{cxx} #{cxx_flags.join(' ')} -std=#{STANDARD} -I build -I include -o #{t.name} #{t.source} -L build -lnatalie_parser"
+  includes = include_paths.map { |path| "-I #{path}" }
+  sh "#{cxx} #{cxx_flags.join(' ')} -std=#{STANDARD} -I build #{includes.join(' ')} -o #{t.name} #{t.source} -L build -lnatalie_parser"
 end
 
 task :bundle_install do
@@ -246,5 +247,8 @@ def cxx_flags
 end
 
 def include_paths
-  [File.expand_path('include', __dir__)]
+  [
+    File.expand_path('include', __dir__),
+    File.expand_path('external/tm/include', __dir__)
+  ]
 end
