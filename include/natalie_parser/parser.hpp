@@ -28,7 +28,7 @@ public:
         SyntaxError(const SyntaxError &) = delete;
         SyntaxError &operator=(const SyntaxError &) = delete;
 
-        const char *message() { return m_message; }
+        const char *message() const { return m_message; }
 
     private:
         char *m_message { nullptr };
