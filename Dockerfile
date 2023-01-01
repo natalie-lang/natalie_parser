@@ -16,12 +16,5 @@ ENV CC=$CC
 ARG CXX=g++
 ENV CXX=$CXX
 
-COPY Rakefile Rakefile
-COPY ext ext
-COPY lib lib
-COPY src src
-COPY include include
-COPY external external
+COPY . /natalie_parser/
 RUN rake
-
-COPY test test

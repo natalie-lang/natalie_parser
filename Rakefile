@@ -78,6 +78,16 @@ task benchmark: :build do
   require_relative './test/benchmark'
 end
 
+desc 'Install the gem and test that it works'
+task test_gem_install: :build do
+  sh 'gem build -o /tmp/natalie_parser.gem natalie_parser.gemspec'
+  sh 'gem install /tmp/natalie_parser.gem'
+  require_relative './lib/natalie_parser/version'
+  expected_version = NatalieParser::VERSION
+  sh "ruby -r natalie_parser -e 'raise %(bad gem version) unless NatalieParser::VERSION == #{expected_version.inspect}'"
+  sh "ruby -r natalie_parser -e 'raise %(bad gem output) unless NatalieParser.parse(%(1)) == s(:lit, 1)'"
+end
+
 # # # # Docker Tasks (used for CI) # # # #
 
 DOCKER_FLAGS =
@@ -103,7 +113,7 @@ task :docker_build_ruby27 do
   sh 'docker build -t natalie-parser-ruby27 --build-arg IMAGE="ruby:2.7" .'
 end
 
-task docker_test: %i[docker_test_gcc docker_test_clang]
+task docker_test: %i[docker_test_gcc docker_test_clang docker_test_gem_install]
 
 task docker_test_gcc: :docker_build do
   sh "docker run #{DOCKER_FLAGS} --rm --entrypoint rake natalie-parser test"
@@ -111,6 +121,10 @@ end
 
 task docker_test_clang: :docker_build_clang do
   sh "docker run #{DOCKER_FLAGS} --rm --entrypoint rake natalie-parser-clang test"
+end
+
+task docker_test_gem_install: :docker_build do
+  sh "docker run #{DOCKER_FLAGS} --rm --entrypoint rake natalie-parser test_gem_install"
 end
 
 # # # # Build Compile Database # # # #

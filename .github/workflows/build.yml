@@ -27,3 +27,11 @@ jobs:
         run: git submodule update --init --recursive
       - name: test with clang
         run: rake docker_test_clang
+  gem_install:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v1
+      - name: checkout submodules
+        run: git submodule update --init --recursive
+      - name: test gem install
+        run: rake docker_test_gem_install
