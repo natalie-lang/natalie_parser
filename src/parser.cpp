@@ -621,10 +621,13 @@ SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
     auto token = current_token();
     SharedPtr<Node> node;
     switch (token.type()) {
-    case Token::Type::BareName:
+    case Token::Type::BareName: {
         advance();
-        node = new IdentifierNode { token, true };
+        auto var_node = new IdentifierNode { token, true };
+        var_node->add_to_locals(locals);
+        node = var_node;
         break;
+    }
     case Token::Type::Bignum:
     case Token::Type::Fixnum:
     case Token::Type::Float:

@@ -1596,7 +1596,12 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("case 1\nin 1.. then 1\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:dot2, s(:lit, 1), nil), s(:lit, 1)), nil)
 
         # variable
-        expect(parse("case 1\nin x\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lvar, :x), s(:lit, :a)), nil)
+        if parser == 'NatalieParser'
+          # RubyParser does not mark the variable as local, but we do
+          expect(parse("case 1\nin x\nx\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lvar, :x), s(:lvar, :x)), nil)
+        else
+          expect(parse("case 1\nin x\nx\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lvar, :x), s(:call, nil, :x)), nil)
+        end
         expect(parse("case 1\nin x then :a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lvar, :x), s(:lit, :a)), nil)
 
         # splat
@@ -1633,10 +1638,16 @@ require_relative '../lib/natalie_parser/sexp'
 
         # hash pattern
         expect(parse("case 1\nin {}\n:a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil), s(:lit, :a)), nil)
-        expect(parse("case 1\nin { x: x }\nx\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil, s(:lit, :x), s(:lvar, :x)), s(:call, nil, :x)), nil)
+        if parser == 'NatalieParser'
+          # we mark the 'x' variable local, but RubyParser does not
+          expect(parse("case 1\nin { x: x }\nx\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil, s(:lit, :x), s(:lvar, :x)), s(:lvar, :x)), nil)
+        else
+          expect(parse("case 1\nin { x: x }\nx\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil, s(:lit, :x), s(:lvar, :x)), s(:call, nil, :x)), nil)
+        end
+        expect(parse("case 1\nin { x: x }\n1\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil, s(:lit, :x), s(:lvar, :x)), s(:lit, 1)), nil)
         expect(parse("case 1\nin { x: x, y: y }\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil, s(:lit, :x), s(:lvar, :x), s(:lit, :y), s(:lvar, :y)), nil), nil)
-        expect(parse("case 1\nin { 'x': x, 'y': y }\nx\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil, s(:lit, :x), s(:lvar, :x), s(:lit, :y), s(:lvar, :y)), s(:call, nil, :x)), nil)
-        expect(parse("case 1\nin { \"x\": x }\nx\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil, s(:lit, :x), s(:lvar, :x)), s(:call, nil, :x)), nil)
+        expect(parse("case 1\nin { 'x': x, 'y': y }\n1\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil, s(:lit, :x), s(:lvar, :x), s(:lit, :y), s(:lvar, :y)), s(:lit, 1)), nil)
+        expect(parse("case 1\nin { \"x\": x }\n1\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil, s(:lit, :x), s(:lvar, :x)), s(:lit, 1)), nil)
         expect(parse("case 1\nin { x: }\nx\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil, s(:lit, :x), nil), s(:lvar, :x)), nil)
         expect(parse("case 1\nin { x:, y: }\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:hash_pat, nil, s(:lit, :x), nil, s(:lit, :y), nil), nil), nil)
         expect(parse("case 1\nin { x: [:a, a] => b } => y\nx\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lasgn, :y, s(:hash_pat, nil, s(:lit, :x), s(:lasgn, :b, s(:array_pat, nil, s(:lit, :a), s(:lvar, :a))))), s(:call, nil, :x)), nil)
