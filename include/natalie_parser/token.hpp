@@ -661,7 +661,6 @@ public:
     bool is_semicolon() const { return m_type == Type::Semicolon; }
     bool is_splat() const { return m_type == Type::Star || m_type == Type::StarStar; }
     bool is_symbol_key() const { return m_type == Type::SymbolKey; }
-    bool is_when_keyword() const { return m_type == Type::WhenKeyword; }
 
     bool is_valid() const {
         return !!type_value();

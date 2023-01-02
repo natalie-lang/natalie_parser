@@ -68,8 +68,7 @@ private:
 
     SharedPtr<BlockNode> parse_body(LocalsHashmap &, Precedence, std::function<bool(Token::Type)>, bool = false);
     SharedPtr<BlockNode> parse_body(LocalsHashmap &, Precedence, Token::Type = Token::Type::EndKeyword, bool = false);
-    SharedPtr<BlockNode> parse_case_in_body(LocalsHashmap &);
-    SharedPtr<BlockNode> parse_case_when_body(LocalsHashmap &);
+    SharedPtr<BlockNode> parse_case_body(LocalsHashmap &, Token::Type);
     SharedPtr<Node> parse_if_body(LocalsHashmap &);
     SharedPtr<BlockNode> parse_def_body(LocalsHashmap &);
 

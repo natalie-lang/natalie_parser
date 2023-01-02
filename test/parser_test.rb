@@ -1603,6 +1603,7 @@ require_relative '../lib/natalie_parser/sexp'
           expect(parse("case 1\nin x\nx\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lvar, :x), s(:call, nil, :x)), nil)
         end
         expect(parse("case 1\nin x then :a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lvar, :x), s(:lit, :a)), nil)
+        expect(parse("case 1\nin x\n:a\nin y\n:b\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:lvar, :x), s(:lit, :a)), s(:in, s(:lvar, :y), s(:lit, :b)), nil)
 
         # splat
         expect(parse("case 1\nin *x then :a\nend")).must_equal s(:case, s(:lit, 1), s(:in, s(:array_pat, nil, :"*x"), s(:lit, :a)), nil)

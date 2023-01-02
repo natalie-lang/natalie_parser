@@ -575,7 +575,7 @@ SharedPtr<Node> Parser::parse_case(LocalsHashmap &locals) {
             } else {
                 next_expression();
             }
-            auto body = parse_case_when_body(locals);
+            auto body = parse_case_body(locals, Token::Type::WhenKeyword);
             auto when_node = new CaseWhenNode { token, condition_array.static_cast_as<Node>(), body };
             node->add_node(when_node);
             break;
@@ -589,7 +589,7 @@ SharedPtr<Node> Parser::parse_case(LocalsHashmap &locals) {
             } else {
                 next_expression();
             }
-            auto body = parse_case_in_body(locals);
+            auto body = parse_case_body(locals, Token::Type::InKeyword);
             auto in_node = new CaseInNode { token, pattern, body };
             node->add_node(in_node);
             break;
@@ -611,10 +611,6 @@ SharedPtr<Node> Parser::parse_case(LocalsHashmap &locals) {
     expect(Token::Type::EndKeyword, "case end");
     advance();
     return node.static_cast_as<Node>();
-}
-
-SharedPtr<BlockNode> Parser::parse_case_in_body(LocalsHashmap &locals) {
-    return parse_case_when_body(locals);
 }
 
 SharedPtr<Node> Parser::parse_case_in_pattern(LocalsHashmap &locals) {
@@ -847,18 +843,26 @@ SharedPtr<Node> Parser::parse_case_in_patterns(LocalsHashmap &locals) {
     }
 }
 
-SharedPtr<BlockNode> Parser::parse_case_when_body(LocalsHashmap &locals) {
+SharedPtr<BlockNode> Parser::parse_case_body(LocalsHashmap &locals, Token::Type type) {
     SharedPtr<BlockNode> body = new BlockNode { current_token() };
     validate_current_token();
     skip_newlines();
-    while (!current_token().is_eof() && !current_token().is_when_keyword() && !current_token().is_else_keyword() && !current_token().is_end_keyword()) {
+    while (!current_token().is_eof() && current_token().type() != type && !current_token().is_else_keyword() && !current_token().is_end_keyword()) {
         auto exp = parse_expression(Precedence::LOWEST, locals);
         body->add_node(exp);
         validate_current_token();
         next_expression();
     }
-    if (!current_token().is_when_keyword() && !current_token().is_else_keyword() && !current_token().is_end_keyword())
-        throw_unexpected("case: when, else, or end");
+    if (current_token().type() != type && !current_token().is_else_keyword() && !current_token().is_end_keyword()) {
+        switch (type) {
+        case Token::Type::InKeyword:
+            throw_unexpected("case: in, else, or end");
+        case Token::Type::WhenKeyword:
+            throw_unexpected("case: when, else, or end");
+        default:
+            TM_UNREACHABLE();
+        }
+    }
     return body;
 }
 
