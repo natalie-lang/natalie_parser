@@ -995,6 +995,8 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("p Foo::Bar:bar")).must_equal s(:call, nil, :p, s(:call, s(:const, :Foo), :Bar, s(:lit, :bar)))
         expect(-> { parse("::Bar :bar") }).must_raise SyntaxError # not with colon3
         expect(parse('foo $&')).must_equal s(:call, nil, :foo, s(:back_ref, :&))
+        expect(parse('foo ::Bar')).must_equal s(:call, nil, :foo, s(:colon3, :Bar))
+        expect(parse('Foo ::Bar')).must_equal s(:call, nil, :Foo, s(:colon3, :Bar))
       end
 
       it 'parses safe calls' do

@@ -2953,6 +2953,8 @@ Parser::parse_left_fn Parser::left_denotation(Token &token, SharedPtr<Node> left
             return &Parser::parse_call_expression_with_parens;
         break;
     case Type::ConstantResolution:
+        if (token.whitespace_precedes())
+            return &Parser::parse_call_expression_without_parens;
         return &Parser::parse_constant_resolution_expression;
     case Type::Ampersand:
     case Type::Caret:
