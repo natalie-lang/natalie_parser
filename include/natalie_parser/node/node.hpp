@@ -99,6 +99,7 @@ public:
         UnaryOp,
         Undef,
         Until,
+        Valias,
         While,
         Yield,
     };

@@ -75,6 +75,8 @@ private:
     void reinsert_collapsed_newline();
     SharedPtr<Node> parse_alias(LocalsHashmap &);
     SharedPtr<SymbolNode> parse_alias_arg(LocalsHashmap &, const char *);
+    SharedPtr<String> parse_valias_arg(bool allow_number, const char *);
+
     SharedPtr<Node> parse_array(LocalsHashmap &);
     SharedPtr<Node> parse_back_ref(LocalsHashmap &);
     SharedPtr<Node> parse_begin_block(LocalsHashmap &);

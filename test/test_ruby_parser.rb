@@ -1,3 +1,4 @@
+# coding: utf-8
 # (The MIT License)
 # 
 # Copyright © Ryan Davis, seattle.rb
@@ -139,7 +140,6 @@ module TestRubyParserShared
   end
 
   def test_alias_gvar_backref
-    skip
     rb = "alias $MATCH $&"
     pt = s(:valias, :$MATCH, :$&)
 

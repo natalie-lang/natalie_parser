@@ -299,10 +299,42 @@ void Parser::reinsert_collapsed_newline() {
 SharedPtr<Node> Parser::parse_alias(LocalsHashmap &locals) {
     auto token = current_token();
     advance();
-    auto new_name = parse_alias_arg(locals, "alias new name (first argument)");
-    auto existing_name = parse_alias_arg(locals, "alias existing name (second argument)");
-    reinsert_collapsed_newline();
-    return new AliasNode { token, new_name, existing_name };
+    auto toktype = current_token().type();
+    if (toktype == Token::Type::GlobalVariable || toktype == Token::Type::BackRef || toktype == Token::Type::NthRef) {
+        // special valias case: `alias $GVAR1 $GVAR2`
+        auto new_name = parse_valias_arg(true, "alias new name (global first argument)");
+        advance();
+        auto existing_name = parse_valias_arg(false, "alias new name (global second argument)");
+        advance();
+        reinsert_collapsed_newline();
+        return new ValiasNode { token, new_name, existing_name };
+    } else {
+        auto new_name = parse_alias_arg(locals, "alias new name (first argument)");
+        auto existing_name = parse_alias_arg(locals, "alias existing name (second argument)");
+        reinsert_collapsed_newline();
+        return new AliasNode { token, new_name, existing_name };
+    }
+}
+
+SharedPtr<String> Parser::parse_valias_arg(bool allow_number, const char *expected_message) {
+    switch (current_token().type()) {
+
+    case Token::Type::GlobalVariable:
+        return current_token().literal_string();
+
+    case Token::Type::BackRef: {
+        return new String("$&");
+    }
+    case Token::Type::NthRef: {
+        if (!allow_number)
+            throw_unexpected("can't make alias for the number variables");
+        auto result = new String(current_token().get_fixnum());
+        result->prepend_char('$');
+        return result;
+    }
+    default:
+        throw_unexpected(expected_message);
+    }
 }
 
 SharedPtr<SymbolNode> Parser::parse_alias_arg(LocalsHashmap &locals, const char *expected_message) {
