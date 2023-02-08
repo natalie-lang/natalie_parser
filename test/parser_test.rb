@@ -1,3 +1,4 @@
+# coding: utf-8
 require_relative './test_helper'
 require_relative './support/expectations'
 require_relative '../lib/natalie_parser/sexp'
@@ -1720,6 +1721,17 @@ require_relative '../lib/natalie_parser/sexp'
         expect(parse("alias foo= and=\ndef foo; end")).must_equal s(:block, s(:alias, s(:lit, :foo=), s(:lit, :and=)), s(:defn, :foo, s(:args), s(:nil)))
       end
 
+      it "parses valias" do
+        expect(parse('alias $ZZ $ZAP')).must_equal s(:valias, :"$ZZ", :"$ZAP")
+        expect(parse('alias $zz $z')).must_equal s(:valias, :"$zz", :"$z")
+        expect(parse('alias $1 $ABC')).must_equal s(:valias, :"$1", :"$ABC") # $number in 1st pos
+        expect(parse('alias $& $&')).must_equal s(:valias, :"$&", :"$&") # backrefs 
+
+        expect_raise_with_message(-> { parse('alias $A A') }, SyntaxError, /error/)
+        expect_raise_with_message(-> { parse('alias $A 1') }, SyntaxError, /error/)
+        expect_raise_with_message(-> { parse('alias $A $1') }, SyntaxError, /can't make alias for the number variables/)
+                
+      end
       it 'parses defined?' do
         expect(parse('defined? foo')).must_equal s(:defined, s(:call, nil, :foo))
         expect(parse('defined?(:foo)')).must_equal s(:defined, s(:lit, :foo))

@@ -89,6 +89,7 @@
 #include "natalie_parser/node/unary_op_node.hpp"
 #include "natalie_parser/node/undef_node.hpp"
 #include "natalie_parser/node/until_node.hpp"
+#include "natalie_parser/node/valias_node.hpp"
 #include "natalie_parser/node/while_node.hpp"
 #include "natalie_parser/node/yield_node.hpp"
 #include "natalie_parser/token.hpp"
