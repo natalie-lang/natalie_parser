@@ -6,4 +6,4 @@ $VPATH << "$(srcdir)/../../src"
 $VPATH << "$(srcdir)/../../src/lexer"
 $VPATH << "$(srcdir)/../../src/node"
 create_header
-create_makefile 'natalie_parser'
+create_makefile 'natalie_parser/natalie_parser'
