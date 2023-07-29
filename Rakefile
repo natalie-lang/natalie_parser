@@ -24,7 +24,9 @@ task :clean do
     build/*.o
     build/node
     build/asan_test
-    ext/natalie_parser/*.{h,log,o}
+    ext/natalie_parser/*.{h,log,so,o,bundle}
+    ext/natalie_parser/Makefile
+    ext/natalie_parser/*.h
   ]].each { |path| rm_rf path if File.exist?(path) }
 end
 
