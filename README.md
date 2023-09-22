@@ -1,5 +1,8 @@
 # Natalie Parser
 
+**NOT MAINTAINED:** This parser has been archived in favor of [YARP](https://github.com/ruby/yarp).
+Natalie [now uses YARP instead](https://github.com/natalie-lang/natalie/pull/1213).
+
 [![Gem Version](https://badge.fury.io/rb/natalie_parser.svg)](https://badge.fury.io/rb/natalie_parser)
 [![github build status](https://github.com/natalie-lang/natalie_parser/actions/workflows/build.yml/badge.svg)](https://github.com/natalie-lang/natalie_parser/actions?query=workflow%3ABuild+branch%3Amaster)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/natalie-lang/natalie_parser/blob/master/LICENSE)
